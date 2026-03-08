@@ -1,3 +1,10 @@
+// Declare the commands module for Tauri command handlers (file I/O, export).
+mod commands;
+// Declare the fonts module for bundled font loading.
+mod fonts;
+// Declare the screenplay module so Rust knows about our document types.
+mod screenplay;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()

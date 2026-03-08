@@ -79,6 +79,18 @@
       <span class="dirty-indicator" title="Unsaved changes"></span>
     {/if}
   </div>
+  <div class="font-selector">
+    <button
+      class="font-btn"
+      class:active={documentStore.currentFont === 'noto-sans-malayalam'}
+      onclick={() => documentStore.setFont('noto-sans-malayalam')}
+    >Noto</button>
+    <button
+      class="font-btn"
+      class:active={documentStore.currentFont === 'manjari'}
+      onclick={() => documentStore.setFont('manjari')}
+    >Manjari</button>
+  </div>
   <div class="actions">
     <button onclick={handleNew}>New</button>
     <button onclick={handleOpen}>Open</button>
@@ -142,6 +154,32 @@
   .actions button:hover {
     background: #444;
     color: #fff;
+  }
+
+  .font-selector {
+    display: flex;
+    gap: 2px;
+  }
+
+  .font-btn {
+    padding: 3px 8px;
+    font-size: 11px;
+    color: #888;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: system-ui, sans-serif;
+  }
+
+  .font-btn:hover {
+    color: #ccc;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .font-btn.active {
+    color: #4fc3f7;
+    border-color: #4fc3f7;
   }
 
   .status-message {

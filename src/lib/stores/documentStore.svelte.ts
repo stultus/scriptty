@@ -106,6 +106,19 @@ class DocumentStore {
     }
   }
 
+  /** Get the current font setting slug (e.g. 'noto-sans-malayalam' or 'manjari') */
+  get currentFont(): string {
+    return this.document?.settings.font ?? 'noto-sans-malayalam';
+  }
+
+  /** Update the font setting and mark the document as dirty */
+  setFont(font: string): void {
+    if (this.document) {
+      this.document.settings.font = font;
+      this.isDirty = true;
+    }
+  }
+
   /** Mark the document as having unsaved changes */
   markDirty(): void {
     this.isDirty = true;

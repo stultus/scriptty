@@ -23,6 +23,11 @@
   let modeFlash = $state(false);
   let currentScheme = $state<'inscript1' | 'inscript2' | 'mozhi'>('mozhi');
 
+  // Map the font setting slug to a CSS font-family name
+  let fontFamily = $derived(
+    documentStore.currentFont === 'manjari' ? 'Manjari' : 'Noto Sans Malayalam'
+  );
+
   /** Switch the active Malayalam input scheme and update local state */
   function selectScheme(scheme: 'inscript1' | 'inscript2' | 'mozhi') {
     currentScheme = scheme;
@@ -214,7 +219,7 @@
 </script>
 
 <div class="editor-wrapper">
-  <div class="editor-container" bind:this={editorElement}></div>
+  <div class="editor-container" bind:this={editorElement} style="--editor-font: '{fontFamily}'"></div>
   <div class="status-bar">
     <span class="status-mode" class:malayalam={currentMode === 'MALAYALAM'} class:flash={modeFlash}>
       {currentMode}
@@ -267,7 +272,7 @@
     box-sizing: border-box;
     min-height: 100%;
     outline: none;
-    font-family: 'Noto Sans Malayalam', 'Noto Sans', sans-serif;
+    font-family: var(--editor-font), sans-serif;
     font-size: 14px;
     line-height: 1.6;
     color: #e0e0e0;

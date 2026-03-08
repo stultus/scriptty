@@ -21,6 +21,13 @@
   let currentMode = $state<'ENGLISH' | 'MALAYALAM'>('ENGLISH');
   let currentElement = $state<string>('SCENE HEADING');
   let modeFlash = $state(false);
+  let currentScheme = $state<'inscript1' | 'inscript2' | 'mozhi'>('mozhi');
+
+  /** Switch the active Malayalam input scheme and update local state */
+  function selectScheme(scheme: 'inscript1' | 'inscript2' | 'mozhi') {
+    currentScheme = scheme;
+    inputManager.setScheme(scheme);
+  }
 
   // Create initial document with one empty scene_heading
   function createInitialDoc() {
@@ -130,6 +137,8 @@
         event.stopPropagation();
         const isNowMalayalam = inputManager.toggle();
         currentMode = isNowMalayalam ? 'MALAYALAM' : 'ENGLISH';
+        // When toggling to Malayalam mode, ensure currentScheme reflects the manager's state
+        currentScheme = inputManager.scheme;
 
         // Brief flash on the mode indicator for visual feedback
         modeFlash = true;
@@ -153,9 +162,38 @@
           // Stop ProseMirror from also processing this key
           event.stopPropagation();
 
-          // Insert the Malayalam character via a ProseMirror transaction
-          const tr = view.state.tr.insertText(result);
+          // Build a ProseMirror transaction that handles Mozhi's delete-back-and-replace
+          let tr = view.state.tr;
+          if (result.deleteBack > 0) {
+            // Delete the specified number of characters before the cursor.
+            // This is needed for Mozhi, which sometimes replaces previously inserted
+            // Malayalam characters (e.g., ക് + h → ഖ്, deleting ക് and inserting ഖ്).
+            const from = tr.selection.from - result.deleteBack;
+            const to = tr.selection.from;
+            tr = tr.delete(from, to);
+          }
+          if (result.text) {
+            tr = tr.insertText(result.text);
+          }
           view.dispatch(tr);
+        }
+
+        // Reset Mozhi buffer on word boundaries — space means the next keystroke
+        // should not combine with the previous word's output
+        if (event.key === ' ') {
+          inputManager.resetMozhi();
+        }
+      }
+
+      // Reset Mozhi buffer on keys that invalidate the context, even if they
+      // weren't intercepted above (e.g., Backspace deletes editor content so
+      // the buffer no longer matches what's in the document)
+      if (inputManager.isMalayalam && inputManager.scheme === 'mozhi') {
+        if (event.key === 'Backspace' || event.key === 'Enter' ||
+            event.key === 'ArrowLeft' || event.key === 'ArrowRight' ||
+            event.key === 'ArrowUp' || event.key === 'ArrowDown' ||
+            event.key === 'Home' || event.key === 'End') {
+          inputManager.resetMozhi();
         }
       }
     }
@@ -181,6 +219,26 @@
     <span class="status-mode" class:malayalam={currentMode === 'MALAYALAM'} class:flash={modeFlash}>
       {currentMode}
     </span>
+    {#if currentMode === 'MALAYALAM'}
+      <span class="status-separator">|</span>
+      <span class="scheme-selector">
+        <button
+          class="scheme-btn"
+          class:active={currentScheme === 'mozhi'}
+          onclick={() => selectScheme('mozhi')}
+        >Mozhi</button>
+        <button
+          class="scheme-btn"
+          class:active={currentScheme === 'inscript2'}
+          onclick={() => selectScheme('inscript2')}
+        >Inscript 2</button>
+        <button
+          class="scheme-btn"
+          class:active={currentScheme === 'inscript1'}
+          onclick={() => selectScheme('inscript1')}
+        >Inscript 1</button>
+      </span>
+    {/if}
     <span class="status-separator">|</span>
     <span class="status-element">{currentElement}</span>
   </div>
@@ -327,5 +385,31 @@
 
   .status-element {
     color: #aaa;
+  }
+
+  .scheme-selector {
+    display: flex;
+    gap: 2px;
+  }
+
+  .scheme-btn {
+    background: none;
+    border: none;
+    padding: 1px 6px;
+    font-size: 11px;
+    font-family: system-ui, sans-serif;
+    color: #666;
+    cursor: pointer;
+    border-radius: 3px;
+  }
+
+  .scheme-btn:hover {
+    color: #aaa;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .scheme-btn.active {
+    color: #81c784;
+    font-weight: 600;
   }
 </style>

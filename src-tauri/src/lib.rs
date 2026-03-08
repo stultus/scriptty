@@ -28,6 +28,7 @@ pub fn run() {
       commands::file::open_screenplay,
       commands::export::export_typst_markup,
       commands::export::export_pdf,
+      commands::export::export_pdf_indian,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

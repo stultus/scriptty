@@ -87,3 +87,57 @@ pub fn export_pdf(document: ScreenplayDocument) -> Result<Vec<u8>, String> {
 
     pdf::generate_pdf(&document.content, font_name, &font_data)
 }
+
+/// Exports a screenplay document as PDF bytes in Indian two-column format.
+///
+/// Indian format places visuals/action in the left column (58%) and
+/// audio/dialogue in the right column (42%). Scene headings span full width.
+/// This is the standard format used by Indian film industries including Malayalam cinema.
+///
+/// The font resolution logic is identical to `export_pdf()` — the same bundled fonts
+/// are used, just with a different page layout.
+///
+/// # Arguments
+///
+/// * `document` — The full `.screenplay` document, deserialized from JSON by Tauri.
+///
+/// # Returns
+///
+/// * `Ok(Vec<u8>)` — The raw PDF file bytes in Indian two-column format, ready to write to disk.
+/// * `Err(String)` — An error message if PDF generation fails.
+#[tauri::command]
+pub fn export_pdf_indian(document: ScreenplayDocument) -> Result<Vec<u8>, String> {
+    // `bundled_fonts()` returns all fonts compiled into the binary as a Vec<BundledFont>.
+    let bundled = fonts::bundled_fonts();
+
+    // Determine which font to use based on the document's settings.
+    // This logic is the same as `export_pdf()` — map the slug to a font name
+    // and find the matching BundledFont struct.
+    let (font_name, font) = match document.settings.font.as_str() {
+        "manjari" => (
+            "Manjari",
+            // `iter().find()` searches the vector for the first item where the
+            // closure returns true. Returns `Option<&BundledFont>`.
+            bundled.iter().find(|f| f.name == "Manjari"),
+        ),
+        _ => (
+            "Noto Sans Malayalam",
+            bundled.iter().find(|f| f.name == "Noto Sans Malayalam"),
+        ),
+    };
+
+    // `ok_or_else` converts Option to Result: Some(val) → Ok(val), None → Err(...).
+    // The `?` operator propagates the error — if the font isn't found, the function
+    // returns early with this error message.
+    let font = font.ok_or_else(|| "Selected font not found in bundled fonts".to_string())?;
+
+    // Build the FontData struct with regular and bold font byte slices.
+    // These are `&'static [u8]` — static references to font bytes embedded in the binary.
+    let font_data = pdf::FontData {
+        regular: font.regular,
+        bold: font.bold,
+    };
+
+    // Call the Indian two-column PDF generator instead of the Hollywood one.
+    pdf::generate_pdf_indian(&document.content, font_name, &font_data)
+}

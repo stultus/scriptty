@@ -1,12 +1,22 @@
 <script lang="ts">
-  import { open } from '@tauri-apps/plugin-dialog';
+  import { invoke } from '@tauri-apps/api/core';
+  import { open, save } from '@tauri-apps/plugin-dialog';
+  import { writeFile } from '@tauri-apps/plugin-fs';
   import { documentStore } from '$lib/stores/documentStore.svelte';
-  import ExportButton from './ExportButton.svelte';
 
   // Derived display title — shows document title or "Untitled"
   let displayTitle = $derived(
     documentStore.document?.meta.title || 'Untitled'
   );
+
+  let statusMessage = $state('');
+  let statusTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  function showStatus(message: string) {
+    statusMessage = message;
+    if (statusTimeout) clearTimeout(statusTimeout);
+    statusTimeout = setTimeout(() => { statusMessage = ''; }, 3000);
+  }
 
   async function handleNew() {
     await documentStore.newDocument();
@@ -27,6 +37,39 @@
       await documentStore.openDocument(path);
     }
   }
+
+  /** Shared PDF export helper — calls the given Rust command and saves the result */
+  async function exportPdf(command: string, defaultName: string) {
+    if (!documentStore.document) {
+      showStatus('No document to export');
+      return;
+    }
+    try {
+      showStatus('Generating PDF...');
+      const bytes = await invoke<number[]>(command, { document: documentStore.document });
+      const path = await save({
+        defaultPath: defaultName,
+        filters: [{ name: 'PDF', extensions: ['pdf'] }]
+      });
+      if (!path) {
+        showStatus(''); // User cancelled
+        return;
+      }
+      await writeFile(path, new Uint8Array(bytes));
+      showStatus('PDF exported');
+    } catch (e) {
+      console.error('[TitleBar] Export failed:', e);
+      showStatus('Export failed');
+    }
+  }
+
+  async function handleExportHollywood() {
+    await exportPdf('export_pdf', 'screenplay.pdf');
+  }
+
+  async function handleExportIndian() {
+    await exportPdf('export_pdf_indian', 'screenplay_indian.pdf');
+  }
 </script>
 
 <div class="title-bar">
@@ -40,7 +83,11 @@
     <button onclick={handleNew}>New</button>
     <button onclick={handleOpen}>Open</button>
     <button onclick={handleSave}>Save</button>
-    <ExportButton />
+    <button onclick={handleExportHollywood}>Export (Hollywood)</button>
+    <button onclick={handleExportIndian}>Export (Indian)</button>
+    {#if statusMessage}
+      <span class="status-message">{statusMessage}</span>
+    {/if}
   </div>
 </div>
 
@@ -95,5 +142,11 @@
   .actions button:hover {
     background: #444;
     color: #fff;
+  }
+
+  .status-message {
+    font-size: 11px;
+    color: #888;
+    font-family: system-ui, sans-serif;
   }
 </style>

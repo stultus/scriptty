@@ -5,9 +5,13 @@
   import { history } from 'prosemirror-history';
   import { baseKeymap } from 'prosemirror-commands';
   import { keymap } from 'prosemirror-keymap';
+  import { Node as ProseMirrorNode } from 'prosemirror-model';
   import { screenplaySchema } from '$lib/editor/schema';
   import { screenplayKeymap } from '$lib/editor/keymap';
+  import { autoUppercasePlugin } from '$lib/editor/autoUppercase';
   import { InputModeManager } from '$lib/editor/input/InputModeManager';
+  import { documentStore } from '$lib/stores/documentStore.svelte';
+  import { editorStore } from '$lib/stores/editorStore.svelte';
 
   let editorElement: HTMLDivElement;
   let view: EditorView | null = null;
@@ -40,6 +44,35 @@
     currentElement = displayNames[nodeName] ?? nodeName.toUpperCase();
   }
 
+  // Watch for New/Open events only — loadTrigger is incremented exclusively by
+  // newDocument() and openDocument(), never by setContent() during typing.
+  // IMPORTANT: only read loadTrigger and loadedContent here — NOT document or
+  // document.content, because those are mutated on every keystroke by setContent().
+  $effect(() => {
+    // Read loadTrigger to establish the reactive dependency
+    const _trigger = documentStore.loadTrigger;
+    // Read the snapshot taken at load time — not the live document
+    const content = documentStore.loadedContent;
+
+    if (!view) return;
+
+    let newDoc;
+    if (content !== null) {
+      // Parse the stored ProseMirror JSON back into a document node
+      newDoc = ProseMirrorNode.fromJSON(screenplaySchema, content as Record<string, unknown>);
+    } else {
+      // New or empty document — start with a fresh scene_heading
+      newDoc = createInitialDoc();
+    }
+
+    const newState = EditorState.create({
+      doc: newDoc,
+      plugins: view.state.plugins,
+    });
+    view.updateState(newState);
+    updateCurrentElement(newState);
+  });
+
   onMount(() => {
     // Guard: never create a second EditorView if one already exists.
     // This prevents issues if onMount somehow fires twice (e.g. HMR, re-mount).
@@ -51,18 +84,31 @@
         screenplayKeymap,
         keymap(baseKeymap),
         history(),
+        autoUppercasePlugin,
       ]
     });
 
     view = new EditorView(editorElement, {
+      // Store the view in editorStore so other components can access it
+      // (we set editorStore.view right after the constructor returns — see below)
       state,
       dispatchTransaction(tr) {
         if (!view) return;
         const newState = view.state.apply(tr);
         view.updateState(newState);
         updateCurrentElement(newState);
+
+        // Sync document changes to the store — setContent() does not
+        // increment loadTrigger, so the $effect won't re-trigger
+        if (tr.docChanged) {
+          documentStore.setContent(newState.doc.toJSON());
+          documentStore.markDirty();
+        }
       }
     });
+
+    // Share the EditorView with other components via the store
+    editorStore.view = view;
 
     // Attach a capture-phase keydown listener directly on the EditorView's DOM element.
     // Using capture: true ensures this fires BEFORE ProseMirror's own keydown handler
@@ -70,6 +116,14 @@
     const editorDom = view.dom;
 
     function handleMalayalamKeydown(event: KeyboardEvent) {
+      // Cmd+S (Mac) or Ctrl+S (Windows/Linux) — save the document
+      if ((event.metaKey || event.ctrlKey) && event.key === 's') {
+        event.preventDefault();
+        event.stopPropagation();
+        documentStore.saveWithDialog();
+        return;
+      }
+
       // Ctrl+Space toggles input mode — intercept before ProseMirror sees it
       if (event.ctrlKey && event.code === 'Space') {
         event.preventDefault();
@@ -112,7 +166,9 @@
     updateCurrentElement(view.state);
 
     return () => {
-      // Clean up: remove the capture listener, then destroy the EditorView
+      // Clean up: clear the shared store reference, remove the capture listener,
+      // then destroy the EditorView
+      editorStore.view = null;
       editorDom.removeEventListener('keydown', handleMalayalamKeydown, { capture: true });
       view?.destroy();
     };
@@ -142,62 +198,91 @@
   .editor-container {
     flex: 1;
     overflow-y: auto;
-    padding: 2rem;
+    background: #141414;
   }
 
-  /* ProseMirror editor styles */
+  /* ProseMirror editor styles — fixed-width content area centered in the container */
   .editor-container :global(.ProseMirror) {
-    max-width: 816px; /* ~8.5 inches at 96dpi — standard US Letter width */
+    max-width: 680px;
     margin: 0 auto;
-    padding: 3rem 2rem;
+    padding: 60px 80px;
+    box-sizing: border-box;
     min-height: 100%;
     outline: none;
-    font-family: var(--editor-font, 'Noto Sans Malayalam'), sans-serif;
+    font-family: 'Noto Sans Malayalam', 'Noto Sans', sans-serif;
     font-size: 14px;
     line-height: 1.6;
     color: #e0e0e0;
-    background: #242424;
-    border-radius: 4px;
+    background: #1c1c1c;
+    border-radius: 2px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+    direction: ltr;
+    unicode-bidi: normal;
+    counter-reset: scene-counter;
   }
 
-  .editor-container :global(.ProseMirror p) {
+  /* Screenplay element styles — Hollywood format
+   * All inner ProseMirror DOM styles must use :global() because ProseMirror
+   * generates its own DOM nodes without Svelte's scoping attributes.
+   * Fixed pixel margins relative to ~520px usable content area.
+   * No text-transform: uppercase — preserves Malayalam script correctly. */
+
+  :global(.ProseMirror p) {
     margin: 0;
     padding: 4px 0;
   }
 
-  /* Screenplay element styles — Hollywood format positioning */
-  .editor-container :global(.scene-heading) {
-    text-transform: uppercase;
-    font-weight: 700;
-    margin-top: 1.5em;
+  :global(.ProseMirror .scene-heading) {
+    font-weight: bold;
+    font-size: 16px;
+    margin-top: 2em;
+    margin-bottom: 0.5em;
+    color: #fff;
+    counter-increment: scene-counter;
   }
 
-  .editor-container :global(.action) {
-    /* Full width, default formatting */
+  :global(.ProseMirror .scene-heading::before) {
+    content: counter(scene-counter) ". ";
+    color: #888;
+    font-size: 11px;
+    font-weight: normal;
+    margin-right: 4px;
   }
 
-  .editor-container :global(.character) {
-    text-transform: uppercase;
-    text-align: center;
-    padding-left: 30%;
+  :global(.ProseMirror .action) {
+    margin: 0.5em 0;
+    color: #ddd;
+  }
+
+  :global(.ProseMirror .character) {
+    margin-left: 200px;
     margin-top: 1em;
+    margin-bottom: 0;
+    color: #fff;
+    font-weight: bold;
   }
 
-  .editor-container :global(.parenthetical) {
-    padding-left: 25%;
-    max-width: 60%;
+  :global(.ProseMirror .dialogue) {
+    margin-left: 100px;
+    margin-right: 100px;
+    margin-top: 0;
+    margin-bottom: 0;
+    color: #ddd;
+  }
+
+  :global(.ProseMirror .parenthetical) {
+    margin-left: 160px;
+    margin-right: 160px;
+    margin-top: 0;
+    margin-bottom: 0;
+    color: #aaa;
     font-style: italic;
   }
 
-  .editor-container :global(.dialogue) {
-    padding-left: 15%;
-    padding-right: 15%;
-  }
-
-  .editor-container :global(.transition) {
-    text-transform: uppercase;
+  :global(.ProseMirror .transition) {
     text-align: right;
     margin-top: 1em;
+    color: #ccc;
   }
 
   /* Status bar */

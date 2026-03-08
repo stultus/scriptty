@@ -1,4 +1,12 @@
-// Tab/Enter navigation keymap for screenplay element transitions
+// Screenplay element navigation keymap
+//
+// Shortcut reference:
+//   Enter         → create next element (scene_heading→action, character→dialogue, etc.)
+//   Shift+Enter   → create new scene_heading below (universal "new scene" shortcut)
+//   Tab           → cycle element type: action→character, dialogue→character, character→action
+//   Shift+Tab     → revert to action (from character/dialogue), or action→scene_heading at cursor pos 0
+//   Mod+Z         → undo
+//   Shift+Mod+Z   → redo
 
 import { keymap } from 'prosemirror-keymap';
 import { type Command, TextSelection, type EditorState } from 'prosemirror-state';
@@ -102,25 +110,57 @@ const handleTab: Command = (state, dispatch) => {
 };
 
 /**
- * Shift-Tab key handler: changes the current node's type back to action.
+ * Shift+Enter handler: universal "new scene" shortcut.
+ * Creates a new empty scene_heading below the current node from anywhere.
+ */
+const handleShiftEnter: Command = (state, dispatch) => {
+	if (dispatch) {
+		const { to } = currentBlockRange(state);
+		const newNode = screenplaySchema.nodes.scene_heading.create();
+		let tr = state.tr.insert(to, newNode);
+		tr = tr.setSelection(TextSelection.create(tr.doc, to + 1));
+		tr.scrollIntoView();
+		dispatch(tr);
+	}
+	return true;
+};
+
+/**
+ * Shift-Tab key handler:
+ *  - character or dialogue → convert to action
+ *  - action at cursor offset 0 → convert to scene_heading
+ *  - everything else → pass through
  */
 const handleShiftTab: Command = (state, dispatch) => {
 	const typeName = currentNodeTypeName(state);
 
-	// Only character and dialogue respond to Shift-Tab
-	if (typeName !== 'character' && typeName !== 'dialogue') {
-		return false;
+	if (typeName === 'character' || typeName === 'dialogue') {
+		if (dispatch) {
+			const $from = state.selection.$from;
+			const pos = $from.before();
+			const tr = state.tr.setNodeMarkup(pos, screenplaySchema.nodes.action);
+			tr.scrollIntoView();
+			dispatch(tr);
+		}
+		return true;
 	}
 
-	if (dispatch) {
+	// Action at cursor offset 0 → convert to scene_heading
+	if (typeName === 'action') {
 		const $from = state.selection.$from;
-		const pos = $from.before();
-		const tr = state.tr.setNodeMarkup(pos, screenplaySchema.nodes.action);
-		tr.scrollIntoView();
-		dispatch(tr);
+		// parentOffset is the cursor position within the parent node (0 = very start)
+		if ($from.parentOffset === 0) {
+			if (dispatch) {
+				const pos = $from.before();
+				const tr = state.tr.setNodeMarkup(pos, screenplaySchema.nodes.scene_heading);
+				tr.scrollIntoView();
+				dispatch(tr);
+			}
+			return true;
+		}
 	}
 
-	return true;
+	return false;
 };
 
 /**
@@ -129,6 +169,7 @@ const handleShiftTab: Command = (state, dispatch) => {
  */
 export const screenplayKeymap = keymap({
 	Enter: handleEnter,
+	'Shift-Enter': handleShiftEnter,
 	Tab: handleTab,
 	'Shift-Tab': handleShiftTab,
 	'Mod-z': undo,

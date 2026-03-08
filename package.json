@@ -11,7 +11,8 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check . && eslint .",
-		"format": "prettier --write ."
+		"format": "prettier --write .",
+		"tauri": "tauri"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^2.0.2",
@@ -35,6 +36,7 @@
 	},
 	"dependencies": {
 		"@tauri-apps/api": "^2.10.1",
+		"@tauri-apps/plugin-dialog": "^2.6.0",
 		"prosemirror-commands": "^1.7.1",
 		"prosemirror-history": "^1.5.0",
 		"prosemirror-inputrules": "^1.5.1",

@@ -19,8 +19,9 @@ export class InputModeManager {
   /** Whether Malayalam input is currently active (false = English passthrough) */
   isMalayalam: boolean = false;
 
-  /** The currently selected Malayalam input scheme */
-  scheme: InputScheme = 'mozhi';
+  /** The currently selected Malayalam input scheme.
+   *  Defaults to 'inscript2' because Mozhi (Varnam JS) is not yet integrated. */
+  scheme: InputScheme = 'inscript2';
 
   // "private constructor" prevents anyone from calling `new InputModeManager()` directly.
   // They must use getInstance() instead, ensuring only one instance ever exists.

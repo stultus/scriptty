@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="src-tauri/icons/128x128@2x.png" width="128" height="128" alt="Scriptty logo">
+</p>
+
 # Scriptty
 
 An offline desktop screenwriting app for Malayalam and English screenwriters.

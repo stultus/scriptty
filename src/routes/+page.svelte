@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { listen } from '@tauri-apps/api/event';
   import { open } from '@tauri-apps/plugin-dialog';
   import Editor from '$lib/components/Editor.svelte';
   import TitleBar from '$lib/components/TitleBar.svelte';
@@ -19,8 +20,18 @@
       }
     }
 
-    // Window-level keyboard shortcuts — works even when editor isn't focused
+    // Window-level keyboard shortcuts — works even when editor isn't focused.
+    // Note: Cmd+N, Cmd+O, Cmd+S, Cmd+Shift+S are also handled by the native
+    // menu accelerators (which emit Tauri events). We keep these keydown handlers
+    // as a fallback — if the native menu intercepts the key first, the keydown
+    // event won't reach the webview, so no double-execution occurs.
     function handleGlobalKeydown(event: KeyboardEvent) {
+      // Cmd+Shift+S — Save As (must be checked BEFORE Cmd+S since both have metaKey+s)
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 's') {
+        event.preventDefault();
+        documentStore.saveAsDialog();
+        return;
+      }
       // Cmd+S (Mac) / Ctrl+S (Windows/Linux)
       if ((event.metaKey || event.ctrlKey) && event.key === 's') {
         event.preventDefault();
@@ -47,8 +58,37 @@
 
     window.addEventListener('keydown', handleGlobalKeydown);
 
+    // Listen for native menu events emitted from the Rust backend.
+    // Each custom menu item (New, Open, Save, Save As) emits an event
+    // that we handle here to call the appropriate store method.
+    const unlistenNew = await listen('menu-new', () => {
+      documentStore.newDocument();
+    });
+
+    const unlistenOpen = await listen('menu-open', async () => {
+      const path = await open({
+        multiple: false,
+        filters: [{ name: 'Screenplay', extensions: ['screenplay'] }]
+      });
+      if (typeof path === 'string') {
+        await documentStore.openDocument(path);
+      }
+    });
+
+    const unlistenSave = await listen('menu-save', () => {
+      documentStore.saveWithDialog();
+    });
+
+    const unlistenSaveAs = await listen('menu-save-as', () => {
+      documentStore.saveAsDialog();
+    });
+
     return () => {
       window.removeEventListener('keydown', handleGlobalKeydown);
+      unlistenNew();
+      unlistenOpen();
+      unlistenSave();
+      unlistenSaveAs();
     };
   });
 </script>

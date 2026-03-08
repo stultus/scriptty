@@ -106,6 +106,20 @@ class DocumentStore {
     }
   }
 
+  /** Save As — always opens a file dialog, even if the document has a current path */
+  async saveAsDialog(): Promise<void> {
+    if (!this.document) return;
+
+    const path = await save({
+      defaultPath: this.document.meta.title
+        ? `${this.document.meta.title}.screenplay`
+        : 'untitled.screenplay',
+      filters: [{ name: 'Screenplay', extensions: ['screenplay'] }]
+    });
+    if (!path) return; // User cancelled
+    await this.saveDocument(path);
+  }
+
   /** Get the current font setting slug (e.g. 'noto-sans-malayalam' or 'manjari') */
   get currentFont(): string {
     return this.document?.settings.font ?? 'noto-sans-malayalam';

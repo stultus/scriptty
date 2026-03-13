@@ -76,6 +76,7 @@ pub fn run() {
         true,
         &[
           &MenuItem::with_id(app, "about", "About Scriptty", true, None::<&str>)?,
+          &MenuItem::with_id(app, "help-guide", "How to Use Scriptty", true, None::<&str>)?,
           &PredefinedMenuItem::separator(app)?,
           &MenuItem::with_id(app, "report-issue", "Report an Issue", true, None::<&str>)?,
           &MenuItem::with_id(app, "view-github", "View on GitHub", true, None::<&str>)?,
@@ -100,6 +101,7 @@ pub fn run() {
           "save" => { let _ = app.emit("menu-save", ()); }
           "save-as" => { let _ = app.emit("menu-save-as", ()); }
           "about" => { let _ = app.emit("menu-about", ()); }
+          "help-guide" => { let _ = app.emit("menu-help-guide", ()); }
           "quit" => { let _ = app.emit("menu-quit", ()); }
           // External links — open in the default browser using the opener plugin.
           // `tauri_plugin_opener::OpenerExt` provides the `.opener()` method on AppHandle.

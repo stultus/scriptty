@@ -8,11 +8,13 @@
   import LeftPanel from '$lib/components/LeftPanel.svelte';
   import SceneCardsView from '$lib/components/SceneCardsView.svelte';
   import AboutModal from '$lib/components/AboutModal.svelte';
+  import HelpModal from '$lib/components/HelpModal.svelte';
   import { documentStore } from '$lib/stores/documentStore.svelte';
   import { themeStore } from '$lib/stores/themeStore.svelte';
 
   let panelOpen = $state(false);
   let showAbout = $state(false);
+  let showHelp = $state(false);
   let showSceneCards = $state(false);
 
   // Module-level guard — prevents newDocument() from firing again on HMR re-mount
@@ -109,6 +111,10 @@
       showAbout = true;
     });
 
+    const unlistenHelpGuide = await listen('menu-help-guide', () => {
+      showHelp = true;
+    });
+
     const unlistenQuit = await listen('menu-quit', async () => {
       if (!(await documentStore.confirmIfDirty())) return;
       // All clear — skip the onCloseRequested check and close the window
@@ -131,6 +137,7 @@
       unlistenSave();
       unlistenSaveAs();
       unlistenAbout();
+      unlistenHelpGuide();
       unlistenQuit();
       unlistenClose();
     };
@@ -150,6 +157,7 @@
 </main>
 
 <AboutModal bind:open={showAbout} />
+<HelpModal bind:open={showHelp} />
 
 <style>
   main {

@@ -90,8 +90,15 @@
     // This prevents issues if onMount somehow fires twice (e.g. HMR, re-mount).
     if (view) return;
 
+    // Restore the document from the store if it exists (e.g. returning from Scene Cards).
+    // Fall back to a fresh empty doc for first launch.
+    const content = documentStore.document?.content;
+    const initialDoc = content
+      ? ProseMirrorNode.fromJSON(screenplaySchema, content as Record<string, unknown>)
+      : createInitialDoc();
+
     const state = EditorState.create({
-      doc: createInitialDoc(),
+      doc: initialDoc,
       plugins: [
         screenplayKeymap,
         keymap(baseKeymap),

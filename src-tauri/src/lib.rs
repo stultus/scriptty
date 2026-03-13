@@ -47,8 +47,9 @@ pub fn run() {
           &MenuItem::with_id(app, "save", "Save", true, Some("CmdOrCtrl+S"))?,
           &MenuItem::with_id(app, "save-as", "Save As...", true, Some("CmdOrCtrl+Shift+S"))?,
           &PredefinedMenuItem::separator(app)?,
-          // PredefinedMenuItem::quit is handled by the OS automatically — no event emitted.
-          &PredefinedMenuItem::quit(app, Some("Quit Scriptty"))?,
+          // Custom quit item instead of PredefinedMenuItem::quit so the frontend
+          // can intercept it and prompt for unsaved changes before quitting.
+          &MenuItem::with_id(app, "quit", "Quit Scriptty", true, Some("CmdOrCtrl+Q"))?,
         ],
       )?;
 
@@ -99,6 +100,7 @@ pub fn run() {
           "save" => { let _ = app.emit("menu-save", ()); }
           "save-as" => { let _ = app.emit("menu-save-as", ()); }
           "about" => { let _ = app.emit("menu-about", ()); }
+          "quit" => { let _ = app.emit("menu-quit", ()); }
           // External links — open in the default browser using the opener plugin.
           // `tauri_plugin_opener::OpenerExt` provides the `.opener()` method on AppHandle.
           "report-issue" => {

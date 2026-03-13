@@ -17,6 +17,8 @@
 
   // Module-level guard — prevents newDocument() from firing again on HMR re-mount
   let appInitialized = false;
+  // Set to true after menu-quit confirms — prevents onCloseRequested from prompting again
+  let quitConfirmed = false;
 
   onMount(async () => {
     // Initialize theme on first mount
@@ -107,8 +109,16 @@
       showAbout = true;
     });
 
+    const unlistenQuit = await listen('menu-quit', async () => {
+      if (!(await documentStore.confirmIfDirty())) return;
+      // All clear — skip the onCloseRequested check and close the window
+      quitConfirmed = true;
+      await getCurrentWindow().close();
+    });
+
     // Intercept window close to prompt for unsaved changes
     const unlistenClose = await getCurrentWindow().onCloseRequested(async (event) => {
+      if (quitConfirmed) return; // Already confirmed via menu-quit
       if (!(await documentStore.confirmIfDirty())) {
         event.preventDefault();
       }
@@ -121,6 +131,7 @@
       unlistenSave();
       unlistenSaveAs();
       unlistenAbout();
+      unlistenQuit();
       unlistenClose();
     };
   });

@@ -1,6 +1,6 @@
 # Scriptty — Development Progress
 
-## Status: Phase 2 Active
+## Status: Phase 2 Complete
 
 ---
 
@@ -86,47 +86,47 @@
 
 ---
 
-## Phase 2 — In Progress
-
-Build order (minimizes dependencies):
+## Phase 2 — Completed
 
 ### 1. Help/About Menu
-- [ ] Add Help submenu to macOS native menu bar
-- [ ] "About Scriptty" menu item → emits `menu-about` event
-- [ ] AboutModal.svelte — logo, version, developer info, credits
-- [ ] "Report an Issue" → opens GitHub issues in browser
-- [ ] "View on GitHub" → opens repo in browser
-- [ ] Version from tauri.conf.json or package.json
+- [x] Help submenu in macOS native menu bar
+- [x] "About Scriptty" menu item → emits `menu-about` event → AboutModal
+- [x] AboutModal.svelte — ഋ logo, version 0.2.0, developer info, credits
+- [x] "Report an Issue" → opens GitHub issues in browser (tauri-plugin-opener)
+- [x] "View on GitHub" → opens repo in browser
 
 ### 2. Story Panel
-- [ ] Add `story` field to ScreenplayDocument (Rust + TypeScript)
-  - ScreenplayStory struct: idea, synopsis, treatment (all String)
-- [ ] StoryPanel.svelte — three collapsible sections with text areas
-- [ ] Tab switcher at top of left panel: Scenes | Story
-- [ ] Ctrl+Shift+B shortcut to open Story Panel
-- [ ] Malayalam input support in Story Panel text areas
-- [ ] Data persisted in .screenplay JSON
+- [x] `story` field added to ScreenplayDocument (Rust + TypeScript) with `#[serde(default)]`
+- [x] StoryPanel.svelte — three collapsible sections (Idea, Synopsis, Treatment)
+- [x] LeftPanel.svelte — tab switcher (Scenes | Story), widens to 420px on Story tab
+- [x] Malayalam input works in Story Panel text areas (inherits from editor context)
+- [x] Data persisted in .screenplay JSON
 
 ### 3. Export Modal
-- [ ] ExportModal.svelte — replaces separate Hollywood/Indian buttons
-- [ ] Checkbox sections: Title Page, Synopsis, Treatment, Screenplay, Scene Cards
-- [ ] Format radio: Hollywood / Indian
-- [ ] Combined PDF generation in Rust (concatenated sections)
-- [ ] Synopsis PDF section: centered heading, prose layout
-- [ ] Treatment PDF section: same as synopsis
-- [ ] Scene Cards PDF section: table/card layout
-- [ ] Single "Export" button in TitleBar opens modal
+- [x] ExportModal.svelte — replaces separate Hollywood/Indian buttons
+- [x] Checkbox sections: Title Page, Synopsis, Treatment, Screenplay, Scene Cards
+- [x] Format radio: Hollywood / Indian
+- [x] Combined PDF generation in Rust (`export_combined_pdf` command)
+- [x] Synopsis/Treatment PDF sections: centered heading, prose layout
+- [x] Scene Cards PDF section: table layout per scene
+- [x] Single "Export" button in TitleBar opens modal
 
 ### 4. Scene Cards
-- [ ] Add `scene_cards` field to ScreenplayDocument (Rust + TypeScript)
-  - SceneCard struct: scene_index, description, shoot_notes
-- [ ] Scene heading parser — extract location, time of day from heading text
-- [ ] Character extractor — collect Character elements per scene
-- [ ] Page estimate — character count / average chars per page
-- [ ] SceneCardsView.svelte — grid of cards, 2–3 columns
-- [ ] Editable description and shoot notes per card
-- [ ] "Back to Script" button to return to editor
-- [ ] Cmd+Shift+K shortcut to toggle view
+- [x] `scene_cards` field added to ScreenplayDocument (Rust + TypeScript) with `#[serde(default)]`
+- [x] Scene heading parser — extracts location, time from INT./EXT. headings
+- [x] Character extractor — collects Character elements per scene
+- [x] Page estimate — character count / 3000 chars per page
+- [x] SceneCardsView.svelte — responsive grid of cards
+- [x] Editable description and shoot notes per card
+- [x] "Back to Script" button to return to editor
+- [x] Cmd+Shift+K shortcut to toggle view
+
+### 5. Dirty-State Guard
+- [x] Save confirmation dialog (Save / Don't Save / Cancel) via native `message` dialog
+- [x] Guards on: New, Open (TitleBar buttons + menu events + keyboard shortcuts)
+- [x] Window close interception via `onCloseRequested`
+- [x] Quit interception — custom menu item replaces `PredefinedMenuItem::quit`
+- [x] `confirmIfDirty()` method on documentStore
 
 ---
 

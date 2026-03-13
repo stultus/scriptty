@@ -63,9 +63,13 @@ scriptty/
 │   │   └── components/           # UI components
 │   │       ├── Editor.svelte          # ProseMirror editor + status bar
 │   │       ├── TitleBar.svelte        # Top bar: actions, title, font/theme controls
-│   │       ├── SceneNavigator.svelte  # Collapsible scene list sidebar
+│   │       ├── LeftPanel.svelte       # Tabbed sidebar (Scenes | Story), auto-widening
+│   │       ├── SceneNavigator.svelte  # Scene list with click-to-jump
+│   │       ├── StoryPanel.svelte      # Idea/Synopsis/Treatment text areas
+│   │       ├── SceneCardsView.svelte  # Full-panel grid of scene breakdown cards
 │   │       ├── MetadataModal.svelte   # Screenplay metadata editor
-│   │       └── ExportButton.svelte    # Standalone export button (minimal use)
+│   │       ├── ExportModal.svelte     # Combined PDF export with section selection
+│   │       └── AboutModal.svelte      # App info, credits, version
 │   └── routes/                   # SvelteKit pages
 │       ├── +layout.svelte        # Global reset, CSS variables, theme system
 │       └── +page.svelte          # Main app page, keyboard shortcuts, menu events
@@ -181,8 +185,8 @@ JSON with top-level keys:
 ```
 
 `content` is the ProseMirror document JSON serialization.
-`story` holds the three Story Panel text sections (Phase 2).
-`scene_cards` holds per-scene descriptions and shoot notes (Phase 2).
+`story` holds the three Story Panel text sections.
+`scene_cards` holds per-scene descriptions and shoot notes.
 
 ### Export Formats
 
@@ -190,7 +194,7 @@ JSON with top-level keys:
 - **Fountain** — UTF-8 plain text, interoperability with other tools
 - **Plain text** — readable draft sharing
 
-### Export System (Phase 2)
+### Export System
 
 - Single "Export" button opens an Export modal (replaces separate Hollywood/Indian buttons)
 - Checkbox sections: Title Page, Synopsis, Treatment, Screenplay, Scene Cards
@@ -223,22 +227,29 @@ JSON with top-level keys:
 - Toggle button in TitleBar right group
 - Warm Kerala-rooted palette: teal accent, cream page, amber dirty indicator
 
-### Story Panel (Phase 2)
+### Story Panel
 
 - Collapsible left panel tab alongside Scene Navigator
 - Three sections: Idea (logline), Synopsis, Treatment (detailed story)
 - Tab switcher at top of left panel: Scenes | Story
-- Ctrl+Shift+B opens Story Panel (Ctrl+B stays for Scene Navigator)
+- Panel auto-widens to 420px on Story tab for more writing space
 - All sections support Malayalam input (Ctrl+Space toggle applies)
 - Data stored in `story` field of `.screenplay` file
 
-### Scene Cards (Phase 2)
+### Scene Cards
 
 - Per-scene breakdown for shoot planning
 - Auto-populated: scene number, heading, location, time, characters, page estimate
 - Manually editable: scene description, shoot notes
 - Grid view accessible via Cmd+Shift+K, replaces editor as full-panel view
 - Data stored in `scene_cards` field of `.screenplay` file
+
+### Dirty-State Guard
+
+- Native OS confirmation dialog (Save / Don't Save / Cancel) via `message` from plugin-dialog
+- Intercepts: New, Open (buttons + menu + keyboard), window close, Quit (custom menu item)
+- `documentStore.confirmIfDirty()` — single entry point for all guard checks
+- Custom quit menu item replaces `PredefinedMenuItem::quit` to allow frontend interception
 
 ### Character Autocomplete
 
@@ -321,14 +332,12 @@ This means:
 
 ---
 
-## Phase 2 Features (Current)
+## Remaining Work
 
-Build in this order to minimize dependencies:
-
-1. **Help/About menu** — Add Help menu to macOS menu bar, About modal with app info
-2. **Story Panel** — Idea/Synopsis/Treatment sections in collapsible left panel tab
-3. **Export modal** — Combined export with section checkboxes, replaces separate buttons
-4. **Scene Cards** — Per-scene breakdown grid view for shoot planning
+### Phase 1 Incomplete
+- **Character autocomplete** — trigger after 2 chars in Character element, Unicode-aware
+- **Fountain export** — UTF-8 .fountain file
+- **Plain text export**
 
 ## Deferred (Do Not Implement Yet)
 

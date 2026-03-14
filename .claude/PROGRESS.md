@@ -125,16 +125,53 @@
 
 ---
 
+## Phase 3 — Completed
+
+### 6. Character Autocomplete
+- [x] ProseMirror plugin triggers after 2 chars typed in Character element
+- [x] Collects character names from document, filters by prefix (case-insensitive, Unicode-aware)
+- [x] Dropdown positioned below cursor, keyboard navigation (arrows/Enter/Tab/Escape)
+- [x] Accepts suggestion and creates Dialogue element below
+
+### 7. Fountain Export
+- [x] `fountain.rs` — ProseMirror JSON → Fountain plain text (.fountain)
+- [x] Title page block, auto-detected scene headings, Malayalam character `@` prefix
+- [x] Parentheticals wrapped, transitions auto-detected or forced with `>`
+- [x] `export_fountain` Tauri command, button in ExportModal
+- [x] 9 unit tests passing
+
+### 8. Find and Replace
+- [x] ProseMirror plugin with DecorationSet for search highlighting
+- [x] FindReplaceBar.svelte — find/replace modes, case sensitivity toggle
+- [x] Match navigation (next/prev), replace current, replace all (single undo step)
+- [x] Cmd+F (find), Cmd+Shift+H (find and replace)
+- [x] Menu items in Edit menu
+
+### 9. Script Statistics
+- [x] StatisticsModal.svelte — computes from ProseMirror JSON on modal open
+- [x] Page count, scene count, word count, dialogue blocks, screen time estimate
+- [x] INT/EXT/Day/Night scene breakdown
+- [x] Per-character table: scenes, dialogue blocks, percentage — sorted by dialogue count
+- [x] Refresh button, Cmd+Shift+I shortcut, View menu item
+
+### 10. Plain Text Export
+- [x] `plaintext.rs` — ProseMirror JSON → formatted plain text (.txt)
+- [x] Character names at col 40, dialogue at col 25 (35-char wrap), parentheticals at col 35
+- [x] Transitions right-aligned, scene headings uppercase, metadata header block
+- [x] Unicode-aware word wrapping for Malayalam text
+- [x] `export_plaintext` Tauri command, button in ExportModal
+- [x] 9 unit tests passing
+
+### 11. UI Consistency Fixes
+- [x] All modals standardized to 480px width and 24px padding
+- [x] Hardcoded `#999` scene number color → `var(--text-muted)`
+- [x] FindReplaceBar border-radius standardized to 6px
+- [x] App opens in fullscreen mode by default
+- [x] Window close/quit permission fix (`core:window:allow-close`)
+
+---
+
 ## Remaining Work
-
-### Immediate
-- [ ] Character autocomplete — trigger after 2 chars in Character element, Unicode-aware
-- [ ] Fountain export — UTF-8, .fountain file
-
-### Short Term
-- [ ] Find and Replace — Cmd+F / Cmd+H, highlight matches, Malayalam-aware
-- [ ] Script statistics — page count, scene count, per-character dialogue stats, INT/EXT breakdown
-- [ ] Plain text export
 
 ### Medium Term
 - [ ] Revision mode — track changes per draft, asterisk marks in margin, Hollywood color cycle

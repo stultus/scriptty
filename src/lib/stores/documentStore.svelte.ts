@@ -160,19 +160,24 @@ class DocumentStore {
   async confirmIfDirty(): Promise<boolean> {
     if (!this.isDirty) return true;
 
-    const result: MessageDialogResult = await message(
-      'You have unsaved changes. Do you want to save before continuing?',
-      {
-        title: 'Unsaved Changes',
-        kind: 'warning',
-        buttons: { yes: 'Save', no: "Don't Save", cancel: 'Cancel' },
-      }
-    );
+    try {
+      const result: MessageDialogResult = await message(
+        'You have unsaved changes. Do you want to save before continuing?',
+        {
+          title: 'Unsaved Changes',
+          kind: 'warning',
+          buttons: { yes: 'Save', no: "Don't Save", cancel: 'Cancel' },
+        }
+      );
 
-    if (result === 'Cancel') return false;
-    if (result === 'Save') await this.saveWithDialog();
-    // 'Don\'t Save' — proceed without saving
-    return true;
+      if (result === 'Cancel') return false;
+      if (result === 'Save') await this.saveWithDialog();
+      // "Don't Save" — proceed without saving
+      return true;
+    } catch (error) {
+      console.error('[confirmIfDirty] dialog error:', error);
+      return true;
+    }
   }
 
   /** Update the document's content without marking dirty.

@@ -67,8 +67,10 @@ scriptty/
 │   │       ├── SceneNavigator.svelte  # Scene list with click-to-jump
 │   │       ├── StoryPanel.svelte      # Idea/Synopsis/Treatment text areas
 │   │       ├── SceneCardsView.svelte  # Full-panel grid of scene breakdown cards
+│   │       ├── StoryModeView.svelte  # Full-screen narrative writing view
 │   │       ├── MetadataModal.svelte   # Screenplay metadata editor
 │   │       ├── ExportModal.svelte     # Combined PDF export with section selection
+│   │       ├── HelpModal.svelte       # User guide with keyboard shortcuts
 │   │       └── AboutModal.svelte      # App info, credits, version
 │   └── routes/                   # SvelteKit pages
 │       ├── +layout.svelte        # Global reset, CSS variables, theme system
@@ -112,7 +114,7 @@ These are final. Do not suggest alternatives unless explicitly asked.
 - Indian two-column is a PDF export option only — not an editor mode
 - Element types: SceneHeading, Action, Character, Parenthetical, Dialogue, Transition
 
-### Element Navigation (Tab/Enter behavior)
+### Element Navigation (Tab/Enter/Shortcut behavior)
 
 | Current element | Key | Next element |
 |---|---|---|
@@ -121,9 +123,15 @@ These are final. Do not suggest alternatives unless explicitly asked.
 | Action | Tab | Character |
 | Character | Enter | Dialogue |
 | Dialogue | Enter | Action |
-| Dialogue | Tab | Character |
+| Dialogue | Tab | Parenthetical |
 | Parenthetical | Enter | Dialogue |
+| Parenthetical | Tab | Character |
 | Transition | Enter | SceneHeading |
+| Any element | Shift+Enter | SceneHeading (new scene) |
+| Any element | Cmd+Shift+T | Transition |
+| Character/Dialogue | Shift+Tab | Action |
+| Parenthetical | Shift+Tab | Dialogue |
+| Action (cursor at pos 0) | Shift+Tab | SceneHeading |
 
 ### Malayalam Language Support
 
@@ -166,6 +174,7 @@ JSON with top-level keys:
   "meta": {
     "title": "",
     "author": "",
+    "director": "",
     "contact": "",
     "draft_number": 1,
     "draft_date": "",
@@ -180,15 +189,19 @@ JSON with top-level keys:
   "story": {
     "idea": "",
     "synopsis": "",
-    "treatment": ""
+    "treatment": "",
+    "narrative": ""
   },
   "scene_cards": []
 }
 ```
 
 `content` is the ProseMirror document JSON serialization.
-`story` holds the three Story Panel text sections.
+`meta` includes `director` field (added with `#[serde(default)]` for backward compat).
+`story` holds Story Panel text sections plus full-length narrative.
 `scene_cards` holds per-scene descriptions and shoot notes.
+
+Full format spec: see `SCREENPLAY_FORMAT.md` at project root.
 
 ### Export Formats
 
@@ -199,17 +212,19 @@ JSON with top-level keys:
 ### Export System
 
 - Single "Export" button opens an Export modal (replaces separate Hollywood/Indian buttons)
-- Checkbox sections: Title Page, Synopsis, Treatment, Screenplay, Scene Cards
-- Format radio: Hollywood (single column) or Indian (two column)
+- Checkbox sections: Title Page, Synopsis, Treatment, Narrative, Screenplay, Scene Cards
+- Format radio: Hollywood (single column) or Indian (two column) — shown only when Screenplay is selected
 - Combined PDF output — selected sections concatenated in order
-- Synopsis/Treatment PDF: centered heading, prose layout, 12pt
-- Scene Cards PDF: table/card layout per scene for set use
+- Synopsis/Treatment/Narrative PDF: project title heading, section subtitle, credit lines, prose layout
+- Scene Cards PDF: project title, credit lines, table/card layout per scene
+- Smart credit formatting: "Written and Directed by" when same person, separate credits otherwise
+- Conditional pagebreaks — no blank leading page when title page is excluded
 
 ### Title Page
 
 - Auto-generated at PDF export time from `meta` fields
 - Not editable inside the editor
-- Fields printed: title, author, contact, draft number, draft date
+- Fields printed: title, author, director (with smart credit formatting), contact, draft number, draft date
 - Editor starts directly at FADE IN:
 
 ### Scene Navigator
@@ -232,11 +247,21 @@ JSON with top-level keys:
 ### Story Panel
 
 - Collapsible left panel tab alongside Scene Navigator
-- Three sections: Idea (logline), Synopsis, Treatment (detailed story)
+- Four sections: Idea (logline), Synopsis, Treatment (detailed story), Narrative (collapsed by default)
 - Tab switcher at top of left panel: Scenes | Story
 - Panel auto-widens to 420px on Story tab for more writing space
 - All sections support Malayalam input (Ctrl+Space toggle applies)
 - Data stored in `story` field of `.screenplay` file
+- Narrative section has "Cmd+Shift+L for full screen" hint
+
+### Story Mode
+
+- Full-screen narrative writing view, toggled with Cmd+Shift+L
+- Page-card styling matching the screenplay editor (white page, box shadow, centered)
+- Malayalam input support via InputModeManager singleton (same Ctrl+Space toggle)
+- Status bar with language mode indicator and scheme selector
+- Word count display in toolbar
+- Escape to close, returns to screenplay editor
 
 ### Scene Cards
 
@@ -334,15 +359,13 @@ This means:
 
 ---
 
+### Parenthetical Elements
+
+- Auto-parentheses via CSS `::before`/`::after` pseudo-elements — parens are visual only, not stored in content
+- All export formats (PDF, Fountain, plain text) defensively wrap in parens if not already present
+- ProseMirror trailing `<br>` hidden in empty parentheticals to keep `()` on one line
+
 ## Remaining Work
-
-### Immediate
-- **Character autocomplete** — trigger after 2 chars in Character element, Unicode-aware
-- **Fountain export** — UTF-8 .fountain file
-
-### Short Term
-- **Find and Replace** — Cmd+F / Cmd+H, highlight matches, Malayalam-aware
-- **Script statistics** — page count, scene count, per-character dialogue stats, INT/EXT breakdown
 
 ### Medium Term
 - **Revision mode** — track changes per draft, asterisk marks in margin, Hollywood color cycle

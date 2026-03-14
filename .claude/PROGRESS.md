@@ -1,6 +1,6 @@
 # Scriptty — Development Progress
 
-## Status: Phase 2 Complete — working on remaining features
+## Status: Phase 4 Complete — Story Mode, director credits, parentheticals, transitions
 
 ---
 
@@ -175,6 +175,49 @@
 - [x] Reorder is a single ProseMirror transaction — undoable with Cmd+Z
 - [x] Editor kept mounted (hidden) when Scene Cards shown so ProseMirror view stays alive
 - [x] Document marked dirty after reorder, editor scrolls to moved scene
+
+---
+
+## Phase 4 — Completed
+
+### 13. Story Mode
+- [x] StoryModeView.svelte — full-screen narrative writing view
+- [x] Page-card styling matching screenplay editor (white page, box shadow, centered)
+- [x] Malayalam input via InputModeManager singleton (Ctrl+Space, scheme selector)
+- [x] Word count display, Escape to close
+- [x] Cmd+Shift+L shortcut, menu item in View menu
+- [x] Narrative section added to StoryPanel (collapsed by default, "Cmd+Shift+L for full screen" hint)
+- [x] `narrative` field added to ScreenplayStory (Rust + TypeScript) with `#[serde(default)]`
+
+### 14. Director Credits & PDF Export Improvements
+- [x] `director` field added to ScreenplayMeta (Rust + TypeScript) with `#[serde(default)]`
+- [x] MetadataModal updated — "Written by" / "Directed by" labels, director input field
+- [x] Smart credit formatting: combined "Written and Directed by" when same person
+- [x] Title page: visual hierarchy — labels 11pt gray, names 16pt
+- [x] Prose sections (Synopsis/Treatment/Narrative): project title heading, section subtitle, credit lines
+- [x] Scene Cards PDF: project title + credits header
+- [x] Conditional pagebreaks — no blank leading page when title page excluded
+- [x] Prose margins fixed: symmetric `left: 3cm, right: 3cm`
+- [x] Narrative checkbox added to ExportModal
+- [x] Format selector shown only when Screenplay is checked
+
+### 15. Parenthetical Element Support
+- [x] Tab from Dialogue creates Parenthetical (was Dialogue → Tab → Character)
+- [x] Tab from Parenthetical → Character, Shift+Tab from Parenthetical → Dialogue
+- [x] Auto-parentheses via CSS `::before`/`::after` — parens are visual only, not stored in content
+- [x] ProseMirror trailing `<br>` hidden in empty parentheticals (keeps `()` on one line)
+- [x] PDF export: parentheses wrapping in Hollywood (grouped + standalone) and Indian format
+- [x] Fountain + plain text exports already had defensive wrapping
+- [x] HelpModal updated with parenthetical navigation
+
+### 16. Transition Shortcut
+- [x] Cmd+Shift+T converts any element to Transition
+- [x] HelpModal updated with shortcut
+
+### 17. File Format Specification
+- [x] SCREENPLAY_FORMAT.md — complete spec of .screenplay JSON format
+- [x] All element types, meta fields, settings, story, scene cards documented
+- [x] Sequencing rules, examples, and LLM generation notes included
 
 ---
 

@@ -24,7 +24,7 @@
 
       <h1 class="app-name">Scriptty</h1>
       <p class="version">Version 0.3.1</p>
-      <p class="tagline">Offline screenwriting for Malayalam<br />and English writers</p>
+      <p class="tagline">Write in the language you dream in.</p>
 
       <hr class="divider" />
 
@@ -37,8 +37,6 @@
       <div class="credits-section">
         <h3 class="credits-heading">Inputs &amp; Feedback</h3>
         <p class="credits-name">Abraham Joseph (Abrooz)</p>
-        <p class="credits-name">Aswin Raveendran</p>
-        <p class="credits-name">Sanjay Krishna</p>
         <p class="credits-name">Aashiq Abu (Filmmaker)</p>
       </div>
 

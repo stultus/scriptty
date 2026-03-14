@@ -23,7 +23,7 @@
       </div>
 
       <h1 class="app-name">Scriptty</h1>
-      <p class="version">Version 0.2.0</p>
+      <p class="version">Version 0.3.0</p>
       <p class="tagline">Offline screenwriting for Malayalam<br />and English writers</p>
 
       <hr class="divider" />

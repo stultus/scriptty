@@ -169,6 +169,13 @@
 - [x] App opens in fullscreen mode by default
 - [x] Window close/quit permission fix (`core:window:allow-close`)
 
+### 12. Drag-and-Drop Scene Reordering
+- [x] Scene Navigator: drag handle (⠿) appears on hover, custom mouse-event drag (WebKit-compatible)
+- [x] Scene Cards: scene number badge as drag handle, teal border highlight on drop target
+- [x] Reorder is a single ProseMirror transaction — undoable with Cmd+Z
+- [x] Editor kept mounted (hidden) when Scene Cards shown so ProseMirror view stays alive
+- [x] Document marked dirty after reorder, editor scrolls to moved scene
+
 ---
 
 ## Remaining Work

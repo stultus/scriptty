@@ -1,6 +1,6 @@
 # Scriptty — Development Progress
 
-## Status: Phase 2 Complete
+## Status: Phase 2 Complete — working on remaining features
 
 ---
 
@@ -79,11 +79,6 @@
 - [x] Scrollbar styling — thin, muted color
 - [x] App menu — macOS native menu bar (File + Edit) with Tauri 2 menu API
 
-### Phase 1 Remaining (Not Started)
-- [ ] Character autocomplete — trigger after 2 chars in Character element, Unicode-aware
-- [ ] Fountain export — UTF-8, .fountain file
-- [ ] Plain text export
-
 ---
 
 ## Phase 2 — Completed
@@ -130,13 +125,29 @@
 
 ---
 
-## Deferred (Not Planned Yet)
+## Remaining Work
 
-- [ ] Mozhi — Varnam JS integration for prediction/learning
-- [ ] Revision tracking / colored revision pages
-- [ ] FDX export
-- [ ] Fountain import
-- [ ] Rachana font
-- [ ] Script statistics
-- [ ] Collaboration / cloud sync
-- [ ] Mobile
+### Immediate
+- [ ] Character autocomplete — trigger after 2 chars in Character element, Unicode-aware
+- [ ] Fountain export — UTF-8, .fountain file
+
+### Short Term
+- [ ] Find and Replace — Cmd+F / Cmd+H, highlight matches, Malayalam-aware
+- [ ] Script statistics — page count, scene count, per-character dialogue stats, INT/EXT breakdown
+- [ ] Plain text export
+
+### Medium Term
+- [ ] Revision mode — track changes per draft, asterisk marks in margin, Hollywood color cycle
+- [ ] Draft history — save snapshots on each save, restore from history, max 50 per file
+
+---
+
+## Deferred (Do Not Implement Yet)
+
+- FDX (Final Draft XML) export
+- Courier font / Hollywood submission mode
+- Rachana font / traditional Malayalam orthography
+- Import from Final Draft / Fountain
+- Real-time collaboration
+- Cloud sync
+- Mobile support

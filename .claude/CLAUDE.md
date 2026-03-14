@@ -21,7 +21,7 @@ input methods requiring no external tools.
 | Frontend | Svelte 5 + TypeScript + Vite |
 | Editor | ProseMirror |
 | PDF generation | Typst (Rust crate) |
-| Mozhi engine | Varnam JS |
+| Mozhi engine | Custom (greedy transliteration from SMC Mozhi spec) |
 | Backend language | Rust 1.93+ |
 | Node.js | v22 / npm |
 
@@ -130,7 +130,9 @@ These are final. Do not suggest alternatives unless explicitly asked.
 - Three input schemes: SMC Mozhi, Inscript 2, Inscript 1
 - Ctrl+Space toggles English/Malayalam mode mid-sentence
 - Mixed script per line is the default (e.g. "രമേഷ് Flat ലേക്ക് നടന്നു")
-- Varnam JS handles Mozhi — do not write custom Mozhi rules from scratch
+- Mozhi uses a custom greedy transliteration engine (ported from 3in1.js by stultus)
+- Mozhi conversion hash: Malayalam output + Latin input → new Malayalam output
+- MozhiEngine class in mozhi.ts maintains a cyrBuffer for stateful matching
 - Inscript 1 and Inscript 2 are static keymaps (~100 lines each)
 - InputModeManager.ts is the single source of truth for input mode state
 - Input scheme is user-level config, not document-level
@@ -334,18 +336,23 @@ This means:
 
 ## Remaining Work
 
-### Phase 1 Incomplete
+### Immediate
 - **Character autocomplete** — trigger after 2 chars in Character element, Unicode-aware
 - **Fountain export** — UTF-8 .fountain file
-- **Plain text export**
+
+### Short Term
+- **Find and Replace** — Cmd+F / Cmd+H, highlight matches, Malayalam-aware
+- **Script statistics** — page count, scene count, per-character dialogue stats, INT/EXT breakdown
+
+### Medium Term
+- **Revision mode** — track changes per draft, asterisk marks in margin, Hollywood color cycle
+- **Draft history** — save snapshots on each save, restore from history, max 50 per file
 
 ## Deferred (Do Not Implement Yet)
 
-- Revision tracking / colored revision pages
 - FDX (Final Draft XML) export
 - Courier font / Hollywood submission mode
 - Rachana font / traditional Malayalam orthography
-- Statistics report (character dialogue count, scene lengths)
 - Import from Final Draft / Fountain
 - Real-time collaboration
 - Cloud sync

@@ -137,7 +137,7 @@ class DocumentStore {
 
   /** Get the current font setting slug (e.g. 'noto-sans-malayalam' or 'manjari') */
   get currentFont(): string {
-    return this.document?.settings.font ?? 'noto-sans-malayalam';
+    return this.document?.settings.font ?? 'manjari';
   }
 
   /** Update the font setting and mark the document as dirty */

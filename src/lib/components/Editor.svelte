@@ -9,6 +9,7 @@
   import { screenplaySchema } from '$lib/editor/schema';
   import { screenplayKeymap } from '$lib/editor/keymap';
   import { autoUppercasePlugin } from '$lib/editor/autoUppercase';
+  import { characterAutocompletePlugin, autocompleteKey } from '$lib/editor/characterAutocomplete';
   import { InputModeManager } from '$lib/editor/input/InputModeManager';
   import { documentStore } from '$lib/stores/documentStore.svelte';
   import { editorStore } from '$lib/stores/editorStore.svelte';
@@ -100,6 +101,7 @@
     const state = EditorState.create({
       doc: initialDoc,
       plugins: [
+        characterAutocompletePlugin,
         screenplayKeymap,
         keymap(baseKeymap),
         history(),
@@ -135,6 +137,21 @@
     const editorDom = view.dom;
 
     function handleMalayalamKeydown(event: KeyboardEvent) {
+      // When character autocomplete dropdown is open, let ProseMirror's plugin
+      // system handle navigation keys (Arrow, Enter, Tab, Escape) so the
+      // autocomplete plugin can process them. Without this, the capture-phase
+      // listener would swallow these keys before ProseMirror sees them.
+      if (view) {
+        const acState = autocompleteKey.getState(view.state);
+        if (acState?.active) {
+          const autocompleteKeys = new Set(['ArrowDown', 'ArrowUp', 'Enter', 'Tab', 'Escape']);
+          if (autocompleteKeys.has(event.key)) {
+            // Don't intercept — let ProseMirror's handleKeyDown handle it
+            return;
+          }
+        }
+      }
+
       // Cmd+S (Mac) or Ctrl+S (Windows/Linux) — save the document
       if ((event.metaKey || event.ctrlKey) && event.key === 's') {
         event.preventDefault();
@@ -278,6 +295,7 @@
   .editor-container {
     max-width: 680px;
     margin: 0 auto;
+    position: relative;
   }
 
   /* ─── ProseMirror editor — the screenplay page ─── */
@@ -436,5 +454,39 @@
   .scheme-btn.active {
     color: var(--accent);
     font-weight: 600;
+  }
+
+  /* ─── Character autocomplete dropdown ─── */
+  :global(.character-autocomplete) {
+    position: absolute;
+    z-index: 100;
+    list-style: none;
+    margin: 0;
+    padding: 4px 0;
+    min-width: 180px;
+    max-width: 320px;
+    max-height: 200px;
+    overflow-y: auto;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px;
+  }
+
+  :global(.autocomplete-item) {
+    padding: 6px 12px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  :global(.autocomplete-item:hover),
+  :global(.autocomplete-item.selected) {
+    background: var(--accent-muted);
+    color: var(--accent);
   }
 </style>

@@ -58,7 +58,7 @@ pub struct ScreenplaySettings {
 impl Default for ScreenplaySettings {
     fn default() -> Self {
         Self {
-            font: "noto-sans-malayalam".to_string(),
+            font: "manjari".to_string(),
             default_language: "malayalam".to_string(),
             input_scheme: "mozhi".to_string(),
         }

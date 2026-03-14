@@ -52,14 +52,15 @@
               <tr><td>Action</td><td><kbd>Tab</kbd></td><td>Character</td></tr>
               <tr><td>Character</td><td><kbd>Enter</kbd></td><td>Dialogue</td></tr>
               <tr><td>Dialogue</td><td><kbd>Enter</kbd></td><td>Action</td></tr>
-              <tr><td>Dialogue</td><td><kbd>Tab</kbd></td><td>Character</td></tr>
+              <tr><td>Dialogue</td><td><kbd>Tab</kbd></td><td>Parenthetical</td></tr>
               <tr><td>Parenthetical</td><td><kbd>Enter</kbd></td><td>Dialogue</td></tr>
+              <tr><td>Parenthetical</td><td><kbd>Tab</kbd></td><td>Character</td></tr>
               <tr><td>Transition</td><td><kbd>Enter</kbd></td><td>Scene Heading</td></tr>
             </tbody>
           </table>
 
           <p><kbd>Shift+Enter</kbd> creates a new Scene Heading from anywhere.<br />
-          <kbd>Shift+Tab</kbd> converts the current element back to Action (or Scene Heading if already Action).</p>
+          <kbd>Shift+Tab</kbd> converts the current element back to Action (or Scene Heading if already Action, Dialogue if in Parenthetical).</p>
           <p>Scene headings and character names are automatically uppercased as you type.</p>
         </section>
 

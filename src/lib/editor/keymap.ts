@@ -3,7 +3,7 @@
 // Shortcut reference:
 //   Enter         → create next element (scene_heading→action, character→dialogue, etc.)
 //   Shift+Enter   → create new scene_heading below (universal "new scene" shortcut)
-//   Tab           → cycle element type: action→character, dialogue→character, character→action
+//   Tab           → cycle element type: action→character, dialogue→parenthetical, parenthetical→character, character→action
 //   Shift+Tab     → revert to action (from character/dialogue), or action→scene_heading at cursor pos 0
 //   Mod+Z         → undo
 //   Shift+Mod+Z   → redo
@@ -83,10 +83,12 @@ const handleEnter: Command = (state, dispatch) => {
 const handleTab: Command = (state, dispatch) => {
 	const typeName = currentNodeTypeName(state);
 
-	// Map from current element type to what Tab should change it to
+	// Map from current element type to what Tab should change it to.
+	// dialogue → parenthetical → character forms a natural cycle within a dialogue block.
 	const tabTargets: Record<string, NodeType | undefined> = {
 		action: screenplaySchema.nodes.character,
-		dialogue: screenplaySchema.nodes.character,
+		dialogue: screenplaySchema.nodes.parenthetical,
+		parenthetical: screenplaySchema.nodes.character,
 		character: screenplaySchema.nodes.action
 	};
 
@@ -139,6 +141,18 @@ const handleShiftTab: Command = (state, dispatch) => {
 			const $from = state.selection.$from;
 			const pos = $from.before();
 			const tr = state.tr.setNodeMarkup(pos, screenplaySchema.nodes.action);
+			tr.scrollIntoView();
+			dispatch(tr);
+		}
+		return true;
+	}
+
+	// Parenthetical → Shift+Tab → revert to dialogue (its natural parent element)
+	if (typeName === 'parenthetical') {
+		if (dispatch) {
+			const $from = state.selection.$from;
+			const pos = $from.before();
+			const tr = state.tr.setNodeMarkup(pos, screenplaySchema.nodes.dialogue);
 			tr.scrollIntoView();
 			dispatch(tr);
 		}

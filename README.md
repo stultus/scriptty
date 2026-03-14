@@ -4,6 +4,8 @@
 
 # Scriptty
 
+[![Build & Release](https://github.com/stultus/scriptty/actions/workflows/release.yml/badge.svg)](https://github.com/stultus/scriptty/actions/workflows/release.yml)
+
 An offline desktop screenwriting app for Malayalam and English screenwriters.
 
 Built with Tauri 2, SvelteKit, TypeScript, ProseMirror, and Typst.

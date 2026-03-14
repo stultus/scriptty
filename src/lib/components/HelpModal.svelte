@@ -31,7 +31,7 @@
           <p>Scriptty is an offline screenwriting app for Malayalam and English writers. Your work is saved locally as <code>.screenplay</code> files — no cloud, no account needed.</p>
           <ol>
             <li>Click <strong>New</strong> in the title bar to create a blank screenplay.</li>
-            <li>Click <strong>Meta</strong> to set your title, author name, and draft info.</li>
+            <li>Click <strong>Meta</strong> to set your title, writer, director, and draft info.</li>
             <li>Start writing — the editor begins in <em>Action</em> mode. Press <kbd>Tab</kbd> to switch to a Character name, then <kbd>Enter</kbd> to write Dialogue.</li>
             <li>Press <kbd>Cmd+S</kbd> to save your work.</li>
           </ol>
@@ -63,6 +63,7 @@
           <p><kbd>Shift+Enter</kbd> creates a new Scene Heading from anywhere.<br />
           <kbd>Shift+Tab</kbd> converts the current element back to Action (or Scene Heading if already Action, Dialogue if in Parenthetical).</p>
           <p>Scene headings and character names are automatically uppercased as you type.</p>
+          <p>Parentheticals are automatically wrapped in parentheses — just type the direction (e.g., "whispering") and the app adds <strong>(</strong> and <strong>)</strong> for you.</p>
         </section>
 
         <!-- Malayalam Input -->
@@ -115,8 +116,16 @@
             <li><strong>Idea</strong> — your logline or core premise (1–3 lines)</li>
             <li><strong>Synopsis</strong> — the full story arc in prose (300–800 words)</li>
             <li><strong>Treatment</strong> — detailed scene-by-scene narrative</li>
+            <li><strong>Narrative</strong> — full-length prose version of your story</li>
           </ul>
           <p>The panel widens automatically when the Story tab is active. Everything you write here is saved in the <code>.screenplay</code> file and can be included in PDF exports.</p>
+        </section>
+
+        <!-- Story Mode -->
+        <section class="help-section">
+          <h3>Story Mode</h3>
+          <p>Press <kbd>Cmd+Shift+L</kbd> to enter Story Mode — a full-screen, distraction-free writing view for your narrative.</p>
+          <p>Story Mode has its own status bar with Malayalam input support (<kbd>Ctrl+Space</kbd> to toggle) and a live word count. Press <kbd>Escape</kbd> or click <strong>Back to Script</strong> to return to the screenplay editor.</p>
         </section>
 
         <!-- Scene Cards -->
@@ -150,11 +159,12 @@
           <p>Click <strong>Export</strong> in the title bar to open the export dialog.</p>
           <p>Choose what to include in your PDF:</p>
           <ul>
-            <li><strong>Title Page</strong> — generated from your metadata</li>
-            <li><strong>Synopsis</strong> and <strong>Treatment</strong> — from the Story panel</li>
+            <li><strong>Title Page</strong> — generated from your metadata (title, writer, director credits)</li>
+            <li><strong>Synopsis</strong>, <strong>Treatment</strong>, and <strong>Narrative</strong> — from the Story panel</li>
             <li><strong>Screenplay</strong> — the full script</li>
             <li><strong>Scene Cards</strong> — production breakdown table</li>
           </ul>
+          <p>If the writer and director are the same person, the title page shows "Written and Directed by" automatically.</p>
           <p>Pick a format:</p>
           <ul>
             <li><strong>Hollywood</strong> — standard single-column layout</li>
@@ -205,6 +215,7 @@
               <tr><td><kbd>Cmd+B</kbd></td><td>Toggle left panel</td></tr>
               <tr><td><kbd>Cmd+Shift+K</kbd></td><td>Toggle scene cards</td></tr>
               <tr><td><kbd>Cmd+Shift+I</kbd></td><td>Script statistics</td></tr>
+              <tr><td><kbd>Cmd+Shift+L</kbd></td><td>Story Mode</td></tr>
               <tr><td><kbd>Cmd+F</kbd></td><td>Find</td></tr>
               <tr><td><kbd>Cmd+Shift+H</kbd></td><td>Find and Replace</td></tr>
               <tr><td><kbd>Ctrl+Space</kbd></td><td>Toggle English / Malayalam</td></tr>

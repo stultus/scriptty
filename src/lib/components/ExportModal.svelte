@@ -16,6 +16,7 @@
 
   let exporting = $state(false);
   let exportingFountain = $state(false);
+  let exportingPlaintext = $state(false);
   let errorMessage = $state('');
 
   // Derived: check if synopsis/treatment have content
@@ -126,6 +127,38 @@
       return { location: match[1].trim(), time: match[2].trim() };
     }
     return { location: heading, time: '' };
+  }
+
+  async function handlePlaintextExport() {
+    if (!documentStore.document) return;
+    exportingPlaintext = true;
+    errorMessage = '';
+
+    try {
+      const plaintext = await invoke<string>('export_plaintext', {
+        document: documentStore.document,
+      });
+
+      const title = documentStore.document.meta.title || 'screenplay';
+      const path = await save({
+        defaultPath: `${title}.txt`,
+        filters: [{ name: 'Plain Text', extensions: ['txt'] }],
+      });
+
+      if (!path) {
+        exportingPlaintext = false;
+        return;
+      }
+
+      const encoder = new TextEncoder();
+      await writeFile(path, encoder.encode(plaintext));
+      open = false;
+    } catch (e) {
+      console.error('[ExportModal] Plain text export failed:', e);
+      errorMessage = String(e);
+    } finally {
+      exportingPlaintext = false;
+    }
   }
 
   async function handleFountainExport() {
@@ -254,6 +287,9 @@
 
       <div class="modal-footer">
         <button class="btn-ghost" onclick={() => { open = false; }}>Cancel</button>
+        <button class="btn-secondary" onclick={handlePlaintextExport} disabled={exportingPlaintext}>
+          {exportingPlaintext ? 'Exporting...' : 'Plain Text'}
+        </button>
         <button class="btn-secondary" onclick={handleFountainExport} disabled={exportingFountain}>
           {exportingFountain ? 'Exporting...' : 'Fountain'}
         </button>
@@ -282,7 +318,7 @@
     border: 1px solid var(--border-medium);
     border-radius: 12px;
     padding: 24px;
-    width: 420px;
+    width: 480px;
     max-width: 90vw;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     animation: modal-in 150ms ease-out;

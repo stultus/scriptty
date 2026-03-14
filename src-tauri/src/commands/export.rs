@@ -7,6 +7,7 @@
 use crate::fonts;
 use crate::screenplay::document::ScreenplayDocument;
 use crate::screenplay::fountain;
+use crate::screenplay::plaintext;
 use crate::screenplay::pdf;
 use serde::Deserialize;
 
@@ -278,6 +279,23 @@ pub fn export_combined_pdf(
 
     // Compile the combined markup to PDF
     pdf::compile_markup_to_pdf(&markup, &font_data)
+}
+
+/// Exports a screenplay document as formatted plain text.
+///
+/// Produces a readable screenplay with proper indentation:
+/// character names at column 40, dialogue at column 25 with 35-char wrapping,
+/// parentheticals at column 35, transitions right-aligned, scene headings uppercase.
+///
+/// # Arguments
+/// * `document` — The full `.screenplay` document, deserialized from JSON by Tauri.
+///
+/// # Returns
+/// * `Ok(String)` — The formatted plain text screenplay.
+/// * `Err(String)` — An error message if conversion fails.
+#[tauri::command]
+pub fn export_plaintext(document: ScreenplayDocument) -> Result<String, String> {
+    Ok(plaintext::generate_plaintext(&document.content, &document.meta))
 }
 
 /// Exports a screenplay document as a Fountain plain-text string.

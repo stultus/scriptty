@@ -145,6 +145,7 @@ pub fn run() {
       commands::export::export_pdf,
       commands::export::export_pdf_indian,
       commands::export::export_combined_pdf,
+      commands::export::export_plaintext,
       commands::export::export_fountain,
     ])
     .run(tauri::generate_context!())

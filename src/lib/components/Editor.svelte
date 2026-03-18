@@ -26,8 +26,6 @@
   let view: EditorView | null = null;
   const inputManager = InputModeManager.getInstance();
 
-  const inputManager = InputModeManager.getInstance();
-
   // Map the font setting slug to a CSS font-family name
   let fontFamily = $derived(
     documentStore.currentFont === 'manjari' ? 'Manjari' : 'Noto Sans Malayalam'
@@ -247,7 +245,7 @@
   </div>
   <div class="status-bar">
     <div class="status-left">
-      <button class="settings-btn" onclick={() => { showSettings = true; }} title="Settings">
+      <button class="settings-btn" onclick={() => { showSettings = true; }} title="Configure Settings">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line>
           <line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line>
@@ -255,7 +253,6 @@
           <line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line>
           <line x1="17" y1="16" x2="23" y2="16"></line>
         </svg>
-        <span style="margin-left: 6px;">Settings</span>
       </button>
     </div>
     <span class="status-element">{currentElement}</span>
@@ -402,63 +399,21 @@
     gap: 8px;
   }
 
-  .status-mode {
-    font-weight: 600;
-    text-transform: uppercase;
-    color: var(--text-muted);
-  }
-
-  .status-mode.malayalam {
-    color: var(--accent);
-  }
-
-  .status-mode.flash {
-    background: var(--accent-muted);
-    border-radius: 3px;
-    padding: 1px 6px;
-    transition: background 0.5s ease-out;
-  }
-
-  .status-separator {
-    color: var(--border-medium);
-  }
-
   .status-element {
     color: var(--text-muted);
     text-transform: uppercase;
   }
 
-  .scheme-selector {
-    display: flex;
-    gap: 1px;
-  }
-
-  .scheme-btn {
-    background: none;
-    border: none;
-    padding: 2px 6px;
-    font-size: 11px;
-    font-family: system-ui, -apple-system, sans-serif;
-    color: var(--text-muted);
-    cursor: pointer;
-    border-radius: 3px;
-    transition: background 100ms, color 100ms;
-    letter-spacing: 0.04em;
-  }
-
   .settings-btn {
     display: flex;
     align-items: center;
+    justify-content: center;
     background: transparent;
     border: none;
     color: var(--text-muted);
-    font-family: system-ui, -apple-system, sans-serif;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
     cursor: pointer;
-    padding: 2px 6px;
+    width: 24px;
+    height: 24px;
     border-radius: 4px;
     transition: background 120ms, color 120ms;
   }

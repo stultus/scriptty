@@ -313,7 +313,8 @@
   .editor-container :global(.ProseMirror) {
     padding: 60px 72px;
     box-sizing: border-box;
-    min-height: 800px;
+    /* Increased from 800px to 2000px to simulate infinite/continuous page rendering */
+    min-height: 2000px;
     outline: none;
     font-family: var(--editor-font), sans-serif;
     font-size: 14px;

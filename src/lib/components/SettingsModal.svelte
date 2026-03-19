@@ -88,8 +88,8 @@
             </button>
 
             {#if schemeDropdownOpen}
-              <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-              <div class="dropdown-backdrop" onclick={(e) => { e.stopPropagation(); schemeDropdownOpen = false; }}></div>
+              <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+              <div class="dropdown-backdrop" role="presentation" onclick={(e) => { e.stopPropagation(); schemeDropdownOpen = false; }} onkeydown={(e) => { if (e.key === 'Escape') schemeDropdownOpen = false; }}></div>
               <div class="custom-options">
                 <button 
                   class="custom-option" 
@@ -216,6 +216,10 @@
     align-items: center;
     justify-content: space-between;
     padding: 8px 0;
+  }
+
+  .setting-row.nested {
+    padding-left: 12px;
   }
 
   .setting-name-group {

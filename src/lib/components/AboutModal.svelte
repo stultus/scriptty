@@ -37,9 +37,11 @@
       <hr class="divider" />
 
       <div class="credits-section">
-        <h3 class="credits-heading">Developer</h3>
+        <h3 class="credits-heading">Developers</h3>
         <p class="credits-name">Hrishikesh Bhaskaran (stultus)</p>
         <p class="credits-contact"><a href="mailto:hello@stultus.in" class="credits-link" onclick={(e) => openExternal(e, 'mailto:hello@stultus.in')}>hello@stultus.in</a> &middot; <a href="https://stultus.in" class="credits-link" onclick={(e) => openExternal(e, 'https://stultus.in')}>stultus.in</a></p>
+        <p class="credits-name" style="margin-top: 10px;">Hiran Venugopalan</p>
+        <p class="credits-contact"><a href="mailto:hiran.v@gmail.com" class="credits-link" onclick={(e) => openExternal(e, 'mailto:hiran.v@gmail.com')}>hiran.v@gmail.com</a> &middot; <a href="https://hiran.in" class="credits-link" onclick={(e) => openExternal(e, 'https://hiran.in')}>hiran.in</a></p>
       </div>
 
       <div class="credits-section">

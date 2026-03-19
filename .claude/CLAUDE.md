@@ -70,6 +70,7 @@ scriptty/
 │   │       ├── StoryModeView.svelte  # Full-screen narrative writing view
 │   │       ├── MetadataModal.svelte   # Screenplay metadata editor
 │   │       ├── ExportModal.svelte     # Combined PDF export with section selection
+│   │       ├── SettingsModal.svelte    # Consolidated settings (language, scheme, font, theme)
 │   │       ├── HelpModal.svelte       # User guide with keyboard shortcuts
 │   │       └── AboutModal.svelte      # App info, credits, version
 │   └── routes/                   # SvelteKit pages
@@ -110,6 +111,7 @@ These are final. Do not suggest alternatives unless explicitly asked.
 ### Editor
 
 - ProseMirror is the editor library — not TipTap, not CodeMirror, not contenteditable
+- Continuous page view — single scrollable editor, no page breaks
 - Editor always shows Hollywood single-column format
 - Indian two-column is a PDF export option only — not an editor mode
 - Element types: SceneHeading, Action, Character, Parenthetical, Dialogue, Transition
@@ -241,7 +243,7 @@ Full format spec: see `SCREENPLAY_FORMAT.md` at project root.
 - CSS custom properties defined in `+layout.svelte` under `[data-theme]` selectors
 - Theme state managed by `themeStore.svelte.ts` with `$state` rune
 - Persisted to `localStorage` under key `scriptty-theme`
-- Toggle button in TitleBar right group
+- Accessible via Settings modal (gear icon in status bar)
 - Warm Kerala-rooted palette: teal accent, cream page, amber dirty indicator
 
 ### Story Panel
@@ -284,6 +286,20 @@ Full format spec: see `SCREENPLAY_FORMAT.md` at project root.
 - Suggests only names already present in the document
 - Unicode-aware — Malayalam names and English names in the same pool
 - Dismissed with Escape, accepted with Enter or Tab
+
+### Settings Modal
+
+- Consolidated settings UI — language mode, keyboard scheme, font, theme in one popup
+- Opens from gear icon in the editor status bar (bottom-left)
+- Replaces scattered TitleBar controls (font selector, theme toggle removed from TitleBar)
+- Keyboard scheme selector shown only when Malayalam mode is active
+- Escape to close, click outside to dismiss
+
+### Editor Layout
+
+- Continuous page view — single scrollable editor without page breaks
+- ProseMirror editor uses min-height for seamless infinite scroll
+- Window launches maximized (not fullscreen) to keep title bar and taskbar visible
 
 ---
 

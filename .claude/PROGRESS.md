@@ -1,6 +1,6 @@
 # Scriptty — Development Progress
 
-## Status: Phase 4 Complete — Story Mode, director credits, parentheticals, transitions
+## Status: Phase 5 Complete — Continuous page view, settings modal, menu bar cleanup
 
 ---
 
@@ -166,7 +166,7 @@
 - [x] All modals standardized to 480px width and 24px padding
 - [x] Hardcoded `#999` scene number color → `var(--text-muted)`
 - [x] FindReplaceBar border-radius standardized to 6px
-- [x] App opens in fullscreen mode by default
+- [x] App opens maximized by default (changed from fullscreen in Phase 5)
 - [x] Window close/quit permission fix (`core:window:allow-close`)
 
 ### 12. Drag-and-Drop Scene Reordering
@@ -218,6 +218,31 @@
 - [x] SCREENPLAY_FORMAT.md — complete spec of .screenplay JSON format
 - [x] All element types, meta fields, settings, story, scene cards documented
 - [x] Sequencing rules, examples, and LLM generation notes included
+
+---
+
+## Phase 5 — Completed
+
+### 18. Continuous Page View (PR #2)
+- [x] Editor uses infinite scroll — single continuous page, no page breaks
+- [x] ProseMirror min-height for seamless scrolling experience
+- [x] Simplified Editor.svelte — removed paginated rendering logic
+
+### 19. Menu Bar Cleanup (PR #3)
+- [x] TitleBar simplified — left-pane toggle button added
+- [x] Font selector, theme toggle, language controls removed from TitleBar
+- [x] Controls consolidated into Settings modal
+
+### 20. Integrated Settings Modal (PR #4)
+- [x] SettingsModal.svelte — consolidated language, keyboard scheme, font, theme
+- [x] Opens from gear icon in editor status bar (bottom-left popup)
+- [x] Keyboard scheme dropdown shown only when Malayalam mode is active
+- [x] Segmented controls for font and theme selection
+
+### 21. Window & CI Improvements
+- [x] Window launches maximized instead of fullscreen (fixes Windows taskbar issue)
+- [x] Rust dependency caching in GitHub Actions release workflow
+- [x] Hiran Venugopalan added as developer in About modal
 
 ---
 

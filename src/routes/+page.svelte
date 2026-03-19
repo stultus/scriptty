@@ -115,102 +115,92 @@
 
     window.addEventListener('keydown', handleGlobalKeydown);
 
+    let unlistens: (() => void)[] = [];
+
     // Listen for native menu events emitted from the Rust backend.
     // Each custom menu item (New, Open, Save, Save As) emits an event
     // that we handle here to call the appropriate store method.
-    const unlistenNew = await listen('menu-new', async () => {
-      if (!(await documentStore.confirmIfDirty())) return;
-      await documentStore.newDocument();
-    });
+    (async () => {
+      unlistens.push(await listen('menu-new', async () => {
+        if (!(await documentStore.confirmIfDirty())) return;
+        await documentStore.newDocument();
+      }));
 
-    const unlistenOpen = await listen('menu-open', async () => {
-      if (!(await documentStore.confirmIfDirty())) return;
-      const path = await open({
-        multiple: false,
-        filters: [{ name: 'Screenplay', extensions: ['screenplay'] }]
-      });
-      if (typeof path === 'string') {
-        await documentStore.openDocument(path);
-      }
-    });
+      unlistens.push(await listen('menu-open', async () => {
+        if (!(await documentStore.confirmIfDirty())) return;
+        const path = await open({
+          multiple: false,
+          filters: [{ name: 'Screenplay', extensions: ['screenplay'] }]
+        });
+        if (typeof path === 'string') {
+          await documentStore.openDocument(path);
+        }
+      }));
 
-    const unlistenSave = await listen('menu-save', () => {
-      documentStore.saveWithDialog();
-    });
+      unlistens.push(await listen('menu-save', () => {
+        documentStore.saveWithDialog();
+      }));
 
-    const unlistenSaveAs = await listen('menu-save-as', () => {
-      documentStore.saveAsDialog();
-    });
+      unlistens.push(await listen('menu-save-as', () => {
+        documentStore.saveAsDialog();
+      }));
 
-    const unlistenAbout = await listen('menu-about', () => {
-      showAbout = true;
-    });
+      unlistens.push(await listen('menu-about', () => {
+        showAbout = true;
+      }));
 
-    const unlistenHelpGuide = await listen('menu-help-guide', () => {
-      showHelp = true;
-    });
+      unlistens.push(await listen('menu-help-guide', () => {
+        showHelp = true;
+      }));
 
-    const unlistenStatistics = await listen('menu-statistics', () => {
-      showStatistics = true;
-    });
+      unlistens.push(await listen('menu-statistics', () => {
+        showStatistics = true;
+      }));
 
-    const unlistenSceneCards = await listen('menu-scene-cards', () => {
-      showSceneCards = !showSceneCards;
-    });
+      unlistens.push(await listen('menu-scene-cards', () => {
+        showSceneCards = !showSceneCards;
+      }));
 
-    const unlistenStoryMode = await listen('menu-story-mode', () => {
-      showStoryMode = !showStoryMode;
-    });
+      unlistens.push(await listen('menu-story-mode', () => {
+        showStoryMode = !showStoryMode;
+      }));
 
-    const unlistenFind = await listen('menu-find', () => {
-      findReplaceOpen = true;
-      findReplaceMode = 'find';
-    });
+      unlistens.push(await listen('menu-find', () => {
+        findReplaceOpen = true;
+        findReplaceMode = 'find';
+      }));
 
-    const unlistenFindReplace = await listen('menu-find-replace', () => {
-      findReplaceOpen = true;
-      findReplaceMode = 'replace';
-    });
+      unlistens.push(await listen('menu-find-replace', () => {
+        findReplaceOpen = true;
+        findReplaceMode = 'replace';
+      }));
 
-    const unlistenToggleSidebar = await listen('menu-toggle-sidebar', () => {
-      panelOpen = !panelOpen;
-    });
+      unlistens.push(await listen('menu-toggle-sidebar', () => {
+        panelOpen = !panelOpen;
+      }));
 
-    const unlistenEditMeta = await listen('menu-edit-meta', () => {
-      showMetadata = true;
-    });
+      unlistens.push(await listen('menu-edit-meta', () => {
+        showMetadata = true;
+      }));
 
-    const unlistenQuit = await listen('menu-quit', async () => {
-      if (!(await documentStore.confirmIfDirty())) return;
-      quitConfirmed = true;
-      await getCurrentWindow().close();
-    });
+      unlistens.push(await listen('menu-quit', async () => {
+        if (!(await documentStore.confirmIfDirty())) return;
+        quitConfirmed = true;
+        await getCurrentWindow().close();
+      }));
 
-    // Intercept window close to prompt for unsaved changes
-    const unlistenClose = await getCurrentWindow().onCloseRequested(async (event) => {
-      if (quitConfirmed) return; // Already confirmed via menu-quit
-      if (!(await documentStore.confirmIfDirty())) {
-        event.preventDefault();
-      }
-    });
+      // Intercept window close to prompt for unsaved changes
+      unlistens.push(await getCurrentWindow().onCloseRequested(async (event) => {
+        if (quitConfirmed) return; // Already confirmed via menu-quit
+        if (!(await documentStore.confirmIfDirty())) {
+          event.preventDefault();
+        }
+      }));
+    })();
 
     return () => {
       window.removeEventListener('keydown', handleGlobalKeydown);
-      unlistenNew();
-      unlistenOpen();
-      unlistenSave();
-      unlistenSaveAs();
-      unlistenAbout();
-      unlistenHelpGuide();
-      unlistenStatistics();
-      unlistenSceneCards();
-      unlistenStoryMode();
-      unlistenFind();
-      unlistenFindReplace();
-      unlistenToggleSidebar();
-      unlistenEditMeta();
-      unlistenQuit();
-      unlistenClose();
+      unlistens.forEach((fn) => fn());
     };
   });
 </script>

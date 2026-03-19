@@ -46,27 +46,13 @@
 
   <div class="btn-group right">
     <!-- Theme toggle -->
-    <button class="btn-icon" onclick={() => themeStore.toggle()} title={themeStore.isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
+    <button
+      class="btn-icon"
+      onclick={() => themeStore.toggle()}
+      title={themeStore.isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+    >
       {themeStore.isDark ? 'Light' : 'Dark'}
     </button>
-
-    <span class="separator"></span>
-
-    <!-- Font selector — segmented control -->
-    <div class="segmented">
-      <button
-        class="segmented-item"
-        class:active={documentStore.currentFont === 'noto-sans-malayalam'}
-        onclick={() => documentStore.setFont('noto-sans-malayalam')}
-      >Noto</button>
-      <button
-        class="segmented-item"
-        class:active={documentStore.currentFont === 'manjari'}
-        onclick={() => documentStore.setFont('manjari')}
-      >Manjari</button>
-    </div>
-
-    <span class="separator"></span>
 
     <button class="btn-ghost" onclick={() => { showExport = true; }}>Export</button>
     <button class="btn-primary" onclick={handleSave}>Save</button>
@@ -180,43 +166,9 @@
     cursor: pointer;
     transition: background 120ms ease, color 120ms ease;
   }
+
   .btn-icon:hover {
     background: var(--surface-hover);
-    color: var(--text-primary);
-  }
-
-  /* ─── Separator ─── */
-  .separator {
-    width: 1px;
-    height: 16px;
-    background: var(--border-subtle);
-    margin: 0 4px;
-  }
-
-  /* ─── Segmented control (font selector) ─── */
-  .segmented {
-    display: flex;
-    background: var(--surface-base);
-    border-radius: 6px;
-    padding: 2px;
-    gap: 1px;
-  }
-  .segmented-item {
-    padding: 3px 8px;
-    border-radius: 4px;
-    border: none;
-    font-size: 11px;
-    font-family: system-ui, -apple-system, sans-serif;
-    color: var(--text-muted);
-    background: transparent;
-    cursor: pointer;
-    transition: background 100ms, color 100ms;
-  }
-  .segmented-item:hover {
-    color: var(--text-secondary);
-  }
-  .segmented-item.active {
-    background: var(--surface-elevated);
     color: var(--text-primary);
   }
 </style>

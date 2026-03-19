@@ -81,6 +81,9 @@ pub fn run() {
           &MenuItem::with_id(app, "statistics", "Statistics", true, Some("CmdOrCtrl+Shift+I"))?,
           &MenuItem::with_id(app, "scene-cards", "Scene Cards", true, Some("CmdOrCtrl+Shift+K"))?,
           &MenuItem::with_id(app, "story-mode", "Story Mode", true, Some("CmdOrCtrl+Shift+L"))?,
+          &PredefinedMenuItem::separator(app)?,
+          &MenuItem::with_id(app, "toggle-sidebar", "Toggle Sidebar", true, Some("CmdOrCtrl+B"))?,
+          &MenuItem::with_id(app, "edit-meta", "Edit Meta Data", true, None::<&str>)?,
         ],
       )?;
 
@@ -120,6 +123,8 @@ pub fn run() {
           "statistics" => { let _ = app.emit("menu-statistics", ()); }
           "scene-cards" => { let _ = app.emit("menu-scene-cards", ()); }
           "story-mode" => { let _ = app.emit("menu-story-mode", ()); }
+          "toggle-sidebar" => { let _ = app.emit("menu-toggle-sidebar", ()); }
+          "edit-meta" => { let _ = app.emit("menu-edit-meta", ()); }
           "find" => { let _ = app.emit("menu-find", ()); }
           "find-replace" => { let _ = app.emit("menu-find-replace", ()); }
           "quit" => { let _ = app.emit("menu-quit", ()); }

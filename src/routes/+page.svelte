@@ -11,6 +11,7 @@
   import AboutModal from '$lib/components/AboutModal.svelte';
   import HelpModal from '$lib/components/HelpModal.svelte';
   import StatisticsModal from '$lib/components/StatisticsModal.svelte';
+  import MetadataModal from '$lib/components/MetadataModal.svelte';
   import { documentStore } from '$lib/stores/documentStore.svelte';
   import { themeStore } from '$lib/stores/themeStore.svelte';
 
@@ -22,6 +23,7 @@
   let findReplaceOpen = $state(false);
   let findReplaceMode = $state<'find' | 'replace'>('find');
   let showStatistics = $state(false);
+  let showMetadata = $state(false);
 
   // Module-level guard — prevents newDocument() from firing again on HMR re-mount
   let appInitialized = false;
@@ -170,6 +172,14 @@
       findReplaceMode = 'replace';
     });
 
+    const unlistenToggleSidebar = await listen('menu-toggle-sidebar', () => {
+      panelOpen = !panelOpen;
+    });
+
+    const unlistenEditMeta = await listen('menu-edit-meta', () => {
+      showMetadata = true;
+    });
+
     const unlistenQuit = await listen('menu-quit', async () => {
       if (!(await documentStore.confirmIfDirty())) return;
       quitConfirmed = true;
@@ -197,6 +207,8 @@
       unlistenStoryMode();
       unlistenFind();
       unlistenFindReplace();
+      unlistenToggleSidebar();
+      unlistenEditMeta();
       unlistenQuit();
       unlistenClose();
     };
@@ -204,7 +216,7 @@
 </script>
 
 <main>
-  <TitleBar />
+  <TitleBar onToggleSidebar={() => { panelOpen = !panelOpen; }} />
   <div class="workspace">
     {#if showSceneCards}
       <SceneCardsView onClose={() => { showSceneCards = false; }} />
@@ -222,6 +234,7 @@
 <AboutModal bind:open={showAbout} />
 <HelpModal bind:open={showHelp} />
 <StatisticsModal bind:open={showStatistics} />
+<MetadataModal bind:open={showMetadata} />
 
 <style>
   main {

@@ -1,11 +1,10 @@
 <script lang="ts">
-  import { open } from '@tauri-apps/plugin-dialog';
   import { documentStore } from '$lib/stores/documentStore.svelte';
   import { themeStore } from '$lib/stores/themeStore.svelte';
-  import MetadataModal from './MetadataModal.svelte';
   import ExportModal from './ExportModal.svelte';
 
-  let showMetadata = $state(false);
+  let { onToggleSidebar } = $props<{ onToggleSidebar?: () => void }>();
+  
   let showExport = $state(false);
 
   // Derived display title — shows document title or "Untitled"
@@ -22,33 +21,17 @@
     statusTimeout = setTimeout(() => { statusMessage = ''; }, 3000);
   }
 
-  async function handleNew() {
-    if (!(await documentStore.confirmIfDirty())) return;
-    await documentStore.newDocument();
-  }
-
   async function handleSave() {
     await documentStore.saveWithDialog();
-  }
-
-  async function handleOpen() {
-    if (!(await documentStore.confirmIfDirty())) return;
-    const path = await open({
-      multiple: false,
-      filters: [{ name: 'Screenplay', extensions: ['screenplay'] }]
-    });
-    if (typeof path === 'string') {
-      await documentStore.openDocument(path);
-    }
   }
 
 </script>
 
 <div class="title-bar">
   <div class="btn-group left">
-    <button class="btn-ghost" onclick={handleNew}>New</button>
-    <button class="btn-ghost" onclick={() => { showMetadata = true; }}>Meta</button>
-    <button class="btn-ghost" onclick={handleOpen}>Open</button>
+    <button class="btn-icon" onclick={onToggleSidebar} title="Toggle Sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+    </button>
   </div>
 
   <div class="title-zone">
@@ -90,7 +73,6 @@
   </div>
 </div>
 
-<MetadataModal bind:open={showMetadata} />
 <ExportModal bind:open={showExport} />
 
 <style>

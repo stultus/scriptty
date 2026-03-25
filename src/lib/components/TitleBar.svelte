@@ -1,11 +1,27 @@
 <script lang="ts">
   import { documentStore } from '$lib/stores/documentStore.svelte';
+  import { editorStore } from '$lib/stores/editorStore.svelte';
   import { themeStore } from '$lib/stores/themeStore.svelte';
+  import { toggleMark } from 'prosemirror-commands';
+  import { screenplaySchema } from '$lib/editor/schema';
   import ExportModal from './ExportModal.svelte';
 
   let { onToggleSidebar } = $props<{ onToggleSidebar?: () => void }>();
-  
+
   let showExport = $state(false);
+
+  // Track which marks are active at the current cursor position.
+  // Updated whenever the editor selection changes via editorStore.markState.
+  let isBoldActive = $derived(editorStore.markState.bold);
+  let isItalicActive = $derived(editorStore.markState.italic);
+  let isUnderlineActive = $derived(editorStore.markState.underline);
+
+  function applyMark(markName: 'bold' | 'italic' | 'underline') {
+    const view = editorStore.view;
+    if (!view) return;
+    toggleMark(screenplaySchema.marks[markName])(view.state, view.dispatch);
+    view.focus();
+  }
 
   // Derived display title — shows document title or "Untitled"
   let displayTitle = $derived(
@@ -32,6 +48,27 @@
     <button class="btn-icon" onclick={onToggleSidebar} title="Toggle Sidebar">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
     </button>
+    <span class="separator"></span>
+    <div class="format-group">
+      <button
+        class="btn-format"
+        class:active={isBoldActive}
+        onclick={() => applyMark('bold')}
+        title="Bold (Cmd+B)"
+      ><span class="fmt-bold">B</span></button>
+      <button
+        class="btn-format"
+        class:active={isItalicActive}
+        onclick={() => applyMark('italic')}
+        title="Italic (Cmd+I)"
+      ><span class="fmt-italic">I</span></button>
+      <button
+        class="btn-format"
+        class:active={isUnderlineActive}
+        onclick={() => applyMark('underline')}
+        title="Underline (Cmd+U)"
+      ><span class="fmt-underline">U</span></button>
+    </div>
   </div>
 
   <div class="title-zone">
@@ -170,5 +207,70 @@
   .btn-icon:hover {
     background: var(--surface-hover);
     color: var(--text-primary);
+  }
+
+  /* ─── Separator between sidebar toggle and format buttons ─── */
+  .separator {
+    width: 1px;
+    height: 16px;
+    background: var(--border-subtle);
+    margin: 0 4px;
+  }
+
+  /* ─── Format button group (B, I, U) — tighter spacing ─── */
+  .format-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  /* ─── Format buttons ─── */
+  .btn-format {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-family: system-ui, -apple-system, sans-serif;
+    cursor: pointer;
+    transition: background 120ms ease, color 120ms ease;
+  }
+
+  .btn-format:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+  }
+
+  .btn-format:active {
+    background: var(--surface-active);
+  }
+
+  .btn-format.active {
+    background: var(--accent-muted);
+    color: var(--accent);
+  }
+
+  .btn-format.active:hover {
+    background: rgba(45, 155, 138, 0.25);
+  }
+
+  /* Format label styling — using CSS instead of HTML tags to avoid
+     browser default style interference */
+  .fmt-bold {
+    font-weight: 700;
+  }
+
+  .fmt-italic {
+    font-style: italic;
+  }
+
+  .fmt-underline {
+    text-decoration: underline;
+    text-underline-offset: 2px;
   }
 </style>

@@ -213,6 +213,8 @@
               <tr><td><kbd>Cmd+S</kbd></td><td>Save</td></tr>
               <tr><td><kbd>Cmd+Shift+S</kbd></td><td>Save As</td></tr>
               <tr><td><kbd>Cmd+B</kbd></td><td>Bold text</td></tr>
+              <tr><td><kbd>Cmd+I</kbd></td><td>Italic text</td></tr>
+              <tr><td><kbd>Cmd+U</kbd></td><td>Underline text</td></tr>
               <tr><td><kbd>Cmd+\</kbd></td><td>Toggle left panel</td></tr>
               <tr><td><kbd>Cmd+Shift+K</kbd></td><td>Toggle scene cards</td></tr>
               <tr><td><kbd>Cmd+Shift+I</kbd></td><td>Script statistics</td></tr>

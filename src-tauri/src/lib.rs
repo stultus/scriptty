@@ -72,6 +72,18 @@ pub fn run() {
         ],
       )?;
 
+      // Format menu for text formatting (bold, italic, underline)
+      let format_menu = Submenu::with_items(
+        app,
+        "Format",
+        true,
+        &[
+          &MenuItem::with_id(app, "bold", "Bold", true, Some("CmdOrCtrl+B"))?,
+          &MenuItem::with_id(app, "italic", "Italic", true, Some("CmdOrCtrl+I"))?,
+          &MenuItem::with_id(app, "underline", "Underline", true, Some("CmdOrCtrl+U"))?,
+        ],
+      )?;
+
       // View menu for statistics and scene cards
       let view_menu = Submenu::with_items(
         app,
@@ -82,7 +94,7 @@ pub fn run() {
           &MenuItem::with_id(app, "scene-cards", "Scene Cards", true, Some("CmdOrCtrl+Shift+K"))?,
           &MenuItem::with_id(app, "story-mode", "Story Mode", true, Some("CmdOrCtrl+Shift+L"))?,
           &PredefinedMenuItem::separator(app)?,
-          &MenuItem::with_id(app, "toggle-sidebar", "Toggle Sidebar", true, Some("CmdOrCtrl+B"))?,
+          &MenuItem::with_id(app, "toggle-sidebar", "Toggle Sidebar", true, None::<&str>)?,
           &MenuItem::with_id(app, "edit-meta", "Edit Meta Data", true, None::<&str>)?,
         ],
       )?;
@@ -102,7 +114,7 @@ pub fn run() {
       )?;
 
       // Assemble the menu bar from the submenus and apply it to the app
-      let menu = Menu::with_items(app, &[&file_menu, &edit_menu, &view_menu, &help_menu])?;
+      let menu = Menu::with_items(app, &[&file_menu, &edit_menu, &format_menu, &view_menu, &help_menu])?;
       app.set_menu(menu)?;
 
       // Handle clicks on our custom menu items by emitting events to the frontend.
@@ -125,6 +137,9 @@ pub fn run() {
           "story-mode" => { let _ = app.emit("menu-story-mode", ()); }
           "toggle-sidebar" => { let _ = app.emit("menu-toggle-sidebar", ()); }
           "edit-meta" => { let _ = app.emit("menu-edit-meta", ()); }
+          "bold" => { let _ = app.emit("menu-bold", ()); }
+          "italic" => { let _ = app.emit("menu-italic", ()); }
+          "underline" => { let _ = app.emit("menu-underline", ()); }
           "find" => { let _ = app.emit("menu-find", ()); }
           "find-replace" => { let _ = app.emit("menu-find-replace", ()); }
           "quit" => { let _ = app.emit("menu-quit", ()); }

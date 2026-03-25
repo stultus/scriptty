@@ -281,24 +281,40 @@ fn extract_inline_typst(node: &Value) -> String {
         };
         let escaped = escape_typst(text);
 
-        // Check if this text node has a "bold" mark.
+        // Check which marks are applied to this text node.
         // `marks` is an optional array on the text node; each mark has a "type" field.
-        let is_bold = child
-            .get("marks")
-            .and_then(|m| m.as_array())
-            .map(|marks| {
-                marks
-                    .iter()
-                    .any(|mark| mark.get("type").and_then(|t| t.as_str()) == Some("bold"))
-            })
-            .unwrap_or(false); // No marks array → not bold
+        let marks_array = child.get("marks").and_then(|m| m.as_array());
 
-        if is_bold {
-            // Wrap in Typst's #strong[...] function for bold rendering
-            result.push_str(&format!("#strong[{}]", escaped));
-        } else {
-            result.push_str(&escaped);
+        // Helper closure: checks if a specific mark type is present in the marks array
+        let has_mark = |mark_type: &str| -> bool {
+            marks_array
+                .map(|marks| {
+                    marks
+                        .iter()
+                        .any(|mark| mark.get("type").and_then(|t| t.as_str()) == Some(mark_type))
+                })
+                .unwrap_or(false)
+        };
+
+        let is_bold = has_mark("bold");
+        let is_italic = has_mark("italic");
+        let is_underline = has_mark("underline");
+
+        // Build nested Typst markup for the text fragment.
+        // Typst uses #strong[...] for bold, #emph[...] for italic,
+        // and #underline[...] for underline. They can be nested.
+        let mut formatted = escaped;
+        if is_underline {
+            formatted = format!("#underline[{}]", formatted);
         }
+        if is_italic {
+            formatted = format!("#emph[{}]", formatted);
+        }
+        if is_bold {
+            formatted = format!("#strong[{}]", formatted);
+        }
+
+        result.push_str(&formatted);
     }
 
     result

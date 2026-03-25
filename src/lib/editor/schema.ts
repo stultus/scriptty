@@ -106,11 +106,36 @@ const marks: Record<string, MarkSpec> = {
 			{ style: 'font-weight=bold' },
 			{ style: 'font-weight=700' }
 		]
+	},
+
+	italic: {
+		// Render italic text as an <em> tag in the DOM
+		toDOM() {
+			return ['em', 0];
+		},
+		// Parse <em> and <i> tags back into the italic mark
+		parseDOM: [
+			{ tag: 'em' },
+			{ tag: 'i' },
+			{ style: 'font-style=italic' }
+		]
+	},
+
+	underline: {
+		// Render underlined text as a <u> tag in the DOM
+		toDOM() {
+			return ['u', 0];
+		},
+		// Parse <u> tags and text-decoration style back into the underline mark
+		parseDOM: [
+			{ tag: 'u' },
+			{ style: 'text-decoration=underline' }
+		]
 	}
 };
 
 /**
  * The screenplay ProseMirror schema.
- * Supports bold inline formatting via the "bold" mark.
+ * Supports bold, italic, and underline inline formatting via marks.
  */
 export const screenplaySchema = new Schema({ nodes, marks });

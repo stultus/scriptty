@@ -195,25 +195,34 @@ fn extract_text(node: &Value) -> String {
     if let Some(children) = node.get("content").and_then(|c| c.as_array()) {
         for child in children {
             if let Some(t) = child.get("text").and_then(|t| t.as_str()) {
-                // Check if this text node has a "bold" mark
-                let is_bold = child
-                    .get("marks")
-                    .and_then(|m| m.as_array())
-                    .map(|marks| {
-                        marks.iter().any(|mark| {
-                            mark.get("type").and_then(|t| t.as_str()) == Some("bold")
-                        })
-                    })
-                    .unwrap_or(false);
+                // Check which marks are applied to this text node.
+                // Fountain supports: **bold**, *italic*, _underline_
+                let marks_array = child.get("marks").and_then(|m| m.as_array());
 
-                if is_bold {
-                    // Fountain bold syntax: **text**
-                    text.push_str("**");
-                    text.push_str(t);
-                    text.push_str("**");
-                } else {
-                    text.push_str(t);
-                }
+                let has_mark = |mark_type: &str| -> bool {
+                    marks_array
+                        .map(|marks| {
+                            marks.iter().any(|mark| {
+                                mark.get("type").and_then(|t| t.as_str()) == Some(mark_type)
+                            })
+                        })
+                        .unwrap_or(false)
+                };
+
+                let is_bold = has_mark("bold");
+                let is_italic = has_mark("italic");
+                let is_underline = has_mark("underline");
+
+                // Build Fountain-formatted text with mark wrappers.
+                // Fountain uses: **bold**, *italic*, _underline_
+                // When combined, nest them: ***bold italic***, **_bold underline_**
+                if is_bold { text.push_str("**"); }
+                if is_italic { text.push('*'); }
+                if is_underline { text.push('_'); }
+                text.push_str(t);
+                if is_underline { text.push('_'); }
+                if is_italic { text.push('*'); }
+                if is_bold { text.push_str("**"); }
             }
         }
     }

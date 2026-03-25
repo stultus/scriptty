@@ -13,7 +13,10 @@
   import StatisticsModal from '$lib/components/StatisticsModal.svelte';
   import MetadataModal from '$lib/components/MetadataModal.svelte';
   import { documentStore } from '$lib/stores/documentStore.svelte';
+  import { editorStore } from '$lib/stores/editorStore.svelte';
   import { themeStore } from '$lib/stores/themeStore.svelte';
+  import { toggleMark } from 'prosemirror-commands';
+  import { screenplaySchema } from '$lib/editor/schema';
 
   let panelOpen = $state(false);
   let showAbout = $state(false);
@@ -173,6 +176,28 @@
       unlistens.push(await listen('menu-find-replace', () => {
         findReplaceOpen = true;
         findReplaceMode = 'replace';
+      }));
+
+      // Format menu — toggle inline marks on the editor
+      unlistens.push(await listen('menu-bold', () => {
+        if (editorStore.view) {
+          toggleMark(screenplaySchema.marks.bold)(editorStore.view.state, editorStore.view.dispatch);
+          editorStore.view.focus();
+        }
+      }));
+
+      unlistens.push(await listen('menu-italic', () => {
+        if (editorStore.view) {
+          toggleMark(screenplaySchema.marks.italic)(editorStore.view.state, editorStore.view.dispatch);
+          editorStore.view.focus();
+        }
+      }));
+
+      unlistens.push(await listen('menu-underline', () => {
+        if (editorStore.view) {
+          toggleMark(screenplaySchema.marks.underline)(editorStore.view.state, editorStore.view.dispatch);
+          editorStore.view.focus();
+        }
       }));
 
       unlistens.push(await listen('menu-toggle-sidebar', () => {

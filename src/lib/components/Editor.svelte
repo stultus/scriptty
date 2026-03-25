@@ -34,6 +34,7 @@
   // Svelte 5 runes for reactive state
   let currentElement = $state<string>('SCENE HEADING');
   let showSettings = $state(false);
+  let isMalayalam = $state(inputManager.isMalayalam);
 
   // Create initial document with one empty scene_heading
   function createInitialDoc() {
@@ -42,7 +43,7 @@
     ]);
   }
 
-  // Update the current element type display based on cursor position
+  // Update the current element type display and mark state based on cursor position
   function updateCurrentElement(state: EditorState) {
     const nodeName = state.selection.$from.parent.type.name;
     // Convert node type name to display name
@@ -55,6 +56,17 @@
       transition: 'TRANSITION',
     };
     currentElement = displayNames[nodeName] ?? nodeName.toUpperCase();
+
+    // Update which inline marks are active at the current cursor/selection.
+    // `storedMarks` are marks that will be applied to the next typed character
+    // (set when toggling a mark with an empty selection). `$from.marks()` returns
+    // marks on existing text at the cursor position.
+    const marks = state.storedMarks || state.selection.$from.marks();
+    editorStore.markState = {
+      bold: marks.some(m => m.type === screenplaySchema.marks.bold),
+      italic: marks.some(m => m.type === screenplaySchema.marks.italic),
+      underline: marks.some(m => m.type === screenplaySchema.marks.underline),
+    };
   }
 
   // Watch for New/Open events only — loadTrigger is incremented exclusively by
@@ -166,6 +178,8 @@
         event.preventDefault();
         event.stopPropagation();
         inputManager.toggle();
+        // Sync the reactive state so the status bar updates
+        isMalayalam = inputManager.isMalayalam;
         return;
       }
 
@@ -254,6 +268,9 @@
           <line x1="17" y1="16" x2="23" y2="16"></line>
         </svg>
       </button>
+      <span class="status-lang" class:malayalam={isMalayalam}>
+        {isMalayalam ? 'MAL' : 'ENG'}
+      </span>
     </div>
     <span class="status-element">{currentElement}</span>
   </div>
@@ -405,6 +422,21 @@
     text-transform: uppercase;
   }
 
+  .status-lang {
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    padding: 1px 6px;
+    border-radius: 3px;
+    transition: background 120ms ease, color 120ms ease;
+  }
+
+  .status-lang.malayalam {
+    color: var(--accent);
+    background: var(--accent-muted);
+  }
+
   .settings-btn {
     display: flex;
     align-items: center;
@@ -424,9 +456,17 @@
     background: var(--surface-hover);
   }
 
-  /* ─── Bold inline formatting ─── */
+  /* ─── Inline formatting (bold, italic, underline) ─── */
   :global(.ProseMirror strong) {
     font-weight: bold;
+  }
+
+  :global(.ProseMirror em) {
+    font-style: italic;
+  }
+
+  :global(.ProseMirror u) {
+    text-decoration: underline;
   }
 
   /* ─── Character autocomplete dropdown ─── */

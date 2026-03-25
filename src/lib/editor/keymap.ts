@@ -206,5 +206,7 @@ export const screenplayKeymap = keymap({
 	'Shift-Mod-t': handleModT,
 	'Mod-z': undo,
 	'Shift-Mod-z': redo,
-	'Mod-b': toggleMark(screenplaySchema.marks.bold)
+	'Mod-b': toggleMark(screenplaySchema.marks.bold),
+	'Mod-i': toggleMark(screenplaySchema.marks.italic),
+	'Mod-u': toggleMark(screenplaySchema.marks.underline)
 });

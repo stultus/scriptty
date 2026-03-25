@@ -14,6 +14,7 @@
   let includeNarrative = $state(false);
   let includeSceneCards = $state(false);
   let format = $state<'hollywood' | 'indian'>('hollywood');
+  let pageBreakAfterScene = $state(false);
 
   let exporting = $state(false);
   let exportingFountain = $state(false);
@@ -214,6 +215,7 @@
           include_narrative: includeNarrative,
           include_scene_cards: includeSceneCards,
           format,
+          page_break_after_scene: pageBreakAfterScene,
           scene_cards_data: sceneCardsData,
         },
       });
@@ -286,6 +288,14 @@
           <label class="radio-row">
             <input type="radio" name="format" value="indian" bind:group={format} />
             <span>Indian (two column)</span>
+          </label>
+        </div>
+
+        <div class="section-label">Layout</div>
+        <div class="checkbox-group">
+          <label class="checkbox-row">
+            <input type="checkbox" bind:checked={pageBreakAfterScene} />
+            <span>Page break after each scene</span>
           </label>
         </div>
       {/if}

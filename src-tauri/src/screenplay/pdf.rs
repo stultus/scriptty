@@ -477,7 +477,7 @@ pub fn generate_title_page_markup(meta: &ScreenplayMeta) -> String {
 /// - All screenplay elements formatted in Hollywood single-column style
 ///
 /// The returned string is valid Typst source that can be compiled to PDF.
-pub fn generate_typst_markup(content: &Value, font_name: &str, meta: &ScreenplayMeta) -> String {
+pub fn generate_typst_markup(content: &Value, font_name: &str, meta: &ScreenplayMeta, page_break_after_scene: bool) -> String {
     let elements = extract_elements(content);
 
     // Group elements for page break control — this ensures scene headings
@@ -527,13 +527,19 @@ pub fn generate_typst_markup(content: &Value, font_name: &str, meta: &Screenplay
                 first_action_typst,
             } => {
                 let escaped_heading = escape_typst(heading_text);
+                // If page-break-after-scene is enabled, insert a page break before
+                // every scene except the first one.
+                let mut block = String::new();
+                if page_break_after_scene && *scene_number > 1 {
+                    block.push_str("#pagebreak()\n");
+                }
                 // Wrap scene heading + first action in an unbreakable block so the
                 // heading never appears orphaned at the bottom of a page.
-                let mut block = format!(
+                block.push_str(&format!(
                     "#block(breakable: false)[\n  #v(1.5em)\n  #text(weight: \"bold\", size: 12pt)[{}. {}]\n  #v(0.5em)\n",
                     scene_number,
                     escaped_heading.to_uppercase()
-                );
+                ));
                 if let Some(action_typst) = first_action_typst {
                     // Use typst_inline to preserve bold formatting in action text
                     block.push_str(&format!("  {}\n", action_typst));
@@ -826,7 +832,7 @@ impl World for ScreenplayWorld {
 /// # Returns
 ///
 /// A complete Typst markup string ready for compilation to PDF.
-pub fn generate_indian_markup(content: &Value, font_name: &str, meta: &ScreenplayMeta) -> String {
+pub fn generate_indian_markup(content: &Value, font_name: &str, meta: &ScreenplayMeta, page_break_after_scene: bool) -> String {
     // Reuse the same element extraction as Hollywood format.
     // `extract_elements` parses ProseMirror JSON into a flat list of ScreenplayElements.
     let elements = extract_elements(content);
@@ -883,6 +889,13 @@ pub fn generate_indian_markup(content: &Value, font_name: &str, meta: &Screenpla
         // the heading doesn't get orphaned at the bottom of a page.
         if let Some(heading_text) = heading {
             scene_number += 1;
+
+            // If page-break-after-scene is enabled, insert a page break before
+            // every scene except the first one.
+            if page_break_after_scene && scene_number > 1 {
+                markup.push_str("#pagebreak()\n");
+            }
+
             let escaped_heading = escape_typst(heading_text);
 
             // Check if the first body element is an action — if so, we'll wrap
@@ -1132,7 +1145,8 @@ pub fn generate_pdf_indian(
 ) -> Result<Vec<u8>, String> {
     // Generate Indian two-column Typst markup instead of Hollywood format.
     // `meta` is passed through to include the title page in the PDF.
-    let markup = generate_indian_markup(content, font_name, meta);
+    // Standalone Indian PDF export doesn't have the page-break-per-scene option — pass false.
+    let markup = generate_indian_markup(content, font_name, meta, false);
 
     // From here, the compilation pipeline is identical to `generate_pdf()`:
     // create a ScreenplayWorld, compile the Typst source, render to PDF bytes.
@@ -1191,7 +1205,8 @@ pub fn generate_pdf(
 ) -> Result<Vec<u8>, String> {
     // Generate the Typst markup from the ProseMirror JSON.
     // `meta` is passed through to include the title page in the PDF.
-    let markup = generate_typst_markup(content, font_name, meta);
+    // Standalone PDF export doesn't have the page-break-per-scene option — pass false.
+    let markup = generate_typst_markup(content, font_name, meta, false);
 
     // Collect all font bytes — pass both regular and bold weights.
     // These are `&'static [u8]` slices embedded in the binary at compile time.

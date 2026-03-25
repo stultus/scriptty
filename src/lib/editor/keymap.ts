@@ -76,6 +76,24 @@ const handleEnter: Command = (state, dispatch) => {
 		return true;
 	}
 
+	// For Action elements with the cursor in the middle of text, split the
+	// paragraph at the cursor position — standard text editor behavior.
+	// This lets writers break a long action paragraph into two.
+	if (typeName === 'action') {
+		const $from = state.selection.$from;
+		const isAtEnd = $from.parentOffset === $from.parent.content.size;
+
+		if (!isAtEnd && $from.parent.content.size > 0) {
+			// Split the node at cursor position into two Action elements
+			if (dispatch) {
+				const tr = state.tr.split(state.selection.from);
+				tr.scrollIntoView();
+				dispatch(tr);
+			}
+			return true;
+		}
+	}
+
 	// Map from current element type to the type that Enter should create
 	const enterTargets: Record<string, NodeType | undefined> = {
 		scene_heading: screenplaySchema.nodes.action,

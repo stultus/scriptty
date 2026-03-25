@@ -45,6 +45,15 @@ function currentBlockRange(state: EditorState): { from: number; to: number } {
  */
 const handleEnter: Command = (state, dispatch) => {
 	const typeName = currentNodeTypeName(state);
+	const currentText = state.selection.$from.parent.textContent;
+
+	// If the current element is empty and it's part of the dialogue loop
+	// (character or dialogue), break out to Action instead of continuing
+	// the Character→Dialogue cycle. This lets writers exit the loop by
+	// pressing Enter on an empty line, matching standard screenwriting tools.
+	const isEmptyDialogueLoop =
+		currentText.length === 0 &&
+		(typeName === 'character' || typeName === 'dialogue');
 
 	// Map from current element type to the type that Enter should create
 	const enterTargets: Record<string, NodeType | undefined> = {
@@ -56,22 +65,35 @@ const handleEnter: Command = (state, dispatch) => {
 		transition: screenplaySchema.nodes.scene_heading
 	};
 
-	const targetType = enterTargets[typeName];
+	const targetType = isEmptyDialogueLoop
+		? screenplaySchema.nodes.action
+		: enterTargets[typeName];
+
 	if (!targetType) {
 		// Unknown node type — let default behavior handle it
 		return false;
 	}
 
 	if (dispatch) {
-		const { to } = currentBlockRange(state);
-		// Create an empty node of the target type
-		const newNode = targetType.create();
-		// Insert the new node right after the current block
-		let tr = state.tr.insert(to, newNode);
-		// Position the cursor inside the newly created empty node.
-		// After insertion, the new node starts at `to` and its content starts at `to + 1`
-		// (because the node's opening tag occupies position `to`).
-		tr = tr.setSelection(TextSelection.create(tr.doc, to + 1));
+		let tr = state.tr;
+
+		if (isEmptyDialogueLoop) {
+			// Convert the current empty element to Action in-place
+			// instead of creating a new node below it
+			const pos = state.selection.$from.before();
+			tr = tr.setNodeMarkup(pos, targetType);
+		} else {
+			const { to } = currentBlockRange(state);
+			// Create an empty node of the target type
+			const newNode = targetType.create();
+			// Insert the new node right after the current block
+			tr = tr.insert(to, newNode);
+			// Position the cursor inside the newly created empty node.
+			// After insertion, the new node starts at `to` and its content starts at `to + 1`
+			// (because the node's opening tag occupies position `to`).
+			tr = tr.setSelection(TextSelection.create(tr.doc, to + 1));
+		}
+
 		tr.scrollIntoView();
 		dispatch(tr);
 	}

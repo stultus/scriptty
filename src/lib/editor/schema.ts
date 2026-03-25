@@ -1,6 +1,6 @@
 // ProseMirror screenplay element schema: SceneHeading, Action, Character, Parenthetical, Dialogue, Transition
 
-import { Schema, type NodeSpec } from 'prosemirror-model';
+import { Schema, type NodeSpec, type MarkSpec } from 'prosemirror-model';
 
 /**
  * Union type representing the six screenplay element types.
@@ -29,7 +29,7 @@ const nodes: Record<string, NodeSpec> = {
 
 	scene_heading: {
 		group: 'block',
-		content: 'text*',
+		content: 'inline*',
 		toDOM() {
 			return ['p', { class: 'scene-heading', 'data-type': 'scene_heading' }, 0];
 		},
@@ -38,7 +38,7 @@ const nodes: Record<string, NodeSpec> = {
 
 	action: {
 		group: 'block',
-		content: 'text*',
+		content: 'inline*',
 		toDOM() {
 			return ['p', { class: 'action', 'data-type': 'action' }, 0];
 		},
@@ -47,7 +47,7 @@ const nodes: Record<string, NodeSpec> = {
 
 	character: {
 		group: 'block',
-		content: 'text*',
+		content: 'inline*',
 		toDOM() {
 			return ['p', { class: 'character', 'data-type': 'character' }, 0];
 		},
@@ -56,7 +56,7 @@ const nodes: Record<string, NodeSpec> = {
 
 	parenthetical: {
 		group: 'block',
-		content: 'text*',
+		content: 'inline*',
 		toDOM() {
 			return ['p', { class: 'parenthetical', 'data-type': 'parenthetical' }, 0];
 		},
@@ -65,7 +65,7 @@ const nodes: Record<string, NodeSpec> = {
 
 	dialogue: {
 		group: 'block',
-		content: 'text*',
+		content: 'inline*',
 		toDOM() {
 			return ['p', { class: 'dialogue', 'data-type': 'dialogue' }, 0];
 		},
@@ -74,7 +74,7 @@ const nodes: Record<string, NodeSpec> = {
 
 	transition: {
 		group: 'block',
-		content: 'text*',
+		content: 'inline*',
 		toDOM() {
 			return ['p', { class: 'transition', 'data-type': 'transition' }, 0];
 		},
@@ -87,7 +87,30 @@ const nodes: Record<string, NodeSpec> = {
 };
 
 /**
- * The screenplay ProseMirror schema.
- * No marks are defined — all text is plain (no bold/italic/underline).
+ * Mark specifications for inline formatting.
+ *
+ * A "mark" in ProseMirror is inline formatting applied to a range of text
+ * (like bold). Marks are stored on text nodes as an array, e.g.:
+ * { "type": "text", "text": "hello", "marks": [{ "type": "bold" }] }
  */
-export const screenplaySchema = new Schema({ nodes, marks: {} });
+const marks: Record<string, MarkSpec> = {
+	bold: {
+		// Render bold text as a <strong> tag in the DOM
+		toDOM() {
+			return ['strong', 0];
+		},
+		// Parse <strong> and <b> tags back into the bold mark
+		parseDOM: [
+			{ tag: 'strong' },
+			{ tag: 'b' },
+			{ style: 'font-weight=bold' },
+			{ style: 'font-weight=700' }
+		]
+	}
+};
+
+/**
+ * The screenplay ProseMirror schema.
+ * Supports bold inline formatting via the "bold" mark.
+ */
+export const screenplaySchema = new Schema({ nodes, marks });

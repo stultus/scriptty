@@ -33,15 +33,21 @@ pub struct FontData {
 struct ScreenplayElement {
     /// The type of element (scene_heading, action, character, etc.)
     element_type: String,
-    /// The text content of the element
+    /// The plain text content of the element (no formatting — used for .to_uppercase() etc.)
     text: String,
+    /// Typst markup with inline formatting (bold spans wrapped in #strong[...], text escaped).
+    /// Used in place of escape_typst(&text) when rendering elements that can have bold text.
+    typst_inline: String,
 }
 
 /// A line within a character's dialogue block.
 /// Parentheticals are stage directions like "(softly)", dialogue is the spoken text.
+/// Each variant stores both the plain text and the Typst-formatted inline markup.
 enum DialogueLine {
-    Parenthetical(String),
-    Dialogue(String),
+    /// (plain_text, typst_inline)
+    Parenthetical(String, String),
+    /// (plain_text, typst_inline)
+    Dialogue(String, String),
 }
 
 /// A grouped screenplay element for page break control.
@@ -55,7 +61,8 @@ enum ScreenplayGroup {
     SceneBlock {
         heading_text: String,
         scene_number: u32,
-        first_action: Option<String>,
+        /// Typst inline markup of the first action (preserves bold formatting)
+        first_action_typst: Option<String>,
     },
     /// A character name grouped with following parentheticals and dialogue.
     /// Rendered inside `#block(breakable: false)[...]` to keep dialogue with its speaker.
@@ -95,11 +102,11 @@ fn group_elements(elements: Vec<ScreenplayElement>) -> Vec<ScreenplayGroup> {
 
                 // Peek at the next element — if it's an action, consume it
                 // into the SceneBlock so they stay on the same page.
-                let first_action = if i + 1 < elements.len()
+                let first_action_typst = if i + 1 < elements.len()
                     && elements[i + 1].element_type == "action"
                 {
                     i += 1; // Skip the next element since we're consuming it
-                    Some(elements[i].text.clone())
+                    Some(elements[i].typst_inline.clone())
                 } else {
                     None
                 };
@@ -107,7 +114,7 @@ fn group_elements(elements: Vec<ScreenplayElement>) -> Vec<ScreenplayGroup> {
                 groups.push(ScreenplayGroup::SceneBlock {
                     heading_text,
                     scene_number,
-                    first_action,
+                    first_action_typst,
                 });
             }
             "character" => {
@@ -128,11 +135,15 @@ fn group_elements(elements: Vec<ScreenplayElement>) -> Vec<ScreenplayGroup> {
                             i += 1;
                             lines.push(DialogueLine::Parenthetical(
                                 elements[i].text.clone(),
+                                elements[i].typst_inline.clone(),
                             ));
                         }
                         "dialogue" => {
                             i += 1;
-                            lines.push(DialogueLine::Dialogue(elements[i].text.clone()));
+                            lines.push(DialogueLine::Dialogue(
+                                elements[i].text.clone(),
+                                elements[i].typst_inline.clone(),
+                            ));
                         }
                         // Stop collecting on ANY non-dialogue/non-parenthetical element.
                         // This includes "action", "scene_heading", "transition", etc.
@@ -150,6 +161,7 @@ fn group_elements(elements: Vec<ScreenplayElement>) -> Vec<ScreenplayGroup> {
                 groups.push(ScreenplayGroup::Standalone(ScreenplayElement {
                     element_type: elements[i].element_type.clone(),
                     text: elements[i].text.clone(),
+                    typst_inline: elements[i].typst_inline.clone(),
                 }));
             }
         }
@@ -196,7 +208,7 @@ fn extract_elements(content: &Value) -> Vec<ScreenplayElement> {
             None => continue,         // Skip nodes without a type
         };
 
-        // Extract text by concatenating all child text nodes.
+        // Extract plain text by concatenating all child text nodes.
         // A node's "content" array may contain multiple text nodes (e.g., when
         // the line has mixed formatting). We join them all into one string.
         let text = match node.get("content").and_then(|c| c.as_array()) {
@@ -212,7 +224,12 @@ fn extract_elements(content: &Value) -> Vec<ScreenplayElement> {
             None => String::new(), // Node with no text content (e.g., empty paragraph)
         };
 
-        elements.push(ScreenplayElement { element_type, text });
+        // Also extract Typst-formatted inline markup that preserves bold marks.
+        // This is used in place of escape_typst(&text) for elements like action
+        // and dialogue where inline bold formatting should appear in the PDF.
+        let typst_inline = extract_inline_typst(node);
+
+        elements.push(ScreenplayElement { element_type, text, typst_inline });
     }
 
     elements
@@ -234,6 +251,57 @@ fn escape_typst(text: &str) -> String {
         .replace('<', "\\<")
         .replace('>', "\\>")
         .replace('$', "\\$")
+}
+
+/// Extracts inline content from a ProseMirror node and returns Typst markup
+/// with bold formatting preserved.
+///
+/// ProseMirror stores inline formatting as "marks" on text nodes. For example,
+/// a node with bold text looks like:
+/// ```json
+/// { "content": [
+///   { "type": "text", "text": "normal " },
+///   { "type": "text", "text": "bold", "marks": [{ "type": "bold" }] }
+/// ]}
+/// ```
+///
+/// This function walks the content array, escapes each text fragment for Typst,
+/// and wraps bold fragments in `#strong[...]`.
+fn extract_inline_typst(node: &Value) -> String {
+    let children = match node.get("content").and_then(|c| c.as_array()) {
+        Some(arr) => arr,
+        None => return String::new(),
+    };
+
+    let mut result = String::new();
+    for child in children {
+        let text = match child.get("text").and_then(|t| t.as_str()) {
+            Some(t) => t,
+            None => continue,
+        };
+        let escaped = escape_typst(text);
+
+        // Check if this text node has a "bold" mark.
+        // `marks` is an optional array on the text node; each mark has a "type" field.
+        let is_bold = child
+            .get("marks")
+            .and_then(|m| m.as_array())
+            .map(|marks| {
+                marks
+                    .iter()
+                    .any(|mark| mark.get("type").and_then(|t| t.as_str()) == Some("bold"))
+            })
+            .unwrap_or(false); // No marks array → not bold
+
+        if is_bold {
+            // Wrap in Typst's #strong[...] function for bold rendering
+            result.push_str(&format!("#strong[{}]", escaped));
+        } else {
+            result.push_str(&escaped);
+        }
+    }
+
+    result
 }
 
 /// Formats credit lines from author and director fields.
@@ -440,7 +508,7 @@ pub fn generate_typst_markup(content: &Value, font_name: &str, meta: &Screenplay
             ScreenplayGroup::SceneBlock {
                 heading_text,
                 scene_number,
-                first_action,
+                first_action_typst,
             } => {
                 let escaped_heading = escape_typst(heading_text);
                 // Wrap scene heading + first action in an unbreakable block so the
@@ -450,10 +518,9 @@ pub fn generate_typst_markup(content: &Value, font_name: &str, meta: &Screenplay
                     scene_number,
                     escaped_heading.to_uppercase()
                 );
-                if let Some(action_text) = first_action {
-                    let escaped_action = escape_typst(action_text);
-                    // Include the first action paragraph inside the unbreakable block
-                    block.push_str(&format!("  {}\n", escaped_action));
+                if let Some(action_typst) = first_action_typst {
+                    // Use typst_inline to preserve bold formatting in action text
+                    block.push_str(&format!("  {}\n", action_typst));
                 }
                 block.push_str("]\n\n");
                 block
@@ -473,7 +540,7 @@ pub fn generate_typst_markup(content: &Value, font_name: &str, meta: &Screenplay
                 );
                 for line in lines {
                     match line {
-                        DialogueLine::Parenthetical(text) => {
+                        DialogueLine::Parenthetical(text, _typst_inline) => {
                             let escaped = escape_typst(text);
                             // Wrap in parentheses if not already present —
                             // the editor shows them via CSS pseudo-elements, not in content.
@@ -488,13 +555,11 @@ pub fn generate_typst_markup(content: &Value, font_name: &str, meta: &Screenplay
                                 display
                             ));
                         }
-                        DialogueLine::Dialogue(text) => {
-                            let escaped = escape_typst(text);
-                            // Dialogue: starts at 6.5cm from page left (3.5cm from text area left),
-                            // ends at 14.5cm from page left (3cm from text area right)
+                        DialogueLine::Dialogue(_text, typst_inline) => {
+                            // Use typst_inline to preserve bold formatting in dialogue
                             block.push_str(&format!(
                                 "  #pad(left: 3.5cm, right: 3cm)[{}]\n",
-                                escaped
+                                typst_inline
                             ));
                         }
                     }
@@ -506,11 +571,12 @@ pub fn generate_typst_markup(content: &Value, font_name: &str, meta: &Screenplay
                 let escaped = escape_typst(&element.text);
                 match element.element_type.as_str() {
                     "action" => {
-                        // Action lines: plain paragraph text, full width
-                        format!("{}\n\n", escaped)
+                        // Action lines: use typst_inline to preserve bold formatting
+                        format!("{}\n\n", element.typst_inline)
                     }
                     "transition" => {
                         // Transitions: right-aligned, uppercase (e.g., "CUT TO:")
+                        // Bold is not meaningful here since transitions are always uppercase styled
                         format!(
                             "#v(1em)\n#align(right)[{}]\n",
                             escaped.to_uppercase()
@@ -532,8 +598,8 @@ pub fn generate_typst_markup(content: &Value, font_name: &str, meta: &Screenplay
                         )
                     }
                     "dialogue" => {
-                        // Dialogue: 6.5cm–14.5cm from page left → pad(left: 3.5cm, right: 3cm)
-                        format!("#pad(left: 3.5cm, right: 3cm)[{}]\n", escaped)
+                        // Dialogue: use typst_inline to preserve bold formatting
+                        format!("#pad(left: 3.5cm, right: 3cm)[{}]\n", element.typst_inline)
                     }
                     "parenthetical" => {
                         // Wrap in parentheses if not already present
@@ -813,12 +879,13 @@ pub fn generate_indian_markup(content: &Value, font_name: &str, meta: &Screenpla
             if first_is_action {
                 // Wrap scene heading + first action in `#block(breakable: false)` to
                 // prevent a page break between them (no orphaned headings).
-                let first_action_text = escape_typst(&body[0].text);
+                // Use typst_inline to preserve bold formatting in the first action.
+                let first_action_typst = &body[0].typst_inline;
                 markup.push_str(&format!(
                     "#v(1.5em)\n#block(breakable: false)[\n#text(weight: \"bold\")[{}. {}]\n\n#grid(\n  columns: (50%, 50%),\n  column-gutter: 1em,\n  align(left)[{}],\n  []\n)\n]\n",
                     scene_number,
                     escaped_heading.to_uppercase(),
-                    first_action_text
+                    first_action_typst
                 ));
             } else {
                 // No first action to pair with — just render the heading.
@@ -915,10 +982,10 @@ pub fn generate_indian_markup(content: &Value, font_name: &str, meta: &Screenpla
                     // Action text: rendered in the left column of a grid row,
                     // with an empty right column. This keeps action text aligned
                     // with the two-column layout instead of spanning full width.
-                    let escaped = escape_typst(&element.text);
+                    // Use typst_inline to preserve bold formatting.
                     markup.push_str(&format!(
                         "#grid(\n  columns: (50%, 50%),\n  column-gutter: 1em,\n  align(left)[{}],\n  []\n)\n",
-                        escaped
+                        element.typst_inline
                     ));
                 }
                 "character" => {
@@ -968,7 +1035,7 @@ pub fn generate_indian_markup(content: &Value, font_name: &str, meta: &Screenpla
                     }
                 }
                 "dialogue" => {
-                    let escaped = escape_typst(&element.text);
+                    // Use typst_inline to preserve bold formatting in dialogue
                     if let Some(char_name) = pending_character.take() {
                         // Dialogue right after a character name (no parenthetical in between):
                         // Left column = character name (right-aligned, bold)
@@ -977,14 +1044,14 @@ pub fn generate_indian_markup(content: &Value, font_name: &str, meta: &Screenpla
                         char_block_rows.push(format!(
                             "#grid(\n  columns: (50%, 50%),\n  column-gutter: 1em,\n  align(right)[#pad(right: 0.5em)[*{}*]],\n  align(left)[#pad(left: 0.5em)[{}]]\n)\n",
                             escaped_name.to_uppercase(),
-                            escaped
+                            element.typst_inline
                         ));
                     } else {
                         // Dialogue after parenthetical already consumed the character:
                         // Left column = empty, right column = dialogue text
                         char_block_rows.push(format!(
                             "#grid(\n  columns: (50%, 50%),\n  column-gutter: 1em,\n  [#pad(right: 0.5em)[]],\n  align(left)[#pad(left: 0.5em)[{}]]\n)\n",
-                            escaped
+                            element.typst_inline
                         ));
                     }
                 }

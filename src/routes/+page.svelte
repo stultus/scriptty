@@ -106,8 +106,8 @@
         findReplaceMode = 'replace';
         return;
       }
-      // Ctrl+B (Mac: Cmd+B) toggles left panel
-      if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
+      // Ctrl+\ (Mac: Cmd+\) toggles left panel
+      if ((event.metaKey || event.ctrlKey) && event.key === '\\') {
         event.preventDefault();
         panelOpen = !panelOpen;
       }

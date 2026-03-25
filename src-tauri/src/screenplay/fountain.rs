@@ -180,7 +180,14 @@ pub fn generate_fountain(content: &Value, meta: &ScreenplayMeta) -> String {
 }
 
 /// Extract the text content from a ProseMirror node by concatenating
-/// all child text nodes.
+/// all child text nodes. Preserves bold formatting using Fountain's
+/// `**bold**` syntax.
+///
+/// ProseMirror stores inline formatting as "marks" on text nodes:
+/// ```json
+/// { "type": "text", "text": "bold word", "marks": [{ "type": "bold" }] }
+/// ```
+/// Bold text is wrapped in `**...**` for Fountain. Non-bold text is plain.
 fn extract_text(node: &Value) -> String {
     let mut text = String::new();
 
@@ -188,7 +195,25 @@ fn extract_text(node: &Value) -> String {
     if let Some(children) = node.get("content").and_then(|c| c.as_array()) {
         for child in children {
             if let Some(t) = child.get("text").and_then(|t| t.as_str()) {
-                text.push_str(t);
+                // Check if this text node has a "bold" mark
+                let is_bold = child
+                    .get("marks")
+                    .and_then(|m| m.as_array())
+                    .map(|marks| {
+                        marks.iter().any(|mark| {
+                            mark.get("type").and_then(|t| t.as_str()) == Some("bold")
+                        })
+                    })
+                    .unwrap_or(false);
+
+                if is_bold {
+                    // Fountain bold syntax: **text**
+                    text.push_str("**");
+                    text.push_str(t);
+                    text.push_str("**");
+                } else {
+                    text.push_str(t);
+                }
             }
         }
     }

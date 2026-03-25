@@ -104,7 +104,7 @@
         <!-- Scene Navigator -->
         <section class="help-section">
           <h3>Scene Navigator</h3>
-          <p>Press <kbd>Cmd+B</kbd> to toggle the left panel. The <strong>Scenes</strong> tab shows all your scene headings with auto-numbered labels.</p>
+          <p>Press <kbd>Cmd+\</kbd> to toggle the left panel. The <strong>Scenes</strong> tab shows all your scene headings with auto-numbered labels.</p>
           <p>Click any scene to jump directly to it in the editor. Drag the handle (<strong>⠿</strong>) that appears on hover to reorder scenes — the entire scene (heading + all content until the next scene) moves as a single block, undoable with <kbd>Cmd+Z</kbd>.</p>
         </section>
 
@@ -212,7 +212,8 @@
               <tr><td><kbd>Cmd+O</kbd></td><td>Open document</td></tr>
               <tr><td><kbd>Cmd+S</kbd></td><td>Save</td></tr>
               <tr><td><kbd>Cmd+Shift+S</kbd></td><td>Save As</td></tr>
-              <tr><td><kbd>Cmd+B</kbd></td><td>Toggle left panel</td></tr>
+              <tr><td><kbd>Cmd+B</kbd></td><td>Bold text</td></tr>
+              <tr><td><kbd>Cmd+\</kbd></td><td>Toggle left panel</td></tr>
               <tr><td><kbd>Cmd+Shift+K</kbd></td><td>Toggle scene cards</td></tr>
               <tr><td><kbd>Cmd+Shift+I</kbd></td><td>Script statistics</td></tr>
               <tr><td><kbd>Cmd+Shift+L</kbd></td><td>Story Mode</td></tr>

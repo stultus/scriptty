@@ -13,6 +13,7 @@ import { keymap } from 'prosemirror-keymap';
 import { type Command, TextSelection, type EditorState } from 'prosemirror-state';
 import type { NodeType } from 'prosemirror-model';
 import { undo, redo } from 'prosemirror-history';
+import { toggleMark } from 'prosemirror-commands';
 import { screenplaySchema } from './schema';
 
 /**
@@ -204,5 +205,6 @@ export const screenplayKeymap = keymap({
 	'Shift-Tab': handleShiftTab,
 	'Shift-Mod-t': handleModT,
 	'Mod-z': undo,
-	'Shift-Mod-z': redo
+	'Shift-Mod-z': redo,
+	'Mod-b': toggleMark(screenplaySchema.marks.bold)
 });

@@ -424,6 +424,11 @@
     background: var(--surface-hover);
   }
 
+  /* ─── Bold inline formatting ─── */
+  :global(.ProseMirror strong) {
+    font-weight: bold;
+  }
+
   /* ─── Character autocomplete dropdown ─── */
   :global(.character-autocomplete) {
     position: absolute;

@@ -47,13 +47,13 @@ const handleEnter: Command = (state, dispatch) => {
 	const typeName = currentNodeTypeName(state);
 	const currentText = state.selection.$from.parent.textContent;
 
-	// If the current element is empty and it's part of the dialogue loop
-	// (character or dialogue), break out to Action instead of continuing
-	// the Character→Dialogue cycle. This lets writers exit the loop by
-	// pressing Enter on an empty line, matching standard screenwriting tools.
+	// If the current element is an empty Character, break out to Action
+	// instead of continuing the Character→Dialogue cycle. This lets writers
+	// exit the dialogue loop by pressing Enter on an empty Character line.
+	// Empty Dialogue still goes to Character — the writer already has a
+	// character above and likely wants to add the next speaker.
 	const isEmptyDialogueLoop =
-		currentText.length === 0 &&
-		(typeName === 'character' || typeName === 'dialogue');
+		currentText.length === 0 && typeName === 'character';
 
 	// Map from current element type to the type that Enter should create
 	const enterTargets: Record<string, NodeType | undefined> = {

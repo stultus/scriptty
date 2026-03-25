@@ -138,17 +138,51 @@ function renderDropdown(
   dropdown.style.display = 'block';
 }
 
-/** Position the dropdown below the cursor line */
+/**
+ * Position the dropdown near the cursor, flipping above if needed.
+ *
+ * The dropdown is a child of `.editor-container` (which has position: relative),
+ * but the visible area is clipped by `.editor-scroll` (overflow-y: auto).
+ * We need to check whether the dropdown fits below the cursor within the
+ * scroll container's visible viewport — if not, flip it above the cursor.
+ */
 function positionDropdown(dropdown: HTMLUListElement, view: EditorView): void {
   const { from } = view.state.selection;
   const coords = view.coordsAtPos(from);
 
-  // Get the editor's scroll container to calculate relative position
   const editorRect = view.dom.getBoundingClientRect();
 
-  // Place the dropdown below the current line, left-aligned with the character element
+  // The scroll container is `.editor-scroll` — the parent of `.editor-container`.
+  // It defines the visible viewport for the editor content.
+  const scrollContainer = view.dom.parentElement?.parentElement;
+  const scrollRect = scrollContainer?.getBoundingClientRect();
+
+  // Left position relative to the ProseMirror editor DOM
   const left = coords.left - editorRect.left;
-  const top = coords.bottom - editorRect.top + 4; // 4px gap below the text
+
+  // Temporarily make dropdown visible but off-screen so we can measure its height
+  dropdown.style.visibility = 'hidden';
+  dropdown.style.display = 'block';
+  const dropdownHeight = dropdown.offsetHeight;
+  dropdown.style.visibility = '';
+
+  // Gap between the cursor line and the dropdown
+  const gap = 4;
+
+  // Default: place below the cursor line
+  let top = coords.bottom - editorRect.top + gap;
+
+  // Check if the dropdown would overflow the scroll container's visible area.
+  // If there isn't enough room below, flip it above the cursor.
+  if (scrollRect) {
+    const spaceBelow = scrollRect.bottom - coords.bottom;
+    const spaceAbove = coords.top - scrollRect.top;
+
+    if (spaceBelow < dropdownHeight + gap && spaceAbove > dropdownHeight + gap) {
+      // Flip above: position the dropdown's bottom edge at the cursor's top
+      top = coords.top - editorRect.top - dropdownHeight - gap;
+    }
+  }
 
   dropdown.style.left = `${left}px`;
   dropdown.style.top = `${top}px`;

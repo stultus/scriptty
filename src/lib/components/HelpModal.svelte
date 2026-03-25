@@ -51,7 +51,7 @@
               <tr><td>Action</td><td><kbd>Enter</kbd></td><td>Action (new paragraph)</td></tr>
               <tr><td>Action</td><td><kbd>Tab</kbd></td><td>Character</td></tr>
               <tr><td>Character</td><td><kbd>Enter</kbd></td><td>Dialogue</td></tr>
-              <tr><td>Dialogue</td><td><kbd>Enter</kbd></td><td>Action</td></tr>
+              <tr><td>Dialogue</td><td><kbd>Enter</kbd></td><td>Character</td></tr>
               <tr><td>Dialogue</td><td><kbd>Tab</kbd></td><td>Parenthetical</td></tr>
               <tr><td>Parenthetical</td><td><kbd>Enter</kbd></td><td>Dialogue</td></tr>
               <tr><td>Parenthetical</td><td><kbd>Tab</kbd></td><td>Character</td></tr>

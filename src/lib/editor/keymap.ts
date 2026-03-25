@@ -51,7 +51,7 @@ const handleEnter: Command = (state, dispatch) => {
 		scene_heading: screenplaySchema.nodes.action,
 		action: screenplaySchema.nodes.action,
 		character: screenplaySchema.nodes.dialogue,
-		dialogue: screenplaySchema.nodes.action,
+		dialogue: screenplaySchema.nodes.character,
 		parenthetical: screenplaySchema.nodes.dialogue,
 		transition: screenplaySchema.nodes.scene_heading
 	};

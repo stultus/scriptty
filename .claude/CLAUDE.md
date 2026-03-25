@@ -124,7 +124,7 @@ These are final. Do not suggest alternatives unless explicitly asked.
 | Action | Enter | Action (new paragraph) |
 | Action | Tab | Character |
 | Character | Enter | Dialogue |
-| Dialogue | Enter | Action |
+| Dialogue | Enter | Character |
 | Dialogue | Tab | Parenthetical |
 | Parenthetical | Enter | Dialogue |
 | Parenthetical | Tab | Character |

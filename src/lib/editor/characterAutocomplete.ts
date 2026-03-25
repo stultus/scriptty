@@ -34,10 +34,18 @@ function collectCharacterNames(state: EditorState): string[] {
   return Array.from(names);
 }
 
-/** Case-insensitive prefix match that works with Unicode (Malayalam etc.) */
+/**
+ * Case-insensitive prefix match that works with Unicode (Malayalam etc.)
+ *
+ * For Malayalam input via Mozhi, intermediate states often have a trailing
+ * virama (്, U+0D4D) that won't appear in the final word. For example,
+ * typing "ram" produces "രമ്" but the target name "രമേഷ്" starts with "രമേ".
+ * We strip trailing virama from the query so "രമ്" matches "രമേഷ്".
+ */
 function matchesQuery(name: string, query: string): boolean {
-  // Use locale-aware case folding for Unicode correctness
-  return name.toLowerCase().startsWith(query.toLowerCase());
+  // Strip trailing virama (്) from the query — it's an intermediate Mozhi state
+  const cleanQuery = query.replace(/\u0D4D$/, '');
+  return name.toLowerCase().startsWith(cleanQuery.toLowerCase());
 }
 
 /** Compute the autocomplete state from the current editor state */
@@ -58,13 +66,20 @@ function computeState(editorState: EditorState): AutocompleteState {
 
   const query = $from.parent.textContent;
 
-  // Need at least 2 characters to trigger
-  if (query.length < 2) return inactive;
+  // Need at least 2 characters to trigger. For Malayalam, strip trailing
+  // virama before checking — "ര്" (r + virama) is just one logical character
+  // and shouldn't trigger the autocomplete by itself.
+  const queryForLength = query.replace(/\u0D4D$/, '');
+  if (queryForLength.length < 2) return inactive;
 
-  // Collect all character names and filter by query prefix
+  // Collect all character names and filter by query prefix.
+  // Strip trailing virama from query for the exact-match exclusion too —
+  // otherwise a partial Malayalam word with trailing virama would never
+  // match the exact name (which has no trailing virama in that position).
+  const cleanQuery = query.replace(/\u0D4D$/, '');
   const allNames = collectCharacterNames(editorState);
   const suggestions = allNames
-    .filter((name) => matchesQuery(name, query) && name !== query)
+    .filter((name) => matchesQuery(name, query) && name !== cleanQuery)
     .sort((a, b) => a.localeCompare(b));
 
   if (suggestions.length === 0) return inactive;

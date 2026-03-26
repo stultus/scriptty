@@ -31,8 +31,9 @@
           <p>Scriptty is an offline screenwriting app for Malayalam and English writers. Your work is saved locally as <code>.screenplay</code> files — no cloud, no account needed.</p>
           <ol>
             <li>Click <strong>New</strong> in the title bar to create a blank screenplay.</li>
-            <li>Click <strong>Meta</strong> to set your title, writer, director, and draft info.</li>
+            <li>Go to <strong>View → Edit Meta Data</strong> to set your title, writer, director, and draft info.</li>
             <li>Start writing — the editor begins in <em>Action</em> mode. Press <kbd>Tab</kbd> to switch to a Character name, then <kbd>Enter</kbd> to write Dialogue.</li>
+            <li>Use <kbd>Cmd+B</kbd>, <kbd>Cmd+I</kbd>, <kbd>Cmd+U</kbd> or the <strong>B I U</strong> buttons in the toolbar for bold, italic, and underline formatting.</li>
             <li>Press <kbd>Cmd+S</kbd> to save your work.</li>
           </ol>
         </section>
@@ -62,6 +63,9 @@
 
           <p><kbd>Shift+Enter</kbd> creates a new Scene Heading from anywhere.<br />
           <kbd>Shift+Tab</kbd> converts the current element back to Action (or Scene Heading if already Action, Dialogue if in Parenthetical).</p>
+
+          <p><strong>Dialogue loop:</strong> Character → Dialogue → Character flows continuously. Press <kbd>Enter</kbd> on an empty Character to break out to Action. Press <kbd>Enter</kbd> on an empty Dialogue to return to the Character above.</p>
+          <p><strong>Paragraph splitting:</strong> Press <kbd>Enter</kbd> in the middle of an Action element to split it into two paragraphs.</p>
           <p>Scene headings and character names are automatically uppercased as you type.</p>
           <p>Parentheticals are automatically wrapped in parentheses — just type the direction (e.g., "whispering") and the app adds <strong>(</strong> and <strong>)</strong> for you.</p>
         </section>
@@ -72,8 +76,8 @@
           <p>Scriptty has built-in Malayalam input — no OS keyboard setup required.</p>
           <ol>
             <li>Press <kbd>Ctrl+Space</kbd> to toggle between English and Malayalam.</li>
-            <li>The status bar at the bottom shows your current mode (<strong>ENGLISH</strong> or <strong class="accent">MALAYALAM</strong>).</li>
-            <li>When in Malayalam mode, choose your input scheme from the status bar:
+            <li>The status bar shows <strong>ENG</strong> or <strong class="accent">MAL</strong> to indicate the current mode.</li>
+            <li>When in Malayalam mode, choose your input scheme from Settings (gear icon):
               <ul>
                 <li><strong>Mozhi</strong> — type phonetically in English (e.g., "namaskkaaram" → നമസ്ക്കാരം)</li>
                 <li><strong>Inscript 2</strong> — standard Indian keyboard layout</li>
@@ -88,6 +92,18 @@
         <section class="help-section">
           <h3>Character Autocomplete</h3>
           <p>When typing a character name, Scriptty suggests names already used in your screenplay after 2 characters. Use <kbd>↑</kbd> / <kbd>↓</kbd> to navigate, <kbd>Enter</kbd> or <kbd>Tab</kbd> to accept, <kbd>Escape</kbd> to dismiss.</p>
+        </section>
+
+        <!-- Text Formatting -->
+        <section class="help-section">
+          <h3>Text Formatting</h3>
+          <p>Use the <strong>B I U</strong> buttons in the toolbar or keyboard shortcuts to format text:</p>
+          <ul>
+            <li><kbd>Cmd+B</kbd> — <strong>Bold</strong></li>
+            <li><kbd>Cmd+I</kbd> — <em>Italic</em></li>
+            <li><kbd>Cmd+U</kbd> — <u>Underline</u></li>
+          </ul>
+          <p>Select text first to apply formatting, or toggle the format before typing. The buttons highlight when the format is active at the cursor. Formatting is preserved in PDF and Fountain exports.</p>
         </section>
 
         <!-- Find and Replace -->
@@ -170,7 +186,8 @@
             <li><strong>Hollywood</strong> — standard single-column layout</li>
             <li><strong>Indian</strong> — two-column layout (dialogue left, translation right)</li>
           </ul>
-          <p>The selected font (Noto Sans Malayalam or Manjari) is embedded in the PDF.</p>
+          <p>Under <strong>Layout</strong>, you can enable <strong>Page break after each scene</strong> to start every scene on a new page.</p>
+          <p>The selected font (Noto Sans Malayalam or Manjari) is embedded in the PDF. Bold, italic, and underline formatting is preserved.</p>
           <p>You can also export as:</p>
           <ul>
             <li><strong>Fountain</strong> — plain-text screenwriting format, compatible with Highland, Fade In, and other tools</li>
@@ -181,7 +198,7 @@
         <!-- Fonts -->
         <section class="help-section">
           <h3>Fonts</h3>
-          <p>Use the segmented control in the title bar to switch between:</p>
+          <p>Open Settings (gear icon in the status bar) to switch between:</p>
           <ul>
             <li><strong>Noto</strong> — Noto Sans Malayalam (default, clean and modern)</li>
             <li><strong>Manjari</strong> — a lighter, more traditional feel</li>

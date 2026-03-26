@@ -70,15 +70,22 @@
     );
     view.dispatch(tr);
 
-    // Scroll the scene heading to the top of the visible area instead of
-    // ProseMirror's default which just makes the cursor barely visible
-    // (often at the bottom of the viewport).
-    const coords = view.coordsAtPos(targetPos);
+    // Scroll the scene heading to the top of the visible area.
+    // We find the DOM node for the scene heading and use its offsetTop
+    // relative to the scroll container for a precise absolute scroll.
+    const domAtPos = view.domAtPos(targetPos);
+    const sceneNode = domAtPos.node instanceof HTMLElement
+      ? domAtPos.node
+      : domAtPos.node.parentElement;
+
     const scrollContainer = view.dom.closest('.editor-scroll') ?? view.dom.parentElement?.parentElement;
-    if (scrollContainer) {
+    if (scrollContainer && sceneNode) {
+      // Calculate the element's position relative to the scroll container
+      const sceneRect = sceneNode.getBoundingClientRect();
       const containerRect = scrollContainer.getBoundingClientRect();
-      const scrollOffset = coords.top - containerRect.top - 40; // 40px padding from top
-      scrollContainer.scrollBy({ top: scrollOffset, behavior: 'smooth' });
+      // Current scroll + element's distance from container top - padding
+      const targetScroll = scrollContainer.scrollTop + (sceneRect.top - containerRect.top) - 20;
+      scrollContainer.scrollTo({ top: targetScroll, behavior: 'smooth' });
     }
 
     view.focus();

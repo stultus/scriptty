@@ -368,50 +368,67 @@
       text-align: center;
     }
 
-    .credits {
-      display: flex;
-      gap: 60px;
-      justify-content: center;
-      margin-bottom: 32px;
-      padding-bottom: 32px;
-      border-bottom: 1px solid var(--border);
-      text-align: left;
+    /* ── Credits section ── */
+    .credits-section {
+      padding: 80px 0;
+      border-top: 1px solid var(--border);
     }
 
-    .credits-col h4 {
+    .credits-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 32px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .credits-group h4 {
       font-size: 11px;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: var(--text-muted);
-      margin-bottom: 10px;
+      margin-bottom: 16px;
     }
 
-    .credits-col p {
-      font-size: 13px;
-      color: var(--text-secondary);
-      margin-bottom: 4px;
-      line-height: 1.5;
+    .credits-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
-    .credits-col strong {
+    .credit-person {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .credit-person strong {
+      font-size: 14px;
       color: var(--text-primary);
+      font-weight: 500;
     }
 
-    .credits-col a {
+    .credit-person span {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .credit-person a {
       color: var(--text-secondary);
-      font-size: 12px;
     }
 
-    .credits-col a:hover {
+    .credit-person a:hover {
       color: var(--teal-bright);
     }
 
-    .footer-bottom {
-      text-align: center;
+    .credits-cta {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
     }
 
-    .footer-bottom p {
+    footer p {
       font-size: 13px;
       color: var(--text-muted);
       margin-bottom: 6px;
@@ -436,7 +453,7 @@
       .download-group { flex-direction: column; align-items: center; }
       .btn-download { width: 100%; max-width: 280px; justify-content: center; }
       .feature-grid { grid-template-columns: 1fr; }
-      .credits { flex-direction: column; gap: 24px; text-align: center; }
+      .credits-grid { grid-template-columns: 1fr; text-align: center; }
     }
   </style>
 </head>
@@ -452,6 +469,7 @@
     <ul class="nav-links">
       <li><a href="#features">Features</a></li>
       <li><a href="#guide">How to Use</a></li>
+      <li><a href="#credits">Credits</a></li>
       <li><a href="#download">Download</a></li>
       <li><a href="https://github.com/stultus/scriptty">GitHub</a></li>
     </ul>
@@ -661,32 +679,59 @@
   </div>
 </section>
 
+<!-- ── Credits ── -->
+<section class="credits-section" id="credits">
+  <div class="container">
+    <p class="section-label">Credits</p>
+    <h2 class="section-title" style="color: var(--text-hero);">People behind Scriptty</h2>
+
+    <div class="credits-grid">
+      <div class="credits-group">
+        <h4>Developers</h4>
+        <div class="credits-list">
+          <div class="credit-person">
+            <strong>Hrishikesh Bhaskaran</strong>
+            <span><a href="https://stultus.in">stultus.in</a></span>
+          </div>
+          <div class="credit-person">
+            <strong>Hiran Venugopalan</strong>
+            <span><a href="https://hiran.in">hiran.in</a></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="credits-group">
+        <h4>Inputs &amp; Feedback</h4>
+        <div class="credits-list">
+          <div class="credit-person">
+            <strong>Abraham Joseph</strong>
+            <span>Abrooz</span>
+          </div>
+          <div class="credit-person">
+            <strong>Aashiq Abu</strong>
+            <span>Filmmaker</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="credits-group">
+        <h4>Contribute</h4>
+        <p class="credits-cta">Scriptty is open source and welcomes contributors. Report bugs, suggest features, or submit code on <a href="https://github.com/stultus/scriptty">GitHub</a>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ── Footer ── -->
 <footer>
   <div class="container">
-    <div class="credits">
-      <div class="credits-col">
-        <h4>Developers</h4>
-        <p><strong>Hrishikesh Bhaskaran</strong> (stultus)<br>
-          <a href="mailto:hello@stultus.in">hello@stultus.in</a> &middot; <a href="https://stultus.in">stultus.in</a></p>
-        <p style="margin-top: 10px;"><strong>Hiran Venugopalan</strong><br>
-          <a href="mailto:hiran.v@gmail.com">hiran.v@gmail.com</a> &middot; <a href="https://hiran.in">hiran.in</a></p>
-      </div>
-      <div class="credits-col">
-        <h4>Inputs &amp; Feedback</h4>
-        <p>Abraham Joseph (Abrooz)</p>
-        <p>Aashiq Abu (Filmmaker)</p>
-      </div>
-    </div>
-
-    <div class="footer-bottom">
-      <p>Scriptty is free and open source software under the MIT License.</p>
-      <p>&copy; 2026 Hrishikesh Bhaskaran</p>
-      <div class="footer-links">
-        <a href="https://github.com/stultus/scriptty">GitHub</a>
-        <a href="https://github.com/stultus/scriptty/issues">Report an Issue</a>
-        <a href="https://stultus.in">stultus.in</a>
-      </div>
+    <p>Scriptty is free and open source software under the MIT License.</p>
+    <p>&copy; 2026 Hrishikesh Bhaskaran</p>
+    <div class="footer-links">
+      <a href="https://github.com/stultus/scriptty">GitHub</a>
+      <a href="https://github.com/stultus/scriptty/issues">Report an Issue</a>
+      <a href="#credits">Credits</a>
+      <a href="https://stultus.in">stultus.in</a>
     </div>
   </div>
 </footer>

@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scriptty — Screenwriting for Malayalam &amp; English</title>
+  <meta name="description" content="Scriptty is a free, offline screenwriting app built for Malayalam and English writers. Hollywood and Indian formats, built-in Malayalam input, no cloud required.">
+  <meta property="og:title" content="Scriptty — Write in the language you dream in">
+  <meta property="og:description" content="Free, offline screenwriting for Malayalam and English. Hollywood and Indian two-column formats, built-in transliteration, PDF export.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://stultus.in/scriptty">
+  <link rel="icon" type="image/png" href="app-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ── Reset ── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* ── Tokens ── */
+    :root {
+      --bg-deep: #111110;
+      --bg-surface: #1a1a19;
+      --bg-elevated: #222221;
+      --bg-warm: #f5f0e8;
+      --bg-page: #faf7f2;
+
+      --teal: #2d9b8a;
+      --teal-bright: #3ec4af;
+      --teal-muted: rgba(45, 155, 138, 0.12);
+      --amber: #e8a04a;
+
+      --text-hero: #f5f0e8;
+      --text-primary: #e0ddd7;
+      --text-secondary: #9e9a94;
+      --text-muted: #5e5a55;
+      --text-dark: #1a1a19;
+      --text-dark-secondary: #4a4740;
+
+      --border: rgba(255,255,255,0.06);
+      --border-dark: rgba(0,0,0,0.08);
+
+      --font-display: 'DM Serif Display', Georgia, serif;
+      --font-body: 'DM Sans', system-ui, -apple-system, sans-serif;
+
+      --max-w: 1080px;
+      --gutter: 24px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-body);
+      color: var(--text-primary);
+      background: var(--bg-deep);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.6;
+    }
+
+    a { color: var(--teal-bright); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .container {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      padding: 0 var(--gutter);
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      background: rgba(17,17,16,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      height: 56px;
+      display: flex;
+      align-items: center;
+    }
+
+    nav .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-display);
+      font-size: 18px;
+      color: var(--text-hero);
+      text-decoration: none;
+    }
+
+    .nav-brand img { width: 28px; height: 28px; border-radius: 6px; }
+
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: color 150ms;
+    }
+
+    .nav-links a:hover { color: var(--text-hero); text-decoration: none; }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 160px 0 100px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: 'ഋ';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -55%);
+      font-size: 420px;
+      color: rgba(45, 155, 138, 0.04);
+      pointer-events: none;
+      font-family: 'Noto Sans Malayalam', sans-serif;
+    }
+
+    .hero-icon {
+      width: 88px;
+      height: 88px;
+      border-radius: 20px;
+      margin-bottom: 32px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06);
+    }
+
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 64px);
+      color: var(--text-hero);
+      line-height: 1.1;
+      margin-bottom: 16px;
+      letter-spacing: -0.01em;
+    }
+
+    .hero .tagline {
+      font-size: clamp(18px, 2.5vw, 22px);
+      color: var(--text-secondary);
+      max-width: 520px;
+      margin: 0 auto 20px;
+      line-height: 1.5;
+    }
+
+    .hero .sub-tagline {
+      font-size: 15px;
+      color: var(--text-muted);
+      max-width: 560px;
+      margin: 0 auto 40px;
+    }
+
+    .download-group {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .btn-download {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: var(--font-body);
+      border: none;
+      cursor: pointer;
+      transition: transform 150ms, box-shadow 150ms;
+      text-decoration: none;
+    }
+
+    .btn-download:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(45, 155, 138, 0.3);
+      text-decoration: none;
+    }
+
+    .btn-download.primary {
+      background: var(--teal);
+      color: #fff;
+    }
+
+    .btn-download.secondary {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-download .os-icon {
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .hero-note {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* ── Features ── */
+    .features {
+      padding: 80px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .section-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--teal);
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: clamp(28px, 4vw, 36px);
+      color: var(--text-hero);
+      text-align: center;
+      margin-bottom: 56px;
+      line-height: 1.2;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .feature-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+    }
+
+    .feature-card h3 {
+      font-family: var(--font-display);
+      font-size: 18px;
+      color: var(--text-hero);
+      margin-bottom: 8px;
+    }
+
+    .feature-card p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .feature-card .feat-icon {
+      font-size: 28px;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    /* ── Guide (light section) ── */
+    .guide {
+      background: var(--bg-warm);
+      padding: 80px 0;
+    }
+
+    .guide .section-label { color: #1e8070; }
+    .guide .section-title { color: var(--text-dark); }
+
+    .guide-content {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .guide-section {
+      margin-bottom: 40px;
+      padding-bottom: 40px;
+      border-bottom: 1px solid var(--border-dark);
+    }
+
+    .guide-section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .guide-section h3 {
+      font-family: var(--font-display);
+      font-size: 20px;
+      color: var(--text-dark);
+      margin-bottom: 12px;
+    }
+
+    .guide-section p,
+    .guide-section li {
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--text-dark-secondary);
+      margin-bottom: 8px;
+    }
+
+    .guide-section ol,
+    .guide-section ul {
+      padding-left: 20px;
+      margin: 8px 0 12px;
+    }
+
+    .guide-section li { margin-bottom: 6px; }
+
+    .guide-section strong { color: var(--text-dark); }
+
+    .guide-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 14px;
+    }
+
+    .guide-table th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #9c9891;
+      padding: 8px 10px;
+      border-bottom: 2px solid rgba(0,0,0,0.08);
+    }
+
+    .guide-table td {
+      padding: 7px 10px;
+      color: var(--text-dark-secondary);
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+
+    kbd {
+      display: inline-block;
+      font-family: var(--font-body);
+      font-size: 12px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: #fff;
+      border: 1px solid rgba(0,0,0,0.12);
+      box-shadow: 0 1px 0 rgba(0,0,0,0.06);
+      color: var(--text-dark);
+      line-height: 1.5;
+    }
+
+    /* ── Footer ── */
+    footer {
+      padding: 48px 0;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+
+    footer p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    footer .footer-links {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin-top: 12px;
+    }
+
+    footer .footer-links a {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      .hero { padding: 120px 0 60px; }
+      .download-group { flex-direction: column; align-items: center; }
+      .btn-download { width: 100%; max-width: 280px; justify-content: center; }
+      .feature-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navigation ── -->
+<nav>
+  <div class="container">
+    <a href="#" class="nav-brand">
+      <img src="app-icon.png" alt="Scriptty icon">
+      Scriptty
+    </a>
+    <ul class="nav-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#guide">How to Use</a></li>
+      <li><a href="#download">Download</a></li>
+      <li><a href="https://github.com/stultus/scriptty">GitHub</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ── Hero ── -->
+<section class="hero" id="download">
+  <div class="container">
+    <img src="app-icon.png" alt="Scriptty" class="hero-icon">
+    <h1>Scriptty</h1>
+    <p class="tagline">Write in the language you dream in.</p>
+    <p class="sub-tagline">A free, offline screenwriting app for Malayalam and English writers. Hollywood and Indian formats. Built-in Malayalam input. No cloud, no account.</p>
+
+    <div class="download-group">
+      <a href="https://github.com/stultus/scriptty/releases/latest" class="btn-download primary">
+        <span class="os-icon">&#8595;</span>
+        Download for macOS
+      </a>
+      <a href="https://github.com/stultus/scriptty/releases/latest" class="btn-download secondary">
+        <span class="os-icon">&#8595;</span>
+        Windows
+      </a>
+      <a href="https://github.com/stultus/scriptty/releases/latest" class="btn-download secondary">
+        <span class="os-icon">&#8595;</span>
+        Linux
+      </a>
+    </div>
+    <p class="hero-note">v0.4.0 &middot; Free &amp; open source &middot; MIT License</p>
+  </div>
+</section>
+
+<!-- ── Features ── -->
+<section class="features" id="features">
+  <div class="container">
+    <p class="section-label">Why Scriptty</p>
+    <h2 class="section-title">Built for how screenwriters actually work</h2>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <span class="feat-icon">&#9997;&#65039;</span>
+        <h3>Malayalam &amp; English</h3>
+        <p>Three built-in input schemes — Mozhi (phonetic), Inscript 1, and Inscript 2. No OS keyboard setup needed. Mix Malayalam and English freely on the same line.</p>
+      </div>
+
+      <div class="feature-card">
+        <span class="feat-icon">&#128196;</span>
+        <h3>Hollywood &amp; Indian Formats</h3>
+        <p>Write in standard Hollywood single-column format. Export as Indian two-column layout for production. Page break per scene option for both.</p>
+      </div>
+
+      <div class="feature-card">
+        <span class="feat-icon">&#128274;</span>
+        <h3>Fully Offline</h3>
+        <p>Zero network calls. Your screenplays live on your machine as .screenplay files. No cloud, no account, no subscription. Works on a flight.</p>
+      </div>
+
+      <div class="feature-card">
+        <span class="feat-icon">&#127916;</span>
+        <h3>Scene Cards &amp; Story Mode</h3>
+        <p>Plan your story with Idea, Synopsis, Treatment, and Narrative panels. Scene Cards give you a production-ready breakdown with drag-to-reorder.</p>
+      </div>
+
+      <div class="feature-card">
+        <span class="feat-icon">&#128462;</span>
+        <h3>PDF, Fountain &amp; Plain Text</h3>
+        <p>Export combined PDFs with title page, synopsis, screenplay, and scene cards. Fountain format for interop with Highland, Fade In, and others.</p>
+      </div>
+
+      <div class="feature-card">
+        <span class="feat-icon">&#128295;</span>
+        <h3>Smart Editor</h3>
+        <p>Auto-uppercase scene headings and characters. Character name autocomplete. Tab/Enter element navigation. Bold, italic, underline formatting. Find &amp; replace.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Guide ── -->
+<section class="guide" id="guide">
+  <div class="container">
+    <p class="section-label">Documentation</p>
+    <h2 class="section-title">How to Use Scriptty</h2>
+
+    <div class="guide-content">
+
+      <div class="guide-section">
+        <h3>Getting Started</h3>
+        <p>Scriptty is an offline screenwriting app for Malayalam and English writers. Your work is saved locally as <code>.screenplay</code> files — no cloud, no account needed.</p>
+        <ol>
+          <li>Click <strong>New</strong> to create a blank screenplay.</li>
+          <li>Go to <strong>View &rarr; Edit Meta Data</strong> to set your title, writer, director, and draft info.</li>
+          <li>Start writing — the editor begins in Action mode. Press <kbd>Tab</kbd> to switch to a Character name, then <kbd>Enter</kbd> to write Dialogue.</li>
+          <li>Use <kbd>Cmd+B</kbd>, <kbd>Cmd+I</kbd>, <kbd>Cmd+U</kbd> or the <strong>B I U</strong> buttons for formatting.</li>
+          <li>Press <kbd>Cmd+S</kbd> to save your work.</li>
+        </ol>
+      </div>
+
+      <div class="guide-section">
+        <h3>Writing in the Editor</h3>
+        <p>The editor uses Hollywood single-column format. Six element types, navigated with Tab and Enter:</p>
+        <table class="guide-table">
+          <thead><tr><th>You're in</th><th>Key</th><th>Creates</th></tr></thead>
+          <tbody>
+            <tr><td>Scene Heading</td><td><kbd>Enter</kbd></td><td>Action</td></tr>
+            <tr><td>Action</td><td><kbd>Enter</kbd></td><td>Action (new paragraph)</td></tr>
+            <tr><td>Action</td><td><kbd>Tab</kbd></td><td>Character</td></tr>
+            <tr><td>Character</td><td><kbd>Enter</kbd></td><td>Dialogue</td></tr>
+            <tr><td>Dialogue</td><td><kbd>Enter</kbd></td><td>Character</td></tr>
+            <tr><td>Dialogue</td><td><kbd>Tab</kbd></td><td>Parenthetical</td></tr>
+            <tr><td>Parenthetical</td><td><kbd>Enter</kbd></td><td>Dialogue</td></tr>
+            <tr><td>Transition</td><td><kbd>Enter</kbd></td><td>Scene Heading</td></tr>
+          </tbody>
+        </table>
+        <p><kbd>Shift+Enter</kbd> creates a new Scene Heading from anywhere. <kbd>Shift+Tab</kbd> converts the current element back.</p>
+        <p><strong>Dialogue loop:</strong> Character &rarr; Dialogue &rarr; Character flows continuously. Press <kbd>Enter</kbd> on an empty Character to break out to Action. Press <kbd>Enter</kbd> on an empty Dialogue to return to the Character above.</p>
+        <p><strong>Paragraph splitting:</strong> Press <kbd>Enter</kbd> in the middle of an Action element to split it into two paragraphs.</p>
+      </div>
+
+      <div class="guide-section">
+        <h3>Text Formatting</h3>
+        <p>Use the <strong>B I U</strong> buttons in the toolbar or keyboard shortcuts:</p>
+        <ul>
+          <li><kbd>Cmd+B</kbd> — <strong>Bold</strong></li>
+          <li><kbd>Cmd+I</kbd> — <em>Italic</em></li>
+          <li><kbd>Cmd+U</kbd> — <u>Underline</u></li>
+        </ul>
+        <p>Select text to apply formatting, or toggle the format before typing. Formatting is preserved in PDF and Fountain exports.</p>
+      </div>
+
+      <div class="guide-section">
+        <h3>Malayalam Input</h3>
+        <p>Scriptty has built-in Malayalam input — no OS keyboard setup required.</p>
+        <ol>
+          <li>Press <kbd>Ctrl+Space</kbd> to toggle between English and Malayalam.</li>
+          <li>The status bar shows <strong>ENG</strong> or <strong style="color: #2d9b8a;">MAL</strong> to indicate the current mode.</li>
+          <li>Choose your input scheme from Settings (gear icon in the status bar):
+            <ul>
+              <li><strong>Mozhi</strong> — type phonetically (e.g., "namaskkaaram" &rarr; &#3368;&#3374;&#3384;&#3405;&#3349;&#3405;&#3349;&#3390;&#3376;&#3330;)</li>
+              <li><strong>Inscript 2</strong> — standard Indian keyboard layout</li>
+              <li><strong>Inscript 1</strong> — legacy Indian keyboard layout</li>
+            </ul>
+          </li>
+        </ol>
+        <p>You can mix Malayalam and English freely on the same line.</p>
+      </div>
+
+      <div class="guide-section">
+        <h3>Character Autocomplete</h3>
+        <p>When typing a character name, Scriptty suggests names already used in your screenplay after 2 characters. Use <kbd>&uarr;</kbd> / <kbd>&darr;</kbd> to navigate, <kbd>Enter</kbd> or <kbd>Tab</kbd> to accept, <kbd>Escape</kbd> to dismiss. Works with both English and Malayalam names.</p>
+      </div>
+
+      <div class="guide-section">
+        <h3>Scene Navigator</h3>
+        <p>Press <kbd>Cmd+\</kbd> to toggle the left panel. The <strong>Scenes</strong> tab shows all your scene headings with auto-numbered labels. Click any scene to jump directly to it. Drag the handle to reorder scenes — undoable with <kbd>Cmd+Z</kbd>.</p>
+      </div>
+
+      <div class="guide-section">
+        <h3>Story Panel &amp; Story Mode</h3>
+        <p>Switch to the <strong>Story</strong> tab in the left panel to work on structure: Idea (logline), Synopsis, Treatment, and Narrative.</p>
+        <p>Press <kbd>Cmd+Shift+L</kbd> for Story Mode — a full-screen, distraction-free writing view for your narrative with word count and Malayalam input support.</p>
+      </div>
+
+      <div class="guide-section">
+        <h3>Scene Cards</h3>
+        <p>Press <kbd>Cmd+Shift+K</kbd> to open Scene Cards — a grid of cards showing scene number, heading, location, time, characters, and page estimate. Add descriptions and shoot notes for production planning.</p>
+      </div>
+
+      <div class="guide-section">
+        <h3>Exporting</h3>
+        <p>Click <strong>Export</strong> in the title bar. Choose what to include: Title Page, Synopsis, Treatment, Narrative, Screenplay, and Scene Cards.</p>
+        <p>Pick a format: <strong>Hollywood</strong> (single column) or <strong>Indian</strong> (two column). Enable <strong>Page break after each scene</strong> under Layout if needed.</p>
+        <p>Also export as <strong>Fountain</strong> (.fountain) for interop with other tools, or <strong>Plain Text</strong> (.txt) for simple sharing. Bold, italic, and underline formatting is preserved in PDF and Fountain.</p>
+      </div>
+
+      <div class="guide-section">
+        <h3>Keyboard Shortcuts</h3>
+        <table class="guide-table">
+          <thead><tr><th>Shortcut</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td><kbd>Cmd+N</kbd></td><td>New document</td></tr>
+            <tr><td><kbd>Cmd+O</kbd></td><td>Open document</td></tr>
+            <tr><td><kbd>Cmd+S</kbd></td><td>Save</td></tr>
+            <tr><td><kbd>Cmd+Shift+S</kbd></td><td>Save As</td></tr>
+            <tr><td><kbd>Cmd+B</kbd></td><td>Bold text</td></tr>
+            <tr><td><kbd>Cmd+I</kbd></td><td>Italic text</td></tr>
+            <tr><td><kbd>Cmd+U</kbd></td><td>Underline text</td></tr>
+            <tr><td><kbd>Cmd+\</kbd></td><td>Toggle left panel</td></tr>
+            <tr><td><kbd>Cmd+Shift+K</kbd></td><td>Scene Cards</td></tr>
+            <tr><td><kbd>Cmd+Shift+I</kbd></td><td>Script Statistics</td></tr>
+            <tr><td><kbd>Cmd+Shift+L</kbd></td><td>Story Mode</td></tr>
+            <tr><td><kbd>Cmd+F</kbd></td><td>Find</td></tr>
+            <tr><td><kbd>Cmd+Shift+H</kbd></td><td>Find and Replace</td></tr>
+            <tr><td><kbd>Ctrl+Space</kbd></td><td>Toggle English / Malayalam</td></tr>
+            <tr><td><kbd>Cmd+Z</kbd></td><td>Undo</td></tr>
+            <tr><td><kbd>Cmd+Shift+Z</kbd></td><td>Redo</td></tr>
+            <tr><td><kbd>Tab</kbd></td><td>Next element type</td></tr>
+            <tr><td><kbd>Shift+Tab</kbd></td><td>Previous element type</td></tr>
+            <tr><td><kbd>Cmd+Shift+T</kbd></td><td>Convert to Transition</td></tr>
+            <tr><td><kbd>Shift+Enter</kbd></td><td>New Scene Heading</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size: 13px; color: #9c9891; font-style: italic;">On Windows/Linux, replace Cmd with Ctrl.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ── -->
+<footer>
+  <div class="container">
+    <p>Scriptty is free and open source software under the MIT License.</p>
+    <p>&copy; 2026 Hrishikesh Bhaskaran</p>
+    <div class="footer-links">
+      <a href="https://github.com/stultus/scriptty">GitHub</a>
+      <a href="https://github.com/stultus/scriptty/issues">Report an Issue</a>
+      <a href="https://stultus.in">stultus.in</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

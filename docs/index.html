@@ -368,7 +368,50 @@
       text-align: center;
     }
 
-    footer p {
+    .credits {
+      display: flex;
+      gap: 60px;
+      justify-content: center;
+      margin-bottom: 32px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+
+    .credits-col h4 {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .credits-col p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+      line-height: 1.5;
+    }
+
+    .credits-col strong {
+      color: var(--text-primary);
+    }
+
+    .credits-col a {
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    .credits-col a:hover {
+      color: var(--teal-bright);
+    }
+
+    .footer-bottom {
+      text-align: center;
+    }
+
+    .footer-bottom p {
       font-size: 13px;
       color: var(--text-muted);
       margin-bottom: 6px;
@@ -393,6 +436,7 @@
       .download-group { flex-direction: column; align-items: center; }
       .btn-download { width: 100%; max-width: 280px; justify-content: center; }
       .feature-grid { grid-template-columns: 1fr; }
+      .credits { flex-direction: column; gap: 24px; text-align: center; }
     }
   </style>
 </head>
@@ -620,12 +664,29 @@
 <!-- ── Footer ── -->
 <footer>
   <div class="container">
-    <p>Scriptty is free and open source software under the MIT License.</p>
-    <p>&copy; 2026 Hrishikesh Bhaskaran</p>
-    <div class="footer-links">
-      <a href="https://github.com/stultus/scriptty">GitHub</a>
-      <a href="https://github.com/stultus/scriptty/issues">Report an Issue</a>
-      <a href="https://stultus.in">stultus.in</a>
+    <div class="credits">
+      <div class="credits-col">
+        <h4>Developers</h4>
+        <p><strong>Hrishikesh Bhaskaran</strong> (stultus)<br>
+          <a href="mailto:hello@stultus.in">hello@stultus.in</a> &middot; <a href="https://stultus.in">stultus.in</a></p>
+        <p style="margin-top: 10px;"><strong>Hiran Venugopalan</strong><br>
+          <a href="mailto:hiran.v@gmail.com">hiran.v@gmail.com</a> &middot; <a href="https://hiran.in">hiran.in</a></p>
+      </div>
+      <div class="credits-col">
+        <h4>Inputs &amp; Feedback</h4>
+        <p>Abraham Joseph (Abrooz)</p>
+        <p>Aashiq Abu (Filmmaker)</p>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>Scriptty is free and open source software under the MIT License.</p>
+      <p>&copy; 2026 Hrishikesh Bhaskaran</p>
+      <div class="footer-links">
+        <a href="https://github.com/stultus/scriptty">GitHub</a>
+        <a href="https://github.com/stultus/scriptty/issues">Report an Issue</a>
+        <a href="https://stultus.in">stultus.in</a>
+      </div>
     </div>
   </div>
 </footer>

@@ -53,9 +53,26 @@
     const view = editorStore.view;
     if (!view) return;
 
+    // Find the scene heading DOM element directly by querying all
+    // scene-heading elements in the editor. This is more reliable than
+    // using domAtPos which can return text nodes or child elements.
+    const headings = view.dom.querySelectorAll('.scene-heading');
+    // sceneIndex is the node index in the document, but we need the
+    // index among scene headings only. Count which scene heading this is.
+    let sceneCount = -1;
+    let targetNodeIndex = -1;
     const doc = view.state.doc;
-    let targetPos = -1;
+    doc.forEach((node, _offset, index) => {
+      if (node.type.name === 'scene_heading') {
+        sceneCount++;
+        if (index === sceneIndex) {
+          targetNodeIndex = sceneCount;
+        }
+      }
+    });
 
+    // Also find the document position for cursor placement
+    let targetPos = -1;
     doc.forEach((node, offset, index) => {
       if (index === sceneIndex) {
         targetPos = offset + 1;
@@ -70,22 +87,15 @@
     );
     view.dispatch(tr);
 
-    // Scroll the scene heading to the top of the visible area.
-    // We find the DOM node for the scene heading and use its offsetTop
-    // relative to the scroll container for a precise absolute scroll.
-    const domAtPos = view.domAtPos(targetPos);
-    const sceneNode = domAtPos.node instanceof HTMLElement
-      ? domAtPos.node
-      : domAtPos.node.parentElement;
-
+    // Scroll the scene heading element to the top of the scroll container
+    const sceneEl = targetNodeIndex >= 0 ? headings[targetNodeIndex] : null;
     const scrollContainer = view.dom.closest('.editor-scroll') ?? view.dom.parentElement?.parentElement;
-    if (scrollContainer && sceneNode) {
-      // Calculate the element's position relative to the scroll container
-      const sceneRect = sceneNode.getBoundingClientRect();
+
+    if (scrollContainer && sceneEl) {
+      const sceneRect = sceneEl.getBoundingClientRect();
       const containerRect = scrollContainer.getBoundingClientRect();
-      // Current scroll + element's distance from container top - padding
       const targetScroll = scrollContainer.scrollTop + (sceneRect.top - containerRect.top) - 20;
-      scrollContainer.scrollTo({ top: targetScroll, behavior: 'smooth' });
+      scrollContainer.scrollTo({ top: Math.max(0, targetScroll), behavior: 'instant' });
     }
 
     view.focus();

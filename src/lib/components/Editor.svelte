@@ -360,7 +360,7 @@
     margin-left: 100px;
     margin-right: 100px;
     margin-top: 0;
-    margin-bottom: 0;
+    margin-bottom: 0.5em;
     color: var(--text-on-page);
     opacity: 0.85;
   }

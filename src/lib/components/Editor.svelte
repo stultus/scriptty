@@ -302,7 +302,7 @@
 
   /* ─── ProseMirror editor — the screenplay page ─── */
   .editor-container :global(.ProseMirror) {
-    padding: 60px 72px;
+    padding: 60px 72px 60vh 72px;
     box-sizing: border-box;
     /* Increased from 800px to 2000px to simulate infinite/continuous page rendering */
     min-height: 2000px;

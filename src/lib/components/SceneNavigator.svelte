@@ -64,11 +64,23 @@
 
     if (targetPos === -1) return;
 
+    // Set the cursor on the target scene heading
     const tr = view.state.tr.setSelection(
       TextSelection.create(view.state.doc, targetPos)
     );
-    tr.scrollIntoView();
     view.dispatch(tr);
+
+    // Scroll the scene heading to the top of the visible area instead of
+    // ProseMirror's default which just makes the cursor barely visible
+    // (often at the bottom of the viewport).
+    const coords = view.coordsAtPos(targetPos);
+    const scrollContainer = view.dom.closest('.editor-scroll') ?? view.dom.parentElement?.parentElement;
+    if (scrollContainer) {
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const scrollOffset = coords.top - containerRect.top - 40; // 40px padding from top
+      scrollContainer.scrollBy({ top: scrollOffset, behavior: 'smooth' });
+    }
+
     view.focus();
   }
 

@@ -53,27 +53,10 @@
     const view = editorStore.view;
     if (!view) return;
 
-    // Find the scene heading DOM element directly by querying all
-    // scene-heading elements in the editor. This is more reliable than
-    // using domAtPos which can return text nodes or child elements.
-    const headings = view.dom.querySelectorAll('.scene-heading');
-    // sceneIndex is the node index in the document, but we need the
-    // index among scene headings only. Count which scene heading this is.
-    let sceneCount = -1;
-    let targetNodeIndex = -1;
-    const doc = view.state.doc;
-    doc.forEach((node, _offset, index) => {
-      if (node.type.name === 'scene_heading') {
-        sceneCount++;
-        if (index === sceneIndex) {
-          targetNodeIndex = sceneCount;
-        }
-      }
-    });
-
-    // Also find the document position for cursor placement
+    // Find the document position for cursor placement
     let targetPos = -1;
-    doc.forEach((node, offset, index) => {
+    const doc = view.state.doc;
+    doc.forEach((_node, offset, index) => {
       if (index === sceneIndex) {
         targetPos = offset + 1;
       }
@@ -81,24 +64,45 @@
 
     if (targetPos === -1) return;
 
-    // Set the cursor on the target scene heading
+    // Set the cursor on the target scene heading — do NOT call
+    // scrollIntoView() on the transaction so it doesn't fight
+    // with our manual scroll below.
     const tr = view.state.tr.setSelection(
       TextSelection.create(view.state.doc, targetPos)
     );
     view.dispatch(tr);
-
-    // Scroll the scene heading element to the top of the scroll container
-    const sceneEl = targetNodeIndex >= 0 ? headings[targetNodeIndex] : null;
-    const scrollContainer = view.dom.closest('.editor-scroll') ?? view.dom.parentElement?.parentElement;
-
-    if (scrollContainer && sceneEl) {
-      const sceneRect = sceneEl.getBoundingClientRect();
-      const containerRect = scrollContainer.getBoundingClientRect();
-      const targetScroll = scrollContainer.scrollTop + (sceneRect.top - containerRect.top) - 20;
-      scrollContainer.scrollTo({ top: Math.max(0, targetScroll), behavior: 'instant' });
-    }
-
     view.focus();
+
+    // Defer the scroll to the next frame so the DOM has settled
+    // after the dispatch. Without this, getBoundingClientRect()
+    // can return stale positions, causing the scroll to land wrong
+    // or not fire at all on rapid clicks.
+    requestAnimationFrame(() => {
+      // Find the scene heading DOM elements after DOM has updated
+      const headings = view.dom.querySelectorAll('.scene-heading');
+
+      // Map the document node index to scene heading index
+      let sceneCount = -1;
+      let targetHeadingIndex = -1;
+      view.state.doc.forEach((node, _offset, index) => {
+        if (node.type.name === 'scene_heading') {
+          sceneCount++;
+          if (index === sceneIndex) {
+            targetHeadingIndex = sceneCount;
+          }
+        }
+      });
+
+      const sceneEl = targetHeadingIndex >= 0 ? headings[targetHeadingIndex] : null;
+      const scrollContainer = view.dom.closest('.editor-scroll') ?? view.dom.parentElement?.parentElement;
+
+      if (scrollContainer && sceneEl) {
+        const sceneRect = sceneEl.getBoundingClientRect();
+        const containerRect = scrollContainer.getBoundingClientRect();
+        const targetScroll = scrollContainer.scrollTop + (sceneRect.top - containerRect.top) - 20;
+        scrollContainer.scrollTo({ top: Math.max(0, targetScroll), behavior: 'instant' });
+      }
+    });
   }
 
   // --- Custom drag via mouse events ---

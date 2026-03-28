@@ -157,6 +157,19 @@ pub fn run() {
         }
       });
 
+      // Check if the app was launched by double-clicking a .screenplay file.
+      // The OS passes the file path as a command-line argument.
+      // `std::env::args()` returns an iterator over the arguments; the first
+      // is the executable path, the rest are user-provided arguments.
+      let args: Vec<String> = std::env::args().collect();
+      if args.len() > 1 {
+        let file_path = &args[1];
+        // Only emit if it looks like a .screenplay file
+        if file_path.ends_with(".screenplay") {
+          let _ = app.emit("file-open-request", file_path.clone());
+        }
+      }
+
       Ok(())
     })
     .invoke_handler(tauri::generate_handler![
@@ -171,6 +184,23 @@ pub fn run() {
       commands::export::export_fountain,
       commands::file::open_external_url,
     ])
-    .run(tauri::generate_context!())
-    .expect("error while running tauri application");
+    .build(tauri::generate_context!())
+    .expect("error while building tauri application")
+    .run(|app, event| {
+      // Handle macOS file open events — fires when a .screenplay file is
+      // double-clicked while the app is already running. `urls` contains
+      // the file paths as file:// URLs.
+      if let tauri::RunEvent::Opened { urls } = event {
+        for url in urls {
+          // Convert file:// URL to a plain path string
+          if let Ok(path) = url.to_file_path() {
+            if let Some(path_str) = path.to_str() {
+              if path_str.ends_with(".screenplay") {
+                let _ = app.emit("file-open-request", path_str.to_string());
+              }
+            }
+          }
+        }
+      }
+    });
 }

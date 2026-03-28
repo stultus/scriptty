@@ -214,6 +214,16 @@
         await getCurrentWindow().close();
       }));
 
+      // Handle file open requests — when a .screenplay file is double-clicked
+      // in the OS file manager, the backend emits this event with the file path.
+      unlistens.push(await listen<string>('file-open-request', async (event) => {
+        const filePath = event.payload;
+        if (typeof filePath === 'string' && filePath.endsWith('.screenplay')) {
+          if (!(await documentStore.confirmIfDirty())) return;
+          await documentStore.openDocument(filePath);
+        }
+      }));
+
       // Intercept window close to prompt for unsaved changes
       unlistens.push(await getCurrentWindow().onCloseRequested(async (event) => {
         if (quitConfirmed) return; // Already confirmed via menu-quit

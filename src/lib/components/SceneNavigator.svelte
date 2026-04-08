@@ -26,7 +26,8 @@
     if (!content.content) return [];
 
     const entries: SceneEntry[] = [];
-    let sceneNumber = 0;
+    const startNum = doc.settings?.scene_number_start ?? 1;
+    let sceneNumber = startNum - 1;
 
     content.content.forEach((node, index) => {
       if (node.type === 'scene_heading') {

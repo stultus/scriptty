@@ -51,7 +51,8 @@
     if (!content.content) return [];
 
     const result: SceneCardData[] = [];
-    let sceneNumber = 0;
+    const startNum = doc.settings?.scene_number_start ?? 1;
+    let sceneNumber = startNum - 1;
     let currentCharacters: string[] = [];
     let currentCharCount = 0;
     let currentHeading = '';
@@ -60,7 +61,7 @@
     let currentContentIndex = -1;
 
     function pushCurrentScene() {
-      if (sceneNumber === 0) return;
+      if (sceneNumber < startNum) return;
       const storedCard = doc.scene_cards.find((c) => c.scene_index === sceneNumber - 1);
       const pages = Math.max(0.1, currentCharCount / 3000);
       result.push({

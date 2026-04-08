@@ -85,12 +85,14 @@ enum ScreenplayGroup {
 ///
 /// Uses a manual index loop so we can "consume" (skip) elements that get absorbed
 /// into a group, preventing them from being processed twice.
-fn group_elements(elements: Vec<ScreenplayElement>) -> Vec<ScreenplayGroup> {
+fn group_elements(elements: Vec<ScreenplayElement>, scene_number_start: u32) -> Vec<ScreenplayGroup> {
     let mut groups: Vec<ScreenplayGroup> = Vec::new();
     // Manual index so we can skip elements that get consumed into groups.
     // A for-each loop wouldn't let us advance past consumed elements.
     let mut i = 0;
-    let mut scene_number: u32 = 0;
+    // Start scene numbering from the configured offset minus 1, because
+    // the counter is incremented before use (so first scene = scene_number_start).
+    let mut scene_number: u32 = scene_number_start - 1;
 
     // `elements.len()` returns the number of items. We use `while i < len`
     // instead of `for` so we can increment `i` by more than 1 when consuming.
@@ -477,12 +479,12 @@ pub fn generate_title_page_markup(meta: &ScreenplayMeta) -> String {
 /// - All screenplay elements formatted in Hollywood single-column style
 ///
 /// The returned string is valid Typst source that can be compiled to PDF.
-pub fn generate_typst_markup(content: &Value, font_name: &str, meta: &ScreenplayMeta, page_break_after_scene: bool) -> String {
+pub fn generate_typst_markup(content: &Value, font_name: &str, meta: &ScreenplayMeta, page_break_after_scene: bool, scene_number_start: u32) -> String {
     let elements = extract_elements(content);
 
     // Group elements for page break control — this ensures scene headings
     // stay with their first action, and character names stay with dialogue.
-    let groups = group_elements(elements);
+    let groups = group_elements(elements, scene_number_start);
 
     // `String::new()` creates an empty growable string — we'll append markup to it.
     let mut markup = String::new();
@@ -530,7 +532,7 @@ pub fn generate_typst_markup(content: &Value, font_name: &str, meta: &Screenplay
                 // If page-break-after-scene is enabled, insert a page break before
                 // every scene except the first one.
                 let mut block = String::new();
-                if page_break_after_scene && *scene_number > 1 {
+                if page_break_after_scene && *scene_number > scene_number_start {
                     block.push_str("#pagebreak()\n");
                 }
                 // Wrap scene heading + first action in an unbreakable block so the
@@ -832,7 +834,7 @@ impl World for ScreenplayWorld {
 /// # Returns
 ///
 /// A complete Typst markup string ready for compilation to PDF.
-pub fn generate_indian_markup(content: &Value, font_name: &str, meta: &ScreenplayMeta, page_break_after_scene: bool) -> String {
+pub fn generate_indian_markup(content: &Value, font_name: &str, meta: &ScreenplayMeta, page_break_after_scene: bool, scene_number_start: u32) -> String {
     // Reuse the same element extraction as Hollywood format.
     // `extract_elements` parses ProseMirror JSON into a flat list of ScreenplayElements.
     let elements = extract_elements(content);
@@ -881,7 +883,8 @@ pub fn generate_indian_markup(content: &Value, font_name: &str, meta: &Screenpla
     }
 
     // Track scene numbers for the heading labels.
-    let mut scene_number: u32 = 0;
+    // Start from scene_number_start - 1 because the counter is incremented before use.
+    let mut scene_number: u32 = scene_number_start - 1;
 
     for (heading, body) in &scenes {
         // --- Scene heading rendering ---
@@ -892,7 +895,7 @@ pub fn generate_indian_markup(content: &Value, font_name: &str, meta: &Screenpla
 
             // If page-break-after-scene is enabled, insert a page break before
             // every scene except the first one.
-            if page_break_after_scene && scene_number > 1 {
+            if page_break_after_scene && scene_number > scene_number_start {
                 markup.push_str("#pagebreak()\n");
             }
 
@@ -1146,7 +1149,8 @@ pub fn generate_pdf_indian(
     // Generate Indian two-column Typst markup instead of Hollywood format.
     // `meta` is passed through to include the title page in the PDF.
     // Standalone Indian PDF export doesn't have the page-break-per-scene option — pass false.
-    let markup = generate_indian_markup(content, font_name, meta, false);
+    // Standalone Indian PDF export uses default scene numbering starting at 1.
+    let markup = generate_indian_markup(content, font_name, meta, false, 1);
 
     // From here, the compilation pipeline is identical to `generate_pdf()`:
     // create a ScreenplayWorld, compile the Typst source, render to PDF bytes.
@@ -1206,7 +1210,8 @@ pub fn generate_pdf(
     // Generate the Typst markup from the ProseMirror JSON.
     // `meta` is passed through to include the title page in the PDF.
     // Standalone PDF export doesn't have the page-break-per-scene option — pass false.
-    let markup = generate_typst_markup(content, font_name, meta, false);
+    // Standalone Hollywood PDF export uses default scene numbering starting at 1.
+    let markup = generate_typst_markup(content, font_name, meta, false, 1);
 
     // Collect all font bytes — pass both regular and bold weights.
     // These are `&'static [u8]` slices embedded in the binary at compile time.
@@ -1595,7 +1600,7 @@ mod tests {
             ]
         });
 
-        let markup = generate_typst_markup(&doc, "Noto Sans Malayalam", &empty_meta());
+        let markup = generate_typst_markup(&doc, "Noto Sans Malayalam", &empty_meta(), false, 1);
         // Should contain the font setting
         assert!(markup.contains("Noto Sans Malayalam"));
         // Scene heading text should be uppercased
@@ -1654,7 +1659,7 @@ mod tests {
             ]
         });
 
-        let markup = generate_typst_markup(&doc, "Noto Sans Malayalam", &empty_meta());
+        let markup = generate_typst_markup(&doc, "Noto Sans Malayalam", &empty_meta(), false, 1);
         // Malayalam text should pass through unmodified (no special chars to escape)
         assert!(markup.contains("രമേഷ് Flat ലേക്ക് നടന്നു"));
     }
@@ -1675,7 +1680,7 @@ mod tests {
             },
         ];
 
-        let groups = group_elements(elements);
+        let groups = group_elements(elements, 1);
         assert_eq!(groups.len(), 1);
 
         // `matches!` is a macro that checks if a value matches a pattern.
@@ -1708,7 +1713,7 @@ mod tests {
             },
         ];
 
-        let groups = group_elements(elements);
+        let groups = group_elements(elements, 1);
         assert_eq!(groups.len(), 2);
 
         match &groups[0] {
@@ -1739,7 +1744,7 @@ mod tests {
             },
         ];
 
-        let groups = group_elements(elements);
+        let groups = group_elements(elements, 1);
         assert_eq!(groups.len(), 1);
 
         match &groups[0] {
@@ -1769,7 +1774,7 @@ mod tests {
             text: "The door opens.".to_string(),
         }];
 
-        let groups = group_elements(elements);
+        let groups = group_elements(elements, 1);
         assert_eq!(groups.len(), 1);
 
         match &groups[0] {
@@ -1803,7 +1808,7 @@ mod tests {
             },
         ];
 
-        let groups = group_elements(elements);
+        let groups = group_elements(elements, 1);
         assert_eq!(groups.len(), 2);
 
         match &groups[0] {
@@ -1842,7 +1847,7 @@ mod tests {
             },
         ];
 
-        let groups = group_elements(elements);
+        let groups = group_elements(elements, 1);
         assert_eq!(groups.len(), 1);
 
         match &groups[0] {
@@ -1878,7 +1883,7 @@ mod tests {
             },
         ];
 
-        let groups = group_elements(elements);
+        let groups = group_elements(elements, 1);
         // Should be 3 groups: CharacterBlock (John + first dialogue),
         // Standalone (action), Standalone (dialogue)
         assert_eq!(groups.len(), 3);
@@ -1942,7 +1947,7 @@ mod tests {
             },
         ];
 
-        let groups = group_elements(elements);
+        let groups = group_elements(elements, 1);
         assert_eq!(groups.len(), 3); // SceneBlock, CharacterBlock, Standalone(transition)
 
         assert!(matches!(&groups[0], ScreenplayGroup::SceneBlock { .. }));
@@ -1967,7 +1972,7 @@ mod tests {
             ]
         });
 
-        let markup = generate_typst_markup(&doc, "Noto Sans Malayalam", &empty_meta());
+        let markup = generate_typst_markup(&doc, "Noto Sans Malayalam", &empty_meta(), false, 1);
         // The scene heading and first action should be inside a single unbreakable block
         assert!(markup.contains("block(breakable: false)"));
         assert!(markup.contains("1. INT. OFFICE - DAY"));
@@ -1997,7 +2002,7 @@ mod tests {
         });
 
         let elements = extract_elements(&doc);
-        let groups = group_elements(elements);
+        let groups = group_elements(elements, 1);
         // Should be: SceneBlock (heading + first action), Standalone (second action)
         assert_eq!(groups.len(), 2);
 

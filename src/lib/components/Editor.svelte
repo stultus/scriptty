@@ -255,7 +255,7 @@
     <FindReplaceBar mode={findReplaceMode} onclose={() => { findReplaceOpen = false; }} />
   {/if}
   <div class="editor-scroll">
-    <div class="editor-container" bind:this={editorElement} style="--editor-font: '{fontFamily}'"></div>
+    <div class="editor-container" bind:this={editorElement} style="--editor-font: '{fontFamily}'; --scene-counter-start: {(documentStore.document?.settings.scene_number_start ?? 1) - 1}"></div>
   </div>
   <div class="status-bar">
     <div class="status-left">
@@ -316,7 +316,7 @@
     box-shadow: 0 4px 24px var(--page-shadow), 0 1px 4px rgba(0, 0, 0, 0.2);
     direction: ltr;
     unicode-bidi: normal;
-    counter-reset: scene-counter;
+    counter-reset: scene-counter var(--scene-counter-start, 0);
   }
 
   /* ─── Screenplay element styles — Hollywood format ─── */
@@ -337,8 +337,8 @@
   :global(.ProseMirror .scene-heading::before) {
     content: counter(scene-counter) ". ";
     color: var(--text-muted);
-    font-size: 11px;
-    font-weight: normal;
+    font-size: 16px;
+    font-weight: bold;
     margin-right: 4px;
   }
 

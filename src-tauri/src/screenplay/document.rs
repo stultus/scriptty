@@ -57,6 +57,17 @@ pub struct ScreenplaySettings {
     pub default_language: String,
     /// Input scheme for Malayalam: "mozhi", "inscript1", or "inscript2"
     pub input_scheme: String,
+    /// Starting scene number — useful when co-writing and this file covers
+    /// a specific range of scenes (e.g. 34–44). Defaults to 1.
+    /// Uses `default` so old .screenplay files without this field still load.
+    #[serde(default = "default_scene_number_start")]
+    pub scene_number_start: u32,
+}
+
+/// Default value for `scene_number_start` — returns 1 so scenes start at 1
+/// when the field is missing from an old .screenplay file.
+fn default_scene_number_start() -> u32 {
+    1
 }
 
 impl Default for ScreenplaySettings {
@@ -65,6 +76,7 @@ impl Default for ScreenplaySettings {
             font: "manjari".to_string(),
             default_language: "malayalam".to_string(),
             input_scheme: "mozhi".to_string(),
+            scene_number_start: 1,
         }
     }
 }

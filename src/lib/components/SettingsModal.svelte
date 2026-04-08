@@ -129,6 +129,23 @@
       </div>
 
       <div class="setting-row">
+        <span class="setting-name">Scene Start #</span>
+        <input
+          class="scene-start-input"
+          type="number"
+          min="1"
+          value={documentStore.document?.settings.scene_number_start ?? 1}
+          onchange={(e: Event) => {
+            const val = parseInt((e.target as HTMLInputElement).value, 10);
+            if (documentStore.document && val >= 1) {
+              documentStore.document.settings.scene_number_start = val;
+              documentStore.markDirty();
+            }
+          }}
+        />
+      </div>
+
+      <div class="setting-row">
         <span class="setting-name">Theme</span>
         <div class="segmented">
           <button
@@ -277,6 +294,23 @@
     background: var(--surface-elevated);
     color: var(--text-primary);
     box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  }
+
+  .scene-start-input {
+    width: 60px;
+    background: var(--surface-base);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-family: inherit;
+    text-align: center;
+    outline: none;
+  }
+
+  .scene-start-input:focus {
+    border-color: var(--accent);
   }
 
   .scheme-select {

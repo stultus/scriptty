@@ -21,6 +21,7 @@ export interface ScreenplaySettings {
   font: string;
   default_language: string;
   input_scheme: string;
+  scene_number_start: number;
 }
 
 export interface ScreenplayStory {

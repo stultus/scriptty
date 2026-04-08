@@ -186,7 +186,8 @@ JSON with top-level keys:
   "settings": {
     "font": "noto-sans-malayalam",
     "default_language": "malayalam",
-    "input_scheme": "mozhi"
+    "input_scheme": "mozhi",
+    "scene_number_start": 1
   },
   "story": {
     "idea": "",
@@ -233,7 +234,9 @@ Full format spec: see `SCREENPLAY_FORMAT.md` at project root.
 
 - Collapsible left panel, toggle with Ctrl+B
 - Shows: auto-computed scene number + scene heading text
-- Scene numbers derived from document order — never stored
+- Scene numbers derived from document order, offset by `scene_number_start` setting
+- `scene_number_start` is a per-document setting (default 1), configurable in Settings modal
+- Useful for co-writing: each writer's file can start numbering from their assigned range
 - Drag to rearrange scenes triggers auto-renumber
 - Click to jump to scene
 

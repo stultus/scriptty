@@ -39,7 +39,7 @@ pub fn export_typst_markup(document: ScreenplayDocument) -> Result<String, Strin
     // We don't need to take ownership — we just need to read the JSON.
     // `&document.meta` passes a reference to the metadata so the markup generator
     // can include a title page if the screenplay has a title set.
-    Ok(pdf::generate_typst_markup(&document.content, font_name, &document.meta, false))
+    Ok(pdf::generate_typst_markup(&document.content, font_name, &document.meta, false, document.settings.scene_number_start))
 }
 
 /// Exports a screenplay document as PDF bytes.
@@ -238,9 +238,9 @@ pub fn export_combined_pdf(
         };
 
         markup = if options.format == "indian" {
-            pdf::generate_indian_markup(&document.content, font_name, &meta_for_export, options.page_break_after_scene)
+            pdf::generate_indian_markup(&document.content, font_name, &meta_for_export, options.page_break_after_scene, document.settings.scene_number_start)
         } else {
-            pdf::generate_typst_markup(&document.content, font_name, &meta_for_export, options.page_break_after_scene)
+            pdf::generate_typst_markup(&document.content, font_name, &meta_for_export, options.page_break_after_scene, document.settings.scene_number_start)
         };
         has_content = true;
     } else {

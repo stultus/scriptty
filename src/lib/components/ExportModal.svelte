@@ -53,7 +53,8 @@
     if (!content.content) return [];
 
     const cards: Array<Record<string, unknown>> = [];
-    let sceneNumber = 0;
+    const startNum = doc.settings?.scene_number_start ?? 1;
+    let sceneNumber = startNum - 1;
     let currentSceneCharacters: string[] = [];
     let currentSceneCharCount = 0;
 
@@ -62,7 +63,7 @@
 
       if (node.type === 'scene_heading') {
         // If there was a previous scene, finalize it
-        if (sceneNumber > 0) {
+        if (sceneNumber >= startNum) {
           finalizeCard(cards, sceneNumber, currentSceneCharacters, currentSceneCharCount);
         }
 
@@ -100,7 +101,7 @@
     }
 
     // Finalize last scene
-    if (sceneNumber > 0) {
+    if (sceneNumber >= startNum) {
       finalizeCard(cards, sceneNumber, currentSceneCharacters, currentSceneCharCount);
     }
 

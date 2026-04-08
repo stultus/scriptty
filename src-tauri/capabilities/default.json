@@ -14,6 +14,7 @@
     "dialog:allow-message",
     "fs:allow-write-file",
     "fs:allow-write-text-file",
-    "opener:allow-open-url"
+    "opener:allow-open-url",
+    "deep-link:default"
   ]
 }

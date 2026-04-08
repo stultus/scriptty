@@ -10,6 +10,7 @@ use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 // Emitter trait lets us send events from Rust to the frontend webview.
 use tauri::Emitter;
 
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -19,6 +20,10 @@ pub fn run() {
     .plugin(tauri_plugin_fs::init())
     // Register the opener plugin so we can open URLs in the default browser.
     .plugin(tauri_plugin_opener::init())
+    // Register the deep-link plugin for file association handling.
+    // This buffers file URLs on cold launch so the frontend can retrieve
+    // them after mounting via getCurrent().
+    .plugin(tauri_plugin_deep_link::init())
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(
@@ -159,17 +164,9 @@ pub fn run() {
 
       // Check if the app was launched by double-clicking a .screenplay file.
       // The OS passes the file path as a command-line argument.
-      // `std::env::args()` returns an iterator over the arguments; the first
-      // is the executable path, the rest are user-provided arguments.
-      let args: Vec<String> = std::env::args().collect();
-      if args.len() > 1 {
-        let file_path = &args[1];
-        // Only emit if it looks like a .screenplay file
-        if file_path.ends_with(".screenplay") {
-          let _ = app.emit("file-open-request", file_path.clone());
-        }
-      }
-
+      // We store it in Tauri's managed state so the frontend can retrieve it
+      // after mounting — emitting an event here would be too early (the
+      // frontend's `listen()` hasn't been registered yet).
       Ok(())
     })
     .invoke_handler(tauri::generate_handler![
@@ -186,21 +183,8 @@ pub fn run() {
     ])
     .build(tauri::generate_context!())
     .expect("error while building tauri application")
-    .run(|app, event| {
-      // Handle macOS file open events — fires when a .screenplay file is
-      // double-clicked while the app is already running. `urls` contains
-      // the file paths as file:// URLs.
-      if let tauri::RunEvent::Opened { urls } = event {
-        for url in urls {
-          // Convert file:// URL to a plain path string
-          if let Ok(path) = url.to_file_path() {
-            if let Some(path_str) = path.to_str() {
-              if path_str.ends_with(".screenplay") {
-                let _ = app.emit("file-open-request", path_str.to_string());
-              }
-            }
-          }
-        }
-      }
+    .run(|_app, _event| {
+      // The deep-link plugin handles both cold launch and warm launch
+      // file open events automatically.
     });
 }

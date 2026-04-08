@@ -1,8 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { invoke } from '@tauri-apps/api/core';
   import { listen } from '@tauri-apps/api/event';
   import { getCurrentWindow } from '@tauri-apps/api/window';
   import { open } from '@tauri-apps/plugin-dialog';
+  import { getCurrent as getDeepLinkUrls, onOpenUrl } from '@tauri-apps/plugin-deep-link';
   import Editor from '$lib/components/Editor.svelte';
   import TitleBar from '$lib/components/TitleBar.svelte';
   import LeftPanel from '$lib/components/LeftPanel.svelte';
@@ -39,7 +41,27 @@
 
     if (!appInitialized) {
       appInitialized = true;
-      if (!documentStore.document) {
+      // Check if the app was launched by double-clicking a .screenplay file.
+      // The deep-link plugin buffers URLs on cold launch so getCurrent()
+      // returns them reliably after the frontend mounts.
+      let openedFile = false;
+      try {
+        const urls = await getDeepLinkUrls();
+        if (urls && urls.length > 0) {
+          for (const url of urls) {
+            // On macOS, file associations come as file:// URLs
+            const filePath = url.startsWith('file://') ? decodeURIComponent(url.replace('file://', '')) : url;
+            if (filePath.endsWith('.screenplay')) {
+              await documentStore.openDocument(filePath);
+              openedFile = true;
+              break;
+            }
+          }
+        }
+      } catch {
+        // Plugin may not be available in dev mode — ignore
+      }
+      if (!openedFile && !documentStore.document) {
         await documentStore.newDocument();
       }
     }
@@ -214,15 +236,23 @@
         await getCurrentWindow().close();
       }));
 
-      // Handle file open requests — when a .screenplay file is double-clicked
-      // in the OS file manager, the backend emits this event with the file path.
-      unlistens.push(await listen<string>('file-open-request', async (event) => {
-        const filePath = event.payload;
-        if (typeof filePath === 'string' && filePath.endsWith('.screenplay')) {
-          if (!(await documentStore.confirmIfDirty())) return;
-          await documentStore.openDocument(filePath);
-        }
-      }));
+      // Handle file open when app is already running (warm launch).
+      // The deep-link plugin calls this when macOS sends an Apple Event
+      // for opening a .screenplay file while the app is in the foreground.
+      try {
+        unlistens.push(await onOpenUrl(async (urls) => {
+          for (const url of urls) {
+            const filePath = url.startsWith('file://') ? decodeURIComponent(url.replace('file://', '')) : url;
+            if (filePath.endsWith('.screenplay')) {
+              if (!(await documentStore.confirmIfDirty())) return;
+              await documentStore.openDocument(filePath);
+              break;
+            }
+          }
+        }));
+      } catch {
+        // Plugin may not be available in dev mode — ignore
+      }
 
       // Intercept window close to prompt for unsaved changes
       unlistens.push(await getCurrentWindow().onCloseRequested(async (event) => {

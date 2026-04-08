@@ -38,8 +38,7 @@
         "ext": ["screenplay"],
         "mimeType": "application/x-screenplay",
         "description": "Scriptty Screenplay",
-        "role": "Editor",
-        "icon": "icons/document"
+        "role": "Editor"
       }
     ]
   }

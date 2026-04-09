@@ -246,7 +246,7 @@
   .modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: var(--backdrop);
     backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
@@ -263,7 +263,7 @@
     max-width: 90vw;
     max-height: 80vh;
     overflow-y: auto;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 8px 32px var(--shadow-heavy);
     animation: modal-in 150ms ease-out;
     font-family: system-ui, -apple-system, sans-serif;
   }

@@ -652,7 +652,7 @@
     color: var(--text-on-page);
     background: var(--page-bg);
     border-radius: 2px;
-    box-shadow: 0 4px 24px var(--page-shadow), 0 1px 4px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 24px var(--page-shadow), 0 1px 4px var(--shadow-soft);
     direction: ltr;
     unicode-bidi: normal;
     counter-reset: scene-counter var(--scene-counter-start, 0);
@@ -761,7 +761,7 @@
     background: var(--surface-elevated);
     border: 1px solid var(--border-subtle);
     border-radius: 6px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 16px var(--shadow-medium);
     font-family: system-ui, -apple-system, sans-serif;
     font-size: 13px;
   }
@@ -783,12 +783,12 @@
 
   /* ─── Find and Replace highlights ─── */
   :global(.find-match) {
-    background: rgba(255, 213, 79, 0.35);
+    background: var(--find-match);
     border-radius: 2px;
   }
 
   :global(.find-match-current) {
-    background: rgba(255, 152, 0, 0.55);
+    background: var(--find-match-current);
     border-radius: 2px;
     outline: 2px solid var(--accent);
   }

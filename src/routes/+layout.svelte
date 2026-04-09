@@ -60,6 +60,19 @@
     /* Borders */
     --border-subtle: rgba(255, 255, 255, 0.07);
     --border-medium: rgba(255, 255, 255, 0.12);
+
+    /* Shadows and overlays */
+    --shadow-soft: rgba(0, 0, 0, 0.2);
+    --shadow-medium: rgba(0, 0, 0, 0.3);
+    --shadow-heavy: rgba(0, 0, 0, 0.4);
+    --backdrop: rgba(0, 0, 0, 0.6);
+
+    /* Text on accent background (e.g. Save button) */
+    --text-on-accent: #ffffff;
+
+    /* Find/replace highlights */
+    --find-match: rgba(255, 213, 79, 0.35);
+    --find-match-current: rgba(255, 152, 0, 0.55);
   }
 
   /* ─── Light mode ─── */
@@ -88,6 +101,16 @@
 
     --border-subtle: rgba(0, 0, 0, 0.08);
     --border-medium: rgba(0, 0, 0, 0.14);
+
+    --shadow-soft: rgba(0, 0, 0, 0.08);
+    --shadow-medium: rgba(0, 0, 0, 0.15);
+    --shadow-heavy: rgba(0, 0, 0, 0.25);
+    --backdrop: rgba(0, 0, 0, 0.4);
+
+    --text-on-accent: #ffffff;
+
+    --find-match: rgba(255, 200, 50, 0.4);
+    --find-match-current: rgba(255, 140, 0, 0.5);
   }
 
   /* ─── Scrollbar styling ─── */

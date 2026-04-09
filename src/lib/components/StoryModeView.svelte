@@ -168,7 +168,7 @@
     margin: 0 auto;
     background: var(--page-bg);
     border-radius: 2px;
-    box-shadow: 0 4px 24px var(--page-shadow), 0 1px 4px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 24px var(--page-shadow), 0 1px 4px var(--shadow-soft);
     padding: 60px 72px;
   }
 

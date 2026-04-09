@@ -209,7 +209,7 @@
   .view-tab.active {
     background: var(--surface-elevated);
     color: var(--text-primary);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 2px var(--shadow-soft);
   }
 
   /* ─── Ghost button ─── */
@@ -240,7 +240,7 @@
     border-radius: 6px;
     border: none;
     background: var(--accent);
-    color: #fff;
+    color: var(--text-on-accent);
     font-size: 12px;
     font-family: system-ui, -apple-system, sans-serif;
     cursor: pointer;
@@ -321,7 +321,7 @@
   }
 
   .btn-format.active:hover {
-    background: rgba(45, 155, 138, 0.25);
+    background: var(--accent-muted);
   }
 
   /* Format label styling — using CSS instead of HTML tags to avoid

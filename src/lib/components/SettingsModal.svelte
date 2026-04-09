@@ -201,7 +201,7 @@
     border-radius: 8px;
     padding: 6px 14px;
     width: 250px;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2), 0 1px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 24px var(--shadow-soft), 0 1px 4px var(--shadow-soft);
     animation: menu-in 100ms ease-out;
     font-family: system-ui, -apple-system, sans-serif;
     z-index: 1000;
@@ -312,7 +312,7 @@
   .segmented-item.active {
     background: var(--surface-elevated);
     color: var(--text-primary);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 2px var(--shadow-soft);
   }
 
   .scene-start-input {
@@ -366,7 +366,7 @@
     background: var(--surface-elevated);
     border: 1px solid var(--border-medium);
     border-radius: 6px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 16px var(--shadow-soft);
     padding: 4px;
     z-index: 1001;
     display: flex;

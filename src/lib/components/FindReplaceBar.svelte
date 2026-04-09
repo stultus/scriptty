@@ -201,7 +201,7 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 4px 16px var(--shadow-medium);
     font-family: system-ui, -apple-system, sans-serif;
     font-size: 12px;
   }

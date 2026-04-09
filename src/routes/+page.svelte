@@ -318,7 +318,7 @@
     {/if}
     <div class="editor-area" class:hidden={activeView !== 'writing'}>
       <LeftPanel isOpen={panelOpen} />
-      <Editor bind:findReplaceOpen bind:findReplaceMode {showAnnotations} bind:this={editorRef} />
+      <Editor bind:findReplaceOpen bind:findReplaceMode {showAnnotations} isActive={activeView === 'writing'} bind:this={editorRef} />
     </div>
   </div>
   <StatusBar bind:showAnnotations>

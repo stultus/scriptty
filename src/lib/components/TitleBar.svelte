@@ -31,10 +31,17 @@
     view.focus();
   }
 
-  // Derived display title — shows document title or "Untitled"
-  let displayTitle = $derived(
-    documentStore.document?.meta.title || 'Untitled'
-  );
+  // Derived display title — shows document title, or filename, or "Untitled"
+  let displayTitle = $derived.by(() => {
+    const title = documentStore.document?.meta.title;
+    if (title) return title;
+    const path = documentStore.currentPath;
+    if (path) {
+      const filename = path.split('/').pop() ?? path.split('\\').pop() ?? path;
+      return filename.replace(/\.screenplay$/, '');
+    }
+    return 'Untitled';
+  });
 
   let statusMessage = $state('');
   let statusTimeout: ReturnType<typeof setTimeout> | null = null;

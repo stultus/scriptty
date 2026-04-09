@@ -20,11 +20,21 @@
     findReplaceOpen = $bindable(false),
     findReplaceMode = $bindable<'find' | 'replace'>('find'),
     showAnnotations = true,
+    isActive = true,
   } = $props<{
     findReplaceOpen: boolean;
     findReplaceMode: 'find' | 'replace';
     showAnnotations?: boolean;
+    isActive?: boolean;
   }>();
+
+  // Recalculate spacers when the editor becomes visible again
+  // (e.g. switching from Cards/Story back to Writing view)
+  $effect(() => {
+    if (isActive && showAnnotations) {
+      scheduleAnnotationUpdate();
+    }
+  });
 
   let editorElement: HTMLDivElement;
   let view: EditorView | null = null;

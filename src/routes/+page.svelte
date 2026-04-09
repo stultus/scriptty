@@ -14,6 +14,7 @@
   import HelpModal from '$lib/components/HelpModal.svelte';
   import StatisticsModal from '$lib/components/StatisticsModal.svelte';
   import MetadataModal from '$lib/components/MetadataModal.svelte';
+  import StatusBar from '$lib/components/StatusBar.svelte';
   import { documentStore } from '$lib/stores/documentStore.svelte';
   import { editorStore } from '$lib/stores/editorStore.svelte';
   import { themeStore } from '$lib/stores/themeStore.svelte';
@@ -23,12 +24,21 @@
   let panelOpen = $state(false);
   let showAbout = $state(false);
   let showHelp = $state(false);
-  let showSceneCards = $state(false);
-  let showStoryMode = $state(false);
+  let activeView = $state<'writing' | 'cards' | 'story'>('writing');
   let findReplaceOpen = $state(false);
   let findReplaceMode = $state<'find' | 'replace'>('find');
   let showStatistics = $state(false);
   let showMetadata = $state(false);
+  let showAnnotations = $state(typeof localStorage !== 'undefined' ? localStorage.getItem('scriptty-annotations') !== 'false' : true);
+
+  // Word count for story view
+  let storyWordCount = $derived(() => {
+    const story = documentStore.document?.story;
+    if (!story) return 0;
+    const text = [story.idea, story.synopsis, story.treatment, story.narrative].join(' ').trim();
+    if (!text) return 0;
+    return text.split(/\s+/).length;
+  });
 
   // Module-level guard — prevents newDocument() from firing again on HMR re-mount
   let appInitialized = false;
@@ -81,7 +91,7 @@
       // Cmd+Shift+K — Toggle scene cards view
       if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'k') {
         event.preventDefault();
-        showSceneCards = !showSceneCards;
+        activeView = activeView === 'cards' ? 'writing' : 'cards';
         return;
       }
       // Cmd+S (Mac) / Ctrl+S (Windows/Linux)
@@ -107,7 +117,7 @@
       // Cmd+Shift+L — Toggle Story Mode
       if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'l') {
         event.preventDefault();
-        showStoryMode = !showStoryMode;
+        activeView = activeView === 'story' ? 'writing' : 'story';
         return;
       }
       // Cmd+Shift+I — Script Statistics
@@ -183,11 +193,11 @@
       }));
 
       unlistens.push(await listen('menu-scene-cards', () => {
-        showSceneCards = !showSceneCards;
+        activeView = activeView === 'cards' ? 'writing' : 'cards';
       }));
 
       unlistens.push(await listen('menu-story-mode', () => {
-        showStoryMode = !showStoryMode;
+        activeView = activeView === 'story' ? 'writing' : 'story';
       }));
 
       unlistens.push(await listen('menu-find', () => {
@@ -271,19 +281,32 @@
 </script>
 
 <main>
-  <TitleBar onToggleSidebar={() => { panelOpen = !panelOpen; }} />
+  <TitleBar
+    onToggleSidebar={() => { panelOpen = !panelOpen; }}
+    {activeView}
+    onViewChange={(v) => { activeView = v; }}
+  />
   <div class="workspace">
-    {#if showSceneCards}
-      <SceneCardsView onClose={() => { showSceneCards = false; }} />
+    {#if activeView === 'cards'}
+      <SceneCardsView />
     {/if}
-    {#if showStoryMode}
-      <StoryModeView onClose={() => { showStoryMode = false; }} />
+    {#if activeView === 'story'}
+      <StoryModeView />
     {/if}
-    <div class="editor-area" class:hidden={showSceneCards || showStoryMode}>
+    <div class="editor-area" class:hidden={activeView !== 'writing'}>
       <LeftPanel isOpen={panelOpen} />
-      <Editor bind:findReplaceOpen bind:findReplaceMode />
+      <Editor bind:findReplaceOpen bind:findReplaceMode {showAnnotations} />
     </div>
   </div>
+  <StatusBar bind:showAnnotations>
+    {#snippet rightContent()}
+      {#if activeView === 'writing'}
+        <span class="status-info">{editorStore.currentElement}</span>
+      {:else if activeView === 'story'}
+        <span class="status-info">{storyWordCount()} words</span>
+      {/if}
+    {/snippet}
+  </StatusBar>
 </main>
 
 <AboutModal bind:open={showAbout} />
@@ -317,5 +340,12 @@
 
   .editor-area.hidden {
     display: none;
+  }
+
+  .status-info {
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.04em;
   }
 </style>

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { EditorState } from 'prosemirror-state';
-  import { EditorView } from 'prosemirror-view';
+  import { EditorState, Plugin, PluginKey } from 'prosemirror-state';
+  import { EditorView, Decoration, DecorationSet } from 'prosemirror-view';
   import { history } from 'prosemirror-history';
   import { baseKeymap } from 'prosemirror-commands';
   import { keymap } from 'prosemirror-keymap';
@@ -13,14 +13,18 @@
   import { findReplacePlugin } from '$lib/editor/findReplace';
   import FindReplaceBar from '$lib/components/FindReplaceBar.svelte';
   import { InputModeManager } from '$lib/editor/input/InputModeManager';
-  import SettingsModal from '$lib/components/SettingsModal.svelte';
   import { documentStore } from '$lib/stores/documentStore.svelte';
   import { editorStore } from '$lib/stores/editorStore.svelte';
 
   let {
     findReplaceOpen = $bindable(false),
     findReplaceMode = $bindable<'find' | 'replace'>('find'),
-  } = $props();
+    showAnnotations = true,
+  } = $props<{
+    findReplaceOpen: boolean;
+    findReplaceMode: 'find' | 'replace';
+    showAnnotations?: boolean;
+  }>();
 
   let editorElement: HTMLDivElement;
   let view: EditorView | null = null;
@@ -32,9 +36,180 @@
   );
 
   // Svelte 5 runes for reactive state
-  let currentElement = $state<string>('SCENE HEADING');
-  let showSettings = $state(false);
   let isMalayalam = $state(inputManager.isMalayalam);
+
+  // ─── Scene annotations with ProseMirror spacer decorations ───
+  // When an annotation is taller than its scene's natural space, a spacer
+  // widget decoration is injected into the ProseMirror doc BEFORE the next
+  // scene heading, pushing the editor content down to make room.
+  // This keeps annotations aligned with their scene headings.
+
+  interface SceneSlot {
+    sceneOrder: number;
+    extent: number;
+    description: string;
+    shootNotes: string;
+  }
+
+  // Plugin that inserts invisible spacer divs before scene headings.
+  // Spacer heights are stored in plugin state, updated via transaction metadata.
+  const spacerKey = new PluginKey<Record<number, number>>('annotation-spacers');
+
+  const annotationSpacerPlugin = new Plugin({
+    key: spacerKey,
+    state: {
+      init(): Record<number, number> { return {}; },
+      apply(tr, value): Record<number, number> {
+        const meta = tr.getMeta(spacerKey);
+        return meta !== undefined ? meta : value;
+      }
+    },
+    props: {
+      decorations(state) {
+        const heights = spacerKey.getState(state);
+        if (!heights || Object.keys(heights).length === 0) return DecorationSet.empty;
+
+        const decos: Decoration[] = [];
+        let idx = 0;
+        state.doc.forEach((node, pos) => {
+          if (node.type.name === 'scene_heading') {
+            const extra = heights[idx];
+            if (extra && extra > 0) {
+              // Insert an invisible spacer div before this scene heading
+              decos.push(Decoration.widget(pos, () => {
+                const el = document.createElement('div');
+                el.style.height = extra + 'px';
+                el.setAttribute('aria-hidden', 'true');
+                return el;
+              }, { side: -1 }));
+            }
+            idx++;
+          }
+        });
+
+        return DecorationSet.create(state.doc, decos);
+      }
+    }
+  });
+
+  let sceneSlots = $state<SceneSlot[]>([]);
+  let gutterTopPad = $state(0);
+  let annotationRafId = 0;
+
+  function scheduleAnnotationUpdate() {
+    cancelAnimationFrame(annotationRafId);
+    annotationRafId = requestAnimationFrame(updateAnnotationPositions);
+  }
+
+  /** Get an element's vertical position relative to a container's content top.
+   *  Uses getBoundingClientRect which is reliable regardless of
+   *  offsetParent chains or ProseMirror's position:relative usage.
+   *  The difference between two rects is stable regardless of scroll. */
+  function posRelativeTo(el: HTMLElement, container: HTMLElement): number {
+    return el.getBoundingClientRect().top - container.getBoundingClientRect().top;
+  }
+
+  /** Estimate annotation height from text content.
+   *  At 320px gutter width, ~12px font → ~45 chars/line, ~17px/line. */
+  function estimateAnnotationHeight(desc: string, notes: string): number {
+    const CHARS_PER_LINE = 40;
+    const LINE_HEIGHT = 17;
+    let h = 0;
+    if (desc) {
+      h += 14 + Math.max(1, Math.ceil(desc.length / CHARS_PER_LINE)) * LINE_HEIGHT + 12;
+    }
+    if (notes) {
+      h += 14 + Math.max(1, Math.ceil(notes.length / CHARS_PER_LINE)) * LINE_HEIGHT + 12;
+    }
+    return h;
+  }
+
+  function updateAnnotationPositions() {
+    if (!editorElement || !view) return;
+    const doc = documentStore.document;
+    if (!doc) return;
+
+    // Step 1: Clear existing spacers so we read clean positions
+    const currentSpacers = spacerKey.getState(view.state) ?? {};
+    if (Object.keys(currentSpacers).length > 0) {
+      view.dispatch(view.state.tr.setMeta(spacerKey, {}));
+      void editorElement.offsetHeight;
+    }
+
+    // Step 2: Read clean positions
+    const headingEls = Array.from(
+      editorElement.querySelectorAll('.scene-heading')
+    ) as HTMLElement[];
+    if (headingEls.length === 0) { sceneSlots = []; return; }
+
+    const positions = headingEls.map((el) => posRelativeTo(el, editorElement));
+    const editorHeight = editorElement.scrollHeight || editorElement.offsetHeight;
+
+    // Step 3: Compute annotation heights and needed spacers
+    const GAP = 20;
+    const newSpacers: Record<number, number> = {};
+
+    for (let i = 0; i < headingEls.length; i++) {
+      const nextTop = i + 1 < positions.length ? positions[i + 1] : editorHeight;
+      const extent = nextTop - positions[i];
+      const card = doc.scene_cards.find(
+        (c: { scene_index: number }) => c.scene_index === i
+      );
+      const desc = card?.description ?? '';
+      const notes = card?.shoot_notes ?? '';
+      const annHeight = estimateAnnotationHeight(desc, notes);
+
+      // If annotation overflows this scene's space, add spacer before next scene
+      if (annHeight > 0 && annHeight + GAP > extent && i + 1 < headingEls.length) {
+        newSpacers[i + 1] = annHeight - extent + GAP;
+      }
+    }
+
+    // Step 4: Apply spacers (pushes editor content apart)
+    if (Object.keys(newSpacers).length > 0) {
+      view.dispatch(view.state.tr.setMeta(spacerKey, newSpacers));
+      void editorElement.offsetHeight;
+    }
+
+    // Step 5: Read final positions and build slots
+    const finalPositions = headingEls.map((el) => posRelativeTo(el, editorElement));
+    const finalEditorHeight = editorElement.scrollHeight || editorElement.offsetHeight;
+    gutterTopPad = finalPositions[0];
+
+    const slots: SceneSlot[] = [];
+    for (let i = 0; i < headingEls.length; i++) {
+      const nextTop = i + 1 < finalPositions.length ? finalPositions[i + 1] : finalEditorHeight;
+      const extent = nextTop - finalPositions[i];
+      const card = doc.scene_cards.find(
+        (c: { scene_index: number }) => c.scene_index === i
+      );
+      slots.push({
+        sceneOrder: i,
+        extent,
+        description: card?.description ?? '',
+        shootNotes: card?.shoot_notes ?? '',
+      });
+    }
+
+    sceneSlots = slots;
+  }
+
+  function updateSceneCard(sceneOrder: number, field: 'description' | 'shoot_notes', value: string) {
+    if (!documentStore.document) return;
+    const cards = documentStore.document.scene_cards;
+    const existing = cards.find((c: { scene_index: number }) => c.scene_index === sceneOrder);
+    if (existing) {
+      if (field === 'description') existing.description = value;
+      else existing.shoot_notes = value;
+    } else {
+      cards.push({
+        scene_index: sceneOrder,
+        description: field === 'description' ? value : '',
+        shoot_notes: field === 'shoot_notes' ? value : '',
+      });
+    }
+    documentStore.markDirty();
+  }
 
   // Create initial document with one empty scene_heading
   function createInitialDoc() {
@@ -55,7 +230,7 @@
       dialogue: 'DIALOGUE',
       transition: 'TRANSITION',
     };
-    currentElement = displayNames[nodeName] ?? nodeName.toUpperCase();
+    editorStore.currentElement = displayNames[nodeName] ?? nodeName.toUpperCase();
 
     // Update which inline marks are active at the current cursor/selection.
     // `storedMarks` are marks that will be applied to the next typed character
@@ -67,6 +242,7 @@
       italic: marks.some(m => m.type === screenplaySchema.marks.italic),
       underline: marks.some(m => m.type === screenplaySchema.marks.underline),
     };
+
   }
 
   // Watch for New/Open events only — loadTrigger is incremented exclusively by
@@ -96,6 +272,7 @@
     });
     view.updateState(newState);
     updateCurrentElement(newState);
+    scheduleAnnotationUpdate();
   });
 
   onMount(() => {
@@ -119,6 +296,7 @@
         history(),
         autoUppercasePlugin,
         findReplacePlugin,
+        annotationSpacerPlugin,
       ]
     });
 
@@ -137,6 +315,7 @@
         if (tr.docChanged) {
           documentStore.setContent(newState.doc.toJSON());
           documentStore.markDirty();
+          scheduleAnnotationUpdate();
         }
       }
     });
@@ -239,12 +418,16 @@
 
     // Set initial element display
     updateCurrentElement(view.state);
+    scheduleAnnotationUpdate();
+
+    // Recompute annotation positions on window resize
+    window.addEventListener('resize', scheduleAnnotationUpdate);
 
     return () => {
-      // Clean up: clear the shared store reference, remove the capture listener,
-      // then destroy the EditorView
       editorStore.view = null;
       editorDom.removeEventListener('keydown', handleMalayalamKeydown, { capture: true });
+      window.removeEventListener('resize', scheduleAnnotationUpdate);
+      cancelAnimationFrame(annotationRafId);
       view?.destroy();
     };
   });
@@ -255,28 +438,42 @@
     <FindReplaceBar mode={findReplaceMode} onclose={() => { findReplaceOpen = false; }} />
   {/if}
   <div class="editor-scroll">
-    <div class="editor-container" bind:this={editorElement} style="--editor-font: '{fontFamily}'; --scene-counter-start: {(documentStore.document?.settings.scene_number_start ?? 1) - 1}"></div>
-  </div>
-  <div class="status-bar">
-    <div class="status-left">
-      <button class="settings-btn" onclick={() => { showSettings = true; }} title="Configure Settings">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line>
-          <line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line>
-          <line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line>
-          <line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line>
-          <line x1="17" y1="16" x2="23" y2="16"></line>
-        </svg>
-      </button>
-      <span class="status-lang" class:malayalam={isMalayalam}>
-        {isMalayalam ? 'MAL' : 'ENG'}
-      </span>
+    <div class="editor-with-annotations">
+      <div class="editor-container" bind:this={editorElement} style="--editor-font: '{fontFamily}'; --scene-counter-start: {(documentStore.document?.settings.scene_number_start ?? 1) - 1}"></div>
+      {#if showAnnotations}
+      <div class="annotations-gutter" style="padding-top: {gutterTopPad}px">
+        {#each sceneSlots as slot (slot.sceneOrder)}
+          <div class="scene-slot" style="min-height: {slot.extent}px">
+            {#if slot.description || slot.shootNotes}
+              {#if slot.description}
+                <div class="ann-field">
+                  <span class="ann-label">Description</span>
+                  <textarea
+                    class="ann-text"
+                    value={slot.description}
+                    oninput={(e: Event) => updateSceneCard(slot.sceneOrder, 'description', (e.target as HTMLTextAreaElement).value)}
+                  ></textarea>
+                </div>
+              {/if}
+              {#if slot.shootNotes}
+                <div class="ann-field">
+                  <span class="ann-label">Notes</span>
+                  <textarea
+                    class="ann-text"
+                    value={slot.shootNotes}
+                    oninput={(e: Event) => updateSceneCard(slot.sceneOrder, 'shoot_notes', (e.target as HTMLTextAreaElement).value)}
+                  ></textarea>
+                </div>
+              {/if}
+            {/if}
+          </div>
+        {/each}
+      </div>
+      {/if}
     </div>
-    <span class="status-element">{currentElement}</span>
   </div>
-</div>
 
-<SettingsModal bind:open={showSettings} />
+</div>
 
 <style>
   .editor-wrapper {
@@ -290,14 +487,80 @@
   .editor-scroll {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     background: var(--surface-base);
     padding: 40px 0;
   }
 
+  .editor-with-annotations {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 16px;
+    min-height: 100%;
+    padding: 0 20px;
+  }
+
   .editor-container {
+    flex: 0 0 680px;
     max-width: 680px;
-    margin: 0 auto;
+    min-width: 0;
     position: relative;
+  }
+
+  .annotations-gutter {
+    flex: 0 1 320px;
+    min-width: 0;
+  }
+
+  .scene-slot {
+    box-sizing: border-box;
+    flex-shrink: 0;
+    border-top: 1px solid transparent;
+  }
+
+  /* Add a visible separator between adjacent annotated slots */
+  .scene-slot:has(.ann-field) + .scene-slot:has(.ann-field) {
+    border-top-color: var(--border-subtle);
+    padding-top: 8px;
+  }
+
+  .ann-field {
+    border-left: 2px solid var(--accent);
+    padding-left: 10px;
+    margin-bottom: 8px;
+  }
+
+  .ann-label {
+    display: block;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 2px;
+  }
+
+  .ann-text {
+    width: 100%;
+    resize: none;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 12px;
+    line-height: 1.4;
+    padding: 0;
+    outline: none;
+    overflow: hidden;
+    field-sizing: content;
+    min-height: 1.4em;
+  }
+
+  .ann-text::placeholder {
+    color: var(--text-muted);
+    opacity: 0.4;
   }
 
   /* ─── ProseMirror editor — the screenplay page ─── */
@@ -394,67 +657,6 @@
     opacity: 0.7;
   }
 
-  /* ─── Status bar — full-width bottom bar ─── */
-  .status-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 28px;
-    padding: 0 16px;
-    background: var(--surface-elevated);
-    border-top: 1px solid var(--border-subtle);
-    font-size: 11px;
-    font-family: system-ui, -apple-system, sans-serif;
-    color: var(--text-muted);
-    user-select: none;
-    flex-shrink: 0;
-    letter-spacing: 0.04em;
-  }
-
-  .status-left {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .status-element {
-    color: var(--text-muted);
-    text-transform: uppercase;
-  }
-
-  .status-lang {
-    color: var(--text-muted);
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.05em;
-    padding: 1px 6px;
-    border-radius: 3px;
-    transition: background 120ms ease, color 120ms ease;
-  }
-
-  .status-lang.malayalam {
-    color: var(--accent);
-    background: var(--accent-muted);
-  }
-
-  .settings-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    width: 24px;
-    height: 24px;
-    border-radius: 4px;
-    transition: background 120ms, color 120ms;
-  }
-
-  .settings-btn:hover {
-    color: var(--text-primary);
-    background: var(--surface-hover);
-  }
 
   /* ─── Inline formatting (bold, italic, underline) ─── */
   :global(.ProseMirror strong) {

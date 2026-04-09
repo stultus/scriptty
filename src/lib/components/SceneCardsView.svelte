@@ -1,10 +1,51 @@
 <script lang="ts">
   import { Fragment, type Node as PMNode } from 'prosemirror-model';
-  import { TextSelection } from 'prosemirror-state';
+  import { flip } from 'svelte/animate';
   import { documentStore } from '$lib/stores/documentStore.svelte';
   import { editorStore } from '$lib/stores/editorStore.svelte';
 
-  let { onClose }: { onClose: () => void } = $props();
+  import { screenplaySchema } from '$lib/editor/schema';
+  import { InputModeManager } from '$lib/editor/input/InputModeManager';
+  import StatusBar from '$lib/components/StatusBar.svelte';
+
+  // Map the font setting slug to a CSS font-family name
+  let fontFamily = $derived(
+    documentStore.currentFont === 'manjari' ? 'Manjari' : 'Noto Sans Malayalam'
+  );
+
+  const inputManager = InputModeManager.getInstance();
+
+  /** Handle Malayalam input in card textareas */
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.ctrlKey && event.code === 'Space') {
+      event.preventDefault();
+      inputManager.toggle();
+      return;
+    }
+    if (!inputManager.isMalayalam) return;
+    if (event.metaKey || event.ctrlKey) return;
+    if (['Space', 'Enter', 'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight',
+         'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.code)) {
+      inputManager.resetMozhi();
+      return;
+    }
+    if (event.key.length === 1 && !event.altKey) {
+      const result = inputManager.processKey(event.key);
+      if (result !== null) {
+        event.preventDefault();
+        const ta = event.target as HTMLTextAreaElement;
+        const start = ta.selectionStart;
+        const end = ta.selectionEnd;
+        const deleteFrom = start - result.deleteBack;
+        const newValue = ta.value.substring(0, deleteFrom) + result.text + ta.value.substring(end);
+        ta.value = newValue;
+        const newPos = deleteFrom + result.text.length;
+        ta.selectionStart = newPos;
+        ta.selectionEnd = newPos;
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }
+  }
 
   /** Parsed scene data with auto-populated and manual fields */
   interface SceneCardData {
@@ -149,7 +190,7 @@
    */
   function sceneNumberAtPoint(clientX: number, clientY: number): number | null {
     if (!gridEl) return null;
-    const cardEls = gridEl.querySelectorAll('.card');
+    const cardEls = gridEl.querySelectorAll('.scene-card');
     for (let i = 0; i < cardEls.length; i++) {
       const rect = cardEls[i].getBoundingClientRect();
       if (clientX >= rect.left && clientX <= rect.right &&
@@ -268,73 +309,111 @@
 
     tr.scrollIntoView();
     view.dispatch(tr);
+
+    // Remap scene_cards indices to follow the reordered scenes.
+    // When a scene moves from fromIdx to toIdx, all indices in between shift.
+    if (documentStore.document) {
+      for (const card of documentStore.document.scene_cards) {
+        if (card.scene_index === fromIdx) {
+          card.scene_index = toIdx;
+        } else if (fromIdx < toIdx) {
+          // Moving forward: scenes between from+1 and to shift down by 1
+          if (card.scene_index > fromIdx && card.scene_index <= toIdx) {
+            card.scene_index--;
+          }
+        } else {
+          // Moving backward: scenes between to and from-1 shift up by 1
+          if (card.scene_index >= toIdx && card.scene_index < fromIdx) {
+            card.scene_index++;
+          }
+        }
+      }
+    }
+
+    documentStore.markDirty();
+  }
+
+  /** Add a new empty scene at the end of the ProseMirror document */
+  function addScene() {
+    const view = editorStore.view;
+    if (!view) return;
+
+    const doc = view.state.doc;
+    const endPos = doc.content.size;
+    const newHeading = screenplaySchema.node('scene_heading');
+    const tr = view.state.tr.insert(endPos, newHeading);
+    view.dispatch(tr);
+    documentStore.setContent(view.state.doc.toJSON());
     documentStore.markDirty();
   }
 </script>
 
-<div class="scene-cards-view">
-  <div class="cards-header">
-    <h2>Scene Cards</h2>
-    <button class="btn-ghost" onclick={onClose}>Back to Script</button>
-  </div>
-
-  {#if cards.length === 0}
-    <p class="empty-message">No scenes in the screenplay yet.</p>
-  {:else}
-    <div class="cards-grid" bind:this={gridEl}>
-      {#each cards as card (card.contentIndex)}
-        <div
-          class="card"
-          class:dragging={dragFromScene === card.sceneNumber}
-          class:drop-target={dropTargetScene === card.sceneNumber}
-        >
-          <div class="card-header">
-            <!-- Scene number badge is the drag handle -->
-            <span
-              class="card-number"
-              onmousedown={(e: MouseEvent) => startDrag(e, card.sceneNumber)}
-              role="button"
-              tabindex="-1"
-              aria-label="Drag to reorder scene {card.sceneNumber}"
-            >{card.sceneNumber}.</span>
-            <span class="card-heading">{card.heading.toUpperCase()}</span>
-          </div>
-          <div class="card-meta">
-            {#if card.location}
-              <span class="meta-item"><strong>Location:</strong> {card.location}</span>
-            {/if}
-            {#if card.time}
-              <span class="meta-item"><strong>Time:</strong> {card.time}</span>
-            {/if}
-            {#if card.characters.length > 0}
-              <span class="meta-item"><strong>Characters:</strong> {card.characters.join(', ')}</span>
-            {/if}
-            <span class="meta-item page-estimate">{card.pageEstimate}</span>
-          </div>
-          <div class="card-editable">
-            <label class="field-label" for="desc-{card.sceneNumber}">Description</label>
-            <textarea
-              id="desc-{card.sceneNumber}"
-              class="card-textarea"
-              placeholder="What happens in this scene..."
-              value={card.description}
-              oninput={(e) => updateDescription(card.sceneNumber - 1, (e.target as HTMLTextAreaElement).value)}
-              rows="2"
-            ></textarea>
-            <label class="field-label" for="notes-{card.sceneNumber}">Shoot Notes</label>
-            <textarea
-              id="notes-{card.sceneNumber}"
-              class="card-textarea"
-              placeholder="Equipment, stunts, VFX, location notes..."
-              value={card.shootNotes}
-              oninput={(e) => updateShootNotes(card.sceneNumber - 1, (e.target as HTMLTextAreaElement).value)}
-              rows="2"
-            ></textarea>
-          </div>
+<div class="scene-cards-view" style="--editor-font: '{fontFamily}'">
+  <div class="cards-grid" bind:this={gridEl}>
+    {#each cards as card (card.heading + card.sceneNumber)}
+      <div
+        class="card scene-card"
+        class:dragging={dragFromScene === card.sceneNumber}
+        class:drop-target={dropTargetScene === card.sceneNumber}
+        animate:flip={{ duration: 300 }}
+      >
+        <div class="card-header">
+          <!-- Scene number badge is the drag handle -->
+          <span
+            class="card-number"
+            onmousedown={(e: MouseEvent) => startDrag(e, card.sceneNumber)}
+            role="button"
+            tabindex="-1"
+            aria-label="Drag to reorder scene {card.sceneNumber}"
+          >{card.sceneNumber}.</span>
+          <span class="card-heading">{card.heading.toUpperCase()}</span>
         </div>
-      {/each}
-    </div>
-  {/if}
+        <div class="card-meta">
+          {#if card.location}
+            <span class="meta-item"><strong>Location:</strong> {card.location}</span>
+          {/if}
+          {#if card.time}
+            <span class="meta-item"><strong>Time:</strong> {card.time}</span>
+          {/if}
+          {#if card.characters.length > 0}
+            <span class="meta-item"><strong>Characters:</strong> {card.characters.join(', ')}</span>
+          {/if}
+          <span class="meta-item page-estimate">{card.pageEstimate}</span>
+        </div>
+        <div class="card-editable">
+          <label class="field-label" for="desc-{card.sceneNumber}">Description</label>
+          <textarea
+            id="desc-{card.sceneNumber}"
+            class="card-textarea"
+            placeholder="What happens in this scene..."
+            value={card.description}
+            oninput={(e) => updateDescription(card.sceneNumber - 1, (e.target as HTMLTextAreaElement).value)}
+            onkeydown={handleKeydown}
+            rows="2"
+          ></textarea>
+          <label class="field-label" for="notes-{card.sceneNumber}">Notes</label>
+          <textarea
+            id="notes-{card.sceneNumber}"
+            class="card-textarea"
+            placeholder="Additional notes..."
+            value={card.shootNotes}
+            oninput={(e) => updateShootNotes(card.sceneNumber - 1, (e.target as HTMLTextAreaElement).value)}
+            onkeydown={handleKeydown}
+            rows="2"
+          ></textarea>
+        </div>
+      </div>
+    {/each}
+
+    <!-- Add Scene card -->
+    <button class="card add-scene-card" onclick={addScene}>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      <span>Add Scene</span>
+    </button>
+  </div>
 </div>
 
 <style>
@@ -344,47 +423,6 @@
     overflow-y: auto;
     background: var(--surface-base);
     padding: 24px;
-  }
-
-  .cards-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 24px;
-  }
-
-  .cards-header h2 {
-    font-family: system-ui, -apple-system, sans-serif;
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin: 0;
-  }
-
-  .btn-ghost {
-    height: 28px;
-    padding: 0 12px;
-    border-radius: 6px;
-    border: none;
-    background: transparent;
-    color: var(--text-secondary);
-    font-size: 12px;
-    font-family: system-ui, -apple-system, sans-serif;
-    cursor: pointer;
-    transition: background 120ms ease, color 120ms ease;
-  }
-
-  .btn-ghost:hover {
-    background: var(--surface-hover);
-    color: var(--text-primary);
-  }
-
-  .empty-message {
-    font-family: system-ui, -apple-system, sans-serif;
-    font-size: 13px;
-    color: var(--text-muted);
-    text-align: center;
-    padding: 60px 0;
   }
 
   .cards-grid {
@@ -440,7 +478,7 @@
   }
 
   .card-heading {
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: var(--editor-font), system-ui, -apple-system, sans-serif;
     font-size: 12px;
     font-weight: 600;
     color: var(--text-primary);
@@ -502,7 +540,7 @@
     background: var(--surface-base);
     border: 1px solid var(--border-subtle);
     border-radius: 4px;
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: var(--editor-font), system-ui, -apple-system, sans-serif;
     resize: none;
     box-sizing: border-box;
     transition: border-color 120ms ease;
@@ -515,5 +553,29 @@
 
   .card-textarea::placeholder {
     color: var(--text-muted);
+  }
+
+  /* ─── Add Scene card ─── */
+  .add-scene-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 120px;
+    border: 2px dashed var(--border-subtle);
+    background: transparent;
+    color: var(--text-muted);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
+  }
+
+  .add-scene-card:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-muted);
   }
 </style>

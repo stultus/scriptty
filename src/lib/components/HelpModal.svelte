@@ -155,7 +155,7 @@
             <li>Characters who appear in the scene</li>
             <li>Estimated page count</li>
           </ul>
-          <p>You can add a <strong>Description</strong> (what happens) and <strong>Shoot Notes</strong> (equipment, VFX, location details) to each card. Drag the scene number badge to reorder cards — this reorders the scenes in your screenplay. Click <strong>Back to Script</strong> to return to the editor.</p>
+          <p>You can add a <strong>Description</strong> and <strong>Notes</strong> to each card. Drag the scene number badge to reorder cards — this reorders the scenes in your screenplay.</p>
         </section>
 
         <!-- Statistics -->

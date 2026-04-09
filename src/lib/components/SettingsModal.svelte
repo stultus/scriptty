@@ -3,7 +3,10 @@
   import { themeStore } from '$lib/stores/themeStore.svelte';
   import { InputModeManager } from '$lib/editor/input/InputModeManager';
 
-  let { open = $bindable(false) } = $props<{ open: boolean }>();
+  let { open = $bindable(false), showAnnotations = $bindable(true) } = $props<{
+    open: boolean;
+    showAnnotations?: boolean;
+  }>();
 
   const inputManager = InputModeManager.getInstance();
 
@@ -158,6 +161,22 @@
             class:active={themeStore.isDark}
             onclick={() => { if (!themeStore.isDark) themeStore.toggle(); }}
           >Dark</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <span class="setting-name">Annotations</span>
+        <div class="segmented">
+          <button
+            class="segmented-item"
+            class:active={showAnnotations}
+            onclick={() => { showAnnotations = true; localStorage.setItem('scriptty-annotations', 'true'); }}
+          >Show</button>
+          <button
+            class="segmented-item"
+            class:active={!showAnnotations}
+            onclick={() => { showAnnotations = false; localStorage.setItem('scriptty-annotations', 'false'); }}
+          >Hide</button>
         </div>
       </div>
 

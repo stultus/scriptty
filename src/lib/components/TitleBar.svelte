@@ -6,7 +6,15 @@
   import { screenplaySchema } from '$lib/editor/schema';
   import ExportModal from './ExportModal.svelte';
 
-  let { onToggleSidebar } = $props<{ onToggleSidebar?: () => void }>();
+  let {
+    onToggleSidebar,
+    activeView = 'writing',
+    onViewChange,
+  } = $props<{
+    onToggleSidebar?: () => void;
+    activeView?: 'writing' | 'cards' | 'story';
+    onViewChange?: (view: 'writing' | 'cards' | 'story') => void;
+  }>();
 
   let showExport = $state(false);
 
@@ -81,16 +89,25 @@
     {/if}
   </div>
 
-  <div class="btn-group right">
-    <!-- Theme toggle -->
+  <div class="view-switcher">
     <button
-      class="btn-icon"
-      onclick={() => themeStore.toggle()}
-      title={themeStore.isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-    >
-      {themeStore.isDark ? 'Light' : 'Dark'}
-    </button>
+      class="view-tab"
+      class:active={activeView === 'writing'}
+      onclick={() => onViewChange?.('writing')}
+    >Writing</button>
+    <button
+      class="view-tab"
+      class:active={activeView === 'cards'}
+      onclick={() => onViewChange?.('cards')}
+    >Cards</button>
+    <button
+      class="view-tab"
+      class:active={activeView === 'story'}
+      onclick={() => onViewChange?.('story')}
+    >Story</button>
+  </div>
 
+  <div class="btn-group right">
     <button class="btn-ghost" onclick={() => { showExport = true; }}>Export</button>
     <button class="btn-primary" onclick={handleSave}>Save</button>
   </div>
@@ -150,6 +167,41 @@
     font-size: 11px;
     color: var(--text-muted);
     letter-spacing: 0.02em;
+  }
+
+  /* ─── View switcher tabs ─── */
+  .view-switcher {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: var(--surface-base);
+    border-radius: 6px;
+    padding: 2px;
+    border: 1px solid var(--border-subtle);
+    -webkit-app-region: no-drag;
+  }
+
+  .view-tab {
+    padding: 4px 12px;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 500;
+    font-family: system-ui, -apple-system, sans-serif;
+    cursor: pointer;
+    transition: background 100ms, color 100ms;
+  }
+
+  .view-tab:hover {
+    color: var(--text-secondary);
+  }
+
+  .view-tab.active {
+    background: var(--surface-elevated);
+    color: var(--text-primary);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   }
 
   /* ─── Ghost button ─── */

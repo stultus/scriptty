@@ -17,6 +17,10 @@ class EditorStore {
 
   // Reactive mark state — updated by the Editor component on every selection change
   markState = $state<MarkState>({ bold: false, italic: false, underline: false });
+
+  // Current element type at cursor (e.g. 'SCENE HEADING', 'ACTION')
+  currentElement = $state<string>('SCENE HEADING');
+
 }
 
 export const editorStore = new EditorStore();

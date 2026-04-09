@@ -368,18 +368,11 @@
           >{card.sceneNumber}.</span>
           <span class="card-heading">{card.heading.toUpperCase()}</span>
         </div>
-        <div class="card-meta">
-          {#if card.location}
-            <span class="meta-item"><strong>Location:</strong> {card.location}</span>
-          {/if}
-          {#if card.time}
-            <span class="meta-item"><strong>Time:</strong> {card.time}</span>
-          {/if}
-          {#if card.characters.length > 0}
-            <span class="meta-item"><strong>Characters:</strong> {card.characters.join(', ')}</span>
-          {/if}
-          <span class="meta-item page-estimate">{card.pageEstimate}</span>
-        </div>
+        {#if card.characters.length > 0}
+          <div class="card-meta">
+            <span class="meta-item">{card.characters.join(', ')}</span>
+          </div>
+        {/if}
         <div class="card-editable">
           <label class="field-label" for="desc-{card.sceneNumber}">Description</label>
           <textarea
@@ -389,7 +382,6 @@
             value={card.description}
             oninput={(e) => updateDescription(card.sceneNumber - 1, (e.target as HTMLTextAreaElement).value)}
             onkeydown={handleKeydown}
-            rows="2"
           ></textarea>
           <label class="field-label" for="notes-{card.sceneNumber}">Notes</label>
           <textarea
@@ -399,8 +391,10 @@
             value={card.shootNotes}
             oninput={(e) => updateShootNotes(card.sceneNumber - 1, (e.target as HTMLTextAreaElement).value)}
             onkeydown={handleKeydown}
-            rows="2"
           ></textarea>
+        </div>
+        <div class="card-footer">
+          <span class="page-estimate">{card.pageEstimate}</span>
         </div>
       </div>
     {/each}
@@ -428,6 +422,7 @@
   .cards-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-auto-rows: 1fr;
     gap: 16px;
   }
 
@@ -437,6 +432,8 @@
     border-radius: 8px;
     overflow: hidden;
     transition: opacity 120ms ease, border-color 120ms ease;
+    display: flex;
+    flex-direction: column;
   }
 
   .card.dragging {
@@ -488,31 +485,34 @@
   }
 
   .card-meta {
-    padding: 10px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
+    padding: 6px 16px;
     border-bottom: 1px solid var(--border-subtle);
   }
 
   .meta-item {
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: var(--editor-font), system-ui, -apple-system, sans-serif;
     font-size: 11px;
     color: var(--text-secondary);
   }
 
-  .meta-item strong {
-    color: var(--text-muted);
-    font-weight: 600;
+  .card-footer {
+    padding: 3px 16px;
+    border-top: 1px solid var(--border-subtle);
+    margin-top: auto;
   }
 
   .page-estimate {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 10px;
     color: var(--text-muted);
     font-style: italic;
   }
 
   .card-editable {
     padding: 10px 16px 14px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
   }
 
   .field-label {
@@ -544,6 +544,8 @@
     resize: none;
     box-sizing: border-box;
     transition: border-color 120ms ease;
+    flex: 1;
+    min-height: 60px;
   }
 
   .card-textarea:focus {
@@ -562,7 +564,6 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    min-height: 120px;
     border: 2px dashed var(--border-subtle);
     background: transparent;
     color: var(--text-muted);

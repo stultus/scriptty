@@ -1441,37 +1441,49 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
         for card in cards {
             let scene_num = card.get("scene_number").and_then(|v| v.as_u64()).unwrap_or(0);
             let heading = card.get("heading").and_then(|v| v.as_str()).unwrap_or("");
-            let location = card.get("location").and_then(|v| v.as_str()).unwrap_or("");
-            let time = card.get("time").and_then(|v| v.as_str()).unwrap_or("");
             let characters = card.get("characters").and_then(|v| v.as_str()).unwrap_or("");
             let description = card.get("description").and_then(|v| v.as_str()).unwrap_or("");
             let shoot_notes = card.get("shoot_notes").and_then(|v| v.as_str()).unwrap_or("");
 
+            // Card header: scene number + heading
             markup.push_str(&format!(
                 r#"#block(stroke: 0.5pt + luma(180), radius: 4pt, inset: 12pt, width: 100%)[
   #text(weight: "bold")[{}. {}]
-  #v(4pt)
-  *Location:* {} #h(1cm) *Time:* {}
-  #linebreak()
-  *Characters:* {}
 "#,
                 scene_num,
                 escape_typst(heading),
-                escape_typst(location),
-                escape_typst(time),
-                escape_typst(characters),
             ));
 
+            // Characters (if any)
+            if !characters.is_empty() {
+                markup.push_str(&format!(
+                    "  #v(4pt)\n  #text(size: 10pt, fill: luma(80))[{}]\n",
+                    escape_typst(characters),
+                ));
+            }
+
+            // Description
             if !description.is_empty() {
                 markup.push_str(&format!(
-                    "  #v(4pt)\n  _{}_\n",
+                    "  #v(6pt)\n  _{}_\n",
                     escape_typst(description)
                 ));
             }
+
+            // Notes
             if !shoot_notes.is_empty() {
                 markup.push_str(&format!(
                     "  #v(4pt)\n  #text(size: 10pt, fill: luma(100))[Notes: {}]\n",
                     escape_typst(shoot_notes)
+                ));
+            }
+
+            // Page estimate as small footer
+            let page_estimate = card.get("page_estimate").and_then(|v| v.as_str()).unwrap_or("");
+            if !page_estimate.is_empty() {
+                markup.push_str(&format!(
+                    "  #v(4pt)\n  #text(size: 9pt, fill: luma(150))[{}]\n",
+                    escape_typst(page_estimate)
                 ));
             }
 

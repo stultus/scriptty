@@ -53,30 +53,38 @@
 
 <div class="title-bar">
   <div class="btn-group left">
-    <button class="btn-icon" onclick={onToggleSidebar} title="Toggle Sidebar">
+    <button
+      class="btn-icon"
+      class:disabled={activeView !== 'writing'}
+      onclick={onToggleSidebar}
+      disabled={activeView !== 'writing'}
+      title="Toggle Sidebar (Writing view only)"
+    >
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
     </button>
-    <span class="separator"></span>
-    <div class="format-group">
-      <button
-        class="btn-format"
-        class:active={isBoldActive}
-        onclick={() => applyMark('bold')}
-        title="Bold (Cmd+B)"
-      ><span class="fmt-bold">B</span></button>
-      <button
-        class="btn-format"
-        class:active={isItalicActive}
-        onclick={() => applyMark('italic')}
-        title="Italic (Cmd+I)"
-      ><span class="fmt-italic">I</span></button>
-      <button
-        class="btn-format"
-        class:active={isUnderlineActive}
-        onclick={() => applyMark('underline')}
-        title="Underline (Cmd+U)"
-      ><span class="fmt-underline">U</span></button>
-    </div>
+    {#if activeView === 'writing'}
+      <span class="separator"></span>
+      <div class="format-group">
+        <button
+          class="btn-format"
+          class:active={isBoldActive}
+          onclick={() => applyMark('bold')}
+          title="Bold (Cmd+B)"
+        ><span class="fmt-bold">B</span></button>
+        <button
+          class="btn-format"
+          class:active={isItalicActive}
+          onclick={() => applyMark('italic')}
+          title="Italic (Cmd+I)"
+        ><span class="fmt-italic">I</span></button>
+        <button
+          class="btn-format"
+          class:active={isUnderlineActive}
+          onclick={() => applyMark('underline')}
+          title="Underline (Cmd+U)"
+        ><span class="fmt-underline">U</span></button>
+      </div>
+    {/if}
   </div>
 
   <div class="title-zone">
@@ -256,9 +264,14 @@
     transition: background 120ms ease, color 120ms ease;
   }
 
-  .btn-icon:hover {
+  .btn-icon:hover:not(:disabled) {
     background: var(--surface-hover);
     color: var(--text-primary);
+  }
+
+  .btn-icon:disabled {
+    opacity: 0.3;
+    cursor: default;
   }
 
   /* ─── Separator between sidebar toggle and format buttons ─── */

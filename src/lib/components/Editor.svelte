@@ -38,6 +38,11 @@
   // Svelte 5 runes for reactive state
   let isMalayalam = $state(inputManager.isMalayalam);
 
+  // Scene index being actively edited via shortcut — forces the annotation
+  // fields to show even when empty, so the user can type into them.
+  let editingSceneIndex = $state<number>(-1);
+  let gutterEl = $state<HTMLDivElement | null>(null);
+
   // ─── Scene annotations with ProseMirror spacer decorations ───
   // When an annotation is taller than its scene's natural space, a spacer
   // widget decoration is injected into the ProseMirror doc BEFORE the next
@@ -109,77 +114,26 @@
     return el.getBoundingClientRect().top - container.getBoundingClientRect().top;
   }
 
-  /** Estimate annotation height from text content.
-   *  At 320px gutter width, ~12px font → ~45 chars/line, ~17px/line. */
-  function estimateAnnotationHeight(desc: string, notes: string): number {
-    const CHARS_PER_LINE = 40;
-    const LINE_HEIGHT = 17;
-    let h = 0;
-    if (desc) {
-      h += 14 + Math.max(1, Math.ceil(desc.length / CHARS_PER_LINE)) * LINE_HEIGHT + 12;
-    }
-    if (notes) {
-      h += 14 + Math.max(1, Math.ceil(notes.length / CHARS_PER_LINE)) * LINE_HEIGHT + 12;
-    }
-    return h;
-  }
-
   function updateAnnotationPositions() {
     if (!editorElement || !view) return;
     const doc = documentStore.document;
     if (!doc) return;
 
-    // Step 1: Clear existing spacers so we read clean positions
-    const currentSpacers = spacerKey.getState(view.state) ?? {};
-    if (Object.keys(currentSpacers).length > 0) {
-      view.dispatch(view.state.tr.setMeta(spacerKey, {}));
-      void editorElement.offsetHeight;
-    }
-
-    // Step 2: Read clean positions
     const headingEls = Array.from(
       editorElement.querySelectorAll('.scene-heading')
     ) as HTMLElement[];
     if (headingEls.length === 0) { sceneSlots = []; return; }
 
+    // Read positions (may include existing spacers)
     const positions = headingEls.map((el) => posRelativeTo(el, editorElement));
     const editorHeight = editorElement.scrollHeight || editorElement.offsetHeight;
+    gutterTopPad = positions[0];
 
-    // Step 3: Compute annotation heights and needed spacers
-    const GAP = 20;
-    const newSpacers: Record<number, number> = {};
-
+    // Build slots so the gutter renders annotation content
+    const slots: SceneSlot[] = [];
     for (let i = 0; i < headingEls.length; i++) {
       const nextTop = i + 1 < positions.length ? positions[i + 1] : editorHeight;
       const extent = nextTop - positions[i];
-      const card = doc.scene_cards.find(
-        (c: { scene_index: number }) => c.scene_index === i
-      );
-      const desc = card?.description ?? '';
-      const notes = card?.shoot_notes ?? '';
-      const annHeight = estimateAnnotationHeight(desc, notes);
-
-      // If annotation overflows this scene's space, add spacer before next scene
-      if (annHeight > 0 && annHeight + GAP > extent && i + 1 < headingEls.length) {
-        newSpacers[i + 1] = annHeight - extent + GAP;
-      }
-    }
-
-    // Step 4: Apply spacers (pushes editor content apart)
-    if (Object.keys(newSpacers).length > 0) {
-      view.dispatch(view.state.tr.setMeta(spacerKey, newSpacers));
-      void editorElement.offsetHeight;
-    }
-
-    // Step 5: Read final positions and build slots
-    const finalPositions = headingEls.map((el) => posRelativeTo(el, editorElement));
-    const finalEditorHeight = editorElement.scrollHeight || editorElement.offsetHeight;
-    gutterTopPad = finalPositions[0];
-
-    const slots: SceneSlot[] = [];
-    for (let i = 0; i < headingEls.length; i++) {
-      const nextTop = i + 1 < finalPositions.length ? finalPositions[i + 1] : finalEditorHeight;
-      const extent = nextTop - finalPositions[i];
       const card = doc.scene_cards.find(
         (c: { scene_index: number }) => c.scene_index === i
       );
@@ -190,8 +144,119 @@
         shootNotes: card?.shoot_notes ?? '',
       });
     }
-
     sceneSlots = slots;
+
+    // Next frame: measure actual DOM heights and recompute spacers
+    requestAnimationFrame(() => measureAndApplySpacers());
+  }
+
+  /** Full spacer recompute: clear → measure base positions → measure
+   *  annotation heights → apply new spacers. All in one synchronous
+   *  block before the browser paints, so no visible flicker. */
+  function measureAndApplySpacers() {
+    if (!gutterEl || !editorElement || !view) return;
+    const doc = documentStore.document;
+    if (!doc) return;
+
+    const GAP = 20;
+
+    // 1. Clear all spacers to get base positions
+    const currentSpacers = spacerKey.getState(view.state) ?? {};
+    if (Object.keys(currentSpacers).length > 0) {
+      view.dispatch(view.state.tr.setMeta(spacerKey, {}));
+    }
+    // Force reflow so positions reflect the cleared state
+    void editorElement.offsetHeight;
+
+    // 2. Read base positions (no spacers)
+    const headingEls = Array.from(
+      editorElement.querySelectorAll('.scene-heading')
+    ) as HTMLElement[];
+    const basePositions = headingEls.map((el) => posRelativeTo(el, editorElement));
+    const baseEditorHeight = editorElement.scrollHeight || editorElement.offsetHeight;
+
+    // Update gutter top pad and slot extents to base values
+    gutterTopPad = basePositions[0];
+    for (let i = 0; i < sceneSlots.length && i < headingEls.length; i++) {
+      const nextTop = i + 1 < basePositions.length ? basePositions[i + 1] : baseEditorHeight;
+      sceneSlots[i].extent = nextTop - basePositions[i];
+    }
+
+    // 3. Measure actual annotation content heights (not scrollHeight of the
+    //    slot, which includes min-height and would give inflated values)
+    const contentEls = gutterEl.querySelectorAll('.slot-content');
+    const newSpacers: Record<number, number> = {};
+
+    contentEls.forEach((contentEl, i) => {
+      const contentHeight = (contentEl as HTMLElement).offsetHeight;
+      const baseExtent = sceneSlots[i]?.extent ?? 0;
+      if (contentHeight > baseExtent && i + 1 < contentEls.length) {
+        newSpacers[i + 1] = contentHeight - baseExtent + GAP;
+      }
+    });
+
+    // 4. Apply new spacers (if any)
+    if (Object.keys(newSpacers).length > 0) {
+      view.dispatch(view.state.tr.setMeta(spacerKey, newSpacers));
+      void editorElement.offsetHeight;
+
+      // Update positions and extents with spacers applied
+      const finalPositions = headingEls.map((el) => posRelativeTo(el, editorElement));
+      const finalEditorHeight = editorElement.scrollHeight || editorElement.offsetHeight;
+      gutterTopPad = finalPositions[0];
+
+      for (let i = 0; i < sceneSlots.length && i < headingEls.length; i++) {
+        const nextTop = i + 1 < finalPositions.length ? finalPositions[i + 1] : finalEditorHeight;
+        sceneSlots[i].extent = nextTop - finalPositions[i];
+      }
+    }
+  }
+
+  /** Open annotation fields for the scene at the cursor position.
+   *  Creates empty card entries if needed, then focuses the description textarea. */
+  export function editCurrentSceneAnnotation() {
+    if (!view || !documentStore.document) return;
+
+    // Find which scene the cursor is in
+    const cursorPos = view.state.selection.$from.pos;
+    let sceneIdx = -1;
+    view.state.doc.forEach((node, offset, index) => {
+      if (offset <= cursorPos && node.type.name === 'scene_heading') {
+        sceneIdx = index;
+      }
+    });
+
+    // Count scene_heading nodes to get the 0-based scene order
+    let sceneOrder = -1;
+    let headingCount = 0;
+    view.state.doc.forEach((node, _offset, index) => {
+      if (node.type.name === 'scene_heading') {
+        if (index === sceneIdx) sceneOrder = headingCount;
+        headingCount++;
+      }
+    });
+
+    if (sceneOrder < 0) return;
+
+    // Ensure a scene_card entry exists
+    const cards = documentStore.document.scene_cards;
+    if (!cards.find((c: { scene_index: number }) => c.scene_index === sceneOrder)) {
+      cards.push({ scene_index: sceneOrder, description: '', shoot_notes: '' });
+    }
+
+    // Show annotation fields for this scene and trigger update
+    editingSceneIndex = sceneOrder;
+    scheduleAnnotationUpdate();
+
+    // Focus the description textarea after DOM updates
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (gutterEl) {
+          const textarea = gutterEl.querySelector(`[data-scene="${sceneOrder}"] .ann-text`) as HTMLTextAreaElement;
+          textarea?.focus();
+        }
+      });
+    });
   }
 
   function updateSceneCard(sceneOrder: number, field: 'description' | 'shoot_notes', value: string) {
@@ -209,6 +274,14 @@
       });
     }
     documentStore.markDirty();
+    // Recalculate spacers since annotation height may have changed.
+    // Schedule both a full update AND a direct measurement pass.
+    // The measurement pass can run even if slot data hasn't changed
+    // (because the textarea grew from field-sizing:content).
+    cancelAnimationFrame(annotationRafId);
+    annotationRafId = requestAnimationFrame(() => {
+      measureAndApplySpacers();
+    });
   }
 
   // Create initial document with one empty scene_heading
@@ -441,31 +514,34 @@
     <div class="editor-with-annotations">
       <div class="editor-container" bind:this={editorElement} style="--editor-font: '{fontFamily}'; --scene-counter-start: {(documentStore.document?.settings.scene_number_start ?? 1) - 1}"></div>
       {#if showAnnotations}
-      <div class="annotations-gutter" style="padding-top: {gutterTopPad}px">
+      <div class="annotations-gutter" style="padding-top: {gutterTopPad}px" bind:this={gutterEl}>
         {#each sceneSlots as slot (slot.sceneOrder)}
-          <div class="scene-slot" style="min-height: {slot.extent}px">
-            {#if slot.description || slot.shootNotes}
-              {#if slot.description}
+          {@const showFields = slot.description || slot.shootNotes || editingSceneIndex === slot.sceneOrder}
+          <div class="scene-slot" style="min-height: {slot.extent}px" data-scene={slot.sceneOrder}>
+            <div class="slot-content">
+              {#if showFields}
                 <div class="ann-field">
                   <span class="ann-label">Description</span>
                   <textarea
                     class="ann-text"
+                    placeholder="Scene description..."
                     value={slot.description}
                     oninput={(e: Event) => updateSceneCard(slot.sceneOrder, 'description', (e.target as HTMLTextAreaElement).value)}
+                    onfocusout={() => { if (editingSceneIndex === slot.sceneOrder) editingSceneIndex = -1; }}
                   ></textarea>
                 </div>
-              {/if}
-              {#if slot.shootNotes}
                 <div class="ann-field">
                   <span class="ann-label">Notes</span>
                   <textarea
                     class="ann-text"
+                    placeholder="Additional notes..."
                     value={slot.shootNotes}
                     oninput={(e: Event) => updateSceneCard(slot.sceneOrder, 'shoot_notes', (e.target as HTMLTextAreaElement).value)}
+                    onfocusout={() => { if (editingSceneIndex === slot.sceneOrder) editingSceneIndex = -1; }}
                   ></textarea>
                 </div>
               {/if}
-            {/if}
+            </div>
           </div>
         {/each}
       </div>

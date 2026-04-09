@@ -4,8 +4,7 @@
 
   let { isOpen }: { isOpen: boolean } = $props();
 
-  // Wider panel when Story tab is active — textareas need more room
-  let panelWidth = $derived(activeTab === 'story' ? 420 : 240);
+  let panelWidth = 320;
 
   // Which tab is active: 'scenes' or 'story'
   let activeTab = $state<'scenes' | 'story'>('scenes');

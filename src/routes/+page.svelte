@@ -28,6 +28,7 @@
   let findReplaceOpen = $state(false);
   let findReplaceMode = $state<'find' | 'replace'>('find');
   let showStatistics = $state(false);
+  let editorRef: { editCurrentSceneAnnotation: () => void } | undefined;
   let showMetadata = $state(false);
   let showAnnotations = $state(typeof localStorage !== 'undefined' ? localStorage.getItem('scriptty-annotations') !== 'false' : true);
 
@@ -141,10 +142,32 @@
         findReplaceMode = 'replace';
         return;
       }
-      // Ctrl+\ (Mac: Cmd+\) toggles left panel
+      // Ctrl+\ (Mac: Cmd+\) toggles left panel (writing view only)
       if ((event.metaKey || event.ctrlKey) && event.key === '\\') {
         event.preventDefault();
-        panelOpen = !panelOpen;
+        if (activeView === 'writing') panelOpen = !panelOpen;
+        return;
+      }
+      // Cmd+Shift+A — Toggle annotations in writing view
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'a') {
+        event.preventDefault();
+        if (activeView === 'writing') {
+          showAnnotations = !showAnnotations;
+          localStorage.setItem('scriptty-annotations', String(showAnnotations));
+        }
+        return;
+      }
+      // Cmd+Shift+D — Add/edit annotation for current scene
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'd') {
+        event.preventDefault();
+        if (activeView === 'writing') {
+          // Ensure annotations are visible first
+          if (!showAnnotations) {
+            showAnnotations = true;
+            localStorage.setItem('scriptty-annotations', 'true');
+          }
+          editorRef?.editCurrentSceneAnnotation();
+        }
       }
     }
 
@@ -233,7 +256,7 @@
       }));
 
       unlistens.push(await listen('menu-toggle-sidebar', () => {
-        panelOpen = !panelOpen;
+        if (activeView === 'writing') panelOpen = !panelOpen;
       }));
 
       unlistens.push(await listen('menu-edit-meta', () => {
@@ -295,7 +318,7 @@
     {/if}
     <div class="editor-area" class:hidden={activeView !== 'writing'}>
       <LeftPanel isOpen={panelOpen} />
-      <Editor bind:findReplaceOpen bind:findReplaceMode {showAnnotations} />
+      <Editor bind:findReplaceOpen bind:findReplaceMode {showAnnotations} bind:this={editorRef} />
     </div>
   </div>
   <StatusBar bind:showAnnotations>

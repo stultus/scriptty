@@ -1,0 +1,71 @@
+name: Update Download Links
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-downloads:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Generate downloads.json from release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION_NUM="${VERSION#v}"
+          RELEASE_URL="${{ github.event.release.html_url }}"
+
+          # Fetch all asset browser_download_url values
+          ASSETS_JSON=$(gh release view "$VERSION" --json assets \
+            --jq '[.assets[] | {name: .name, url: .browserDownloadUrl}]')
+
+          # Match assets to platform keys by filename pattern
+          get_url() {
+            echo "$ASSETS_JSON" | jq -r \
+              --arg pattern "$1" \
+              '[.[] | select(.name | test($pattern))][0].url // ""'
+          }
+
+          MACOS_ARM=$(get_url "_aarch64\\.dmg$")
+          MACOS_INTEL=$(get_url "_x64\\.dmg$")
+          WINDOWS=$(get_url "_x64-setup\\.exe$")
+          LINUX_DEB=$(get_url "_amd64\\.deb$")
+          LINUX_APPIMAGE=$(get_url "_amd64\\.AppImage$")
+
+          # Write the JSON file
+          cat > docs/downloads.json << ENDJSON
+          {
+            "version": "${VERSION_NUM}",
+            "release_url": "${RELEASE_URL}",
+            "assets": {
+              "macos_arm": "${MACOS_ARM}",
+              "macos_intel": "${MACOS_INTEL}",
+              "windows": "${WINDOWS}",
+              "linux_deb": "${LINUX_DEB}",
+              "linux_appimage": "${LINUX_APPIMAGE}"
+            }
+          }
+          ENDJSON
+
+          # Pretty-print with jq
+          jq '.' docs/downloads.json > docs/downloads.tmp && mv docs/downloads.tmp docs/downloads.json
+
+          echo "Generated downloads.json for ${VERSION}:"
+          cat docs/downloads.json
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/downloads.json
+          git diff --staged --quiet && echo "No changes" && exit 0
+          git commit -m "ci: update download links for ${{ github.event.release.tag_name }}"
+          git push

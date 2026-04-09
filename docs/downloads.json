@@ -1,0 +1,11 @@
+{
+  "version": "0.5.1",
+  "release_url": "https://github.com/stultus/scriptty/releases/tag/v0.5.1",
+  "assets": {
+    "macos_arm": "",
+    "macos_intel": "",
+    "windows": "",
+    "linux_deb": "",
+    "linux_appimage": ""
+  }
+}

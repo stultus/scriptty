@@ -50,6 +50,8 @@
   /** Parsed scene data with auto-populated and manual fields */
   interface SceneCardData {
     sceneNumber: number;
+    /** 0-based scene order for scene_cards lookup */
+    sceneOrder: number;
     heading: string;
     location: string;
     time: string;
@@ -94,6 +96,7 @@
     const result: SceneCardData[] = [];
     const startNum = doc.settings?.scene_number_start ?? 1;
     let sceneNumber = startNum - 1;
+    let sceneOrder = -1; // 0-based scene index for scene_cards lookup
     let currentCharacters: string[] = [];
     let currentCharCount = 0;
     let currentHeading = '';
@@ -103,10 +106,11 @@
 
     function pushCurrentScene() {
       if (sceneNumber < startNum) return;
-      const storedCard = doc.scene_cards.find((c) => c.scene_index === sceneNumber - 1);
+      const storedCard = doc.scene_cards.find((c) => c.scene_index === sceneOrder);
       const pages = Math.max(0.1, currentCharCount / 3000);
       result.push({
         sceneNumber,
+        sceneOrder,
         heading: currentHeading,
         location: currentLocation,
         time: currentTime,
@@ -124,6 +128,7 @@
       if (node.type === 'scene_heading') {
         pushCurrentScene();
         sceneNumber++;
+        sceneOrder++;
         currentCharacters = [];
         currentCharCount = 0;
         currentContentIndex = i;
@@ -380,7 +385,7 @@
             class="card-textarea"
             placeholder="What happens in this scene..."
             value={card.description}
-            oninput={(e) => updateDescription(card.sceneNumber - 1, (e.target as HTMLTextAreaElement).value)}
+            oninput={(e) => updateDescription(card.sceneOrder, (e.target as HTMLTextAreaElement).value)}
             onkeydown={handleKeydown}
           ></textarea>
           <label class="field-label" for="notes-{card.sceneNumber}">Notes</label>
@@ -389,7 +394,7 @@
             class="card-textarea"
             placeholder="Additional notes..."
             value={card.shootNotes}
-            oninput={(e) => updateShootNotes(card.sceneNumber - 1, (e.target as HTMLTextAreaElement).value)}
+            oninput={(e) => updateShootNotes(card.sceneOrder, (e.target as HTMLTextAreaElement).value)}
             onkeydown={handleKeydown}
           ></textarea>
         </div>

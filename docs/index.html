@@ -485,20 +485,26 @@
     <p class="sub-tagline">A free, offline screenwriting app for Malayalam and English writers. Hollywood and Indian formats. Built-in Malayalam input. No cloud, no account.</p>
 
     <div class="download-group">
-      <a href="https://github.com/stultus/scriptty/releases/latest" class="btn-download primary">
-        <span class="os-icon">&#8595;</span>
-        Download for macOS
+      <a href="https://github.com/stultus/scriptty/releases/download/v0.5.0/Scriptty_0.5.0_aarch64.dmg" class="btn-download primary">
+        <span class="os-icon">&#63743;</span>
+        macOS (Apple Silicon)
       </a>
-      <a href="https://github.com/stultus/scriptty/releases/latest" class="btn-download secondary">
-        <span class="os-icon">&#8595;</span>
-        Windows
-      </a>
-      <a href="https://github.com/stultus/scriptty/releases/latest" class="btn-download secondary">
-        <span class="os-icon">&#8595;</span>
-        Linux
+      <a href="https://github.com/stultus/scriptty/releases/download/v0.5.0/Scriptty_0.5.0_x64.dmg" class="btn-download secondary">
+        <span class="os-icon">&#63743;</span>
+        macOS (Intel)
       </a>
     </div>
-    <p class="hero-note">v0.4.0 &middot; Free &amp; open source &middot; MIT License</p>
+    <div class="download-group">
+      <a href="https://github.com/stultus/scriptty/releases/download/v0.5.0/Scriptty_0.5.0_amd64.deb" class="btn-download secondary">
+        <span class="os-icon">&#128039;</span>
+        Linux (.deb)
+      </a>
+      <a href="https://github.com/stultus/scriptty/releases/download/v0.5.0/Scriptty_0.5.0_amd64.AppImage" class="btn-download secondary">
+        <span class="os-icon">&#128039;</span>
+        Linux (AppImage)
+      </a>
+    </div>
+    <p class="hero-note">v0.5.0 &middot; Free &amp; open source &middot; MIT License &middot; <a href="https://github.com/stultus/scriptty/releases" style="color: var(--text-secondary);">All releases</a></p>
   </div>
 </section>
 
@@ -529,8 +535,8 @@
 
       <div class="feature-card">
         <span class="feat-icon">&#127916;</span>
-        <h3>Scene Cards &amp; Story Mode</h3>
-        <p>Plan your story with Idea, Synopsis, Treatment, and Narrative panels. Scene Cards give you a production-ready breakdown with drag-to-reorder.</p>
+        <h3>Three Views</h3>
+        <p>Writing view with scene annotations in the margin. Cards view for production breakdown with drag-to-reorder. Story view combining Idea, Synopsis, Treatment, and Narrative.</p>
       </div>
 
       <div class="feature-card">
@@ -628,14 +634,14 @@
       </div>
 
       <div class="guide-section">
-        <h3>Story Panel &amp; Story Mode</h3>
-        <p>Switch to the <strong>Story</strong> tab in the left panel to work on structure: Idea (logline), Synopsis, Treatment, and Narrative.</p>
-        <p>Press <kbd>Cmd+Shift+L</kbd> for Story Mode — a full-screen, distraction-free writing view for your narrative with word count and Malayalam input support.</p>
-      </div>
-
-      <div class="guide-section">
-        <h3>Scene Cards</h3>
-        <p>Press <kbd>Cmd+Shift+K</kbd> to open Scene Cards — a grid of cards showing scene number, heading, location, time, characters, and page estimate. Add descriptions and shoot notes for production planning.</p>
+        <h3>Three Views</h3>
+        <p>Use the tab bar in the title bar to switch between views:</p>
+        <ul>
+          <li><strong>Writing</strong> — the screenplay editor with scene annotations in the right margin. Press <kbd>Cmd+Shift+D</kbd> to add a description to the current scene. <kbd>Cmd+Shift+A</kbd> to toggle annotations.</li>
+          <li><strong>Cards</strong> (<kbd>Cmd+Shift+K</kbd>) — a grid of scene cards showing heading, characters, description, notes, and page estimate. Click <strong>Add Scene</strong> to create new scenes from the outline. Drag to reorder.</li>
+          <li><strong>Story</strong> (<kbd>Cmd+Shift+L</kbd>) — all four story sections (Idea, Synopsis, Treatment, Narrative) in one continuous page with word count.</li>
+        </ul>
+        <p>The left panel (<kbd>Cmd+\</kbd>) provides quick access to the Scene Navigator and Story sections in Writing view.</p>
       </div>
 
       <div class="guide-section">
@@ -658,9 +664,11 @@
             <tr><td><kbd>Cmd+I</kbd></td><td>Italic text</td></tr>
             <tr><td><kbd>Cmd+U</kbd></td><td>Underline text</td></tr>
             <tr><td><kbd>Cmd+\</kbd></td><td>Toggle left panel</td></tr>
-            <tr><td><kbd>Cmd+Shift+K</kbd></td><td>Scene Cards</td></tr>
+            <tr><td><kbd>Cmd+Shift+K</kbd></td><td>Toggle Cards view</td></tr>
+            <tr><td><kbd>Cmd+Shift+L</kbd></td><td>Toggle Story view</td></tr>
+            <tr><td><kbd>Cmd+Shift+A</kbd></td><td>Toggle annotations</td></tr>
+            <tr><td><kbd>Cmd+Shift+D</kbd></td><td>Edit current scene annotation</td></tr>
             <tr><td><kbd>Cmd+Shift+I</kbd></td><td>Script Statistics</td></tr>
-            <tr><td><kbd>Cmd+Shift+L</kbd></td><td>Story Mode</td></tr>
             <tr><td><kbd>Cmd+F</kbd></td><td>Find</td></tr>
             <tr><td><kbd>Cmd+Shift+H</kbd></td><td>Find and Replace</td></tr>
             <tr><td><kbd>Ctrl+Space</kbd></td><td>Toggle English / Malayalam</td></tr>

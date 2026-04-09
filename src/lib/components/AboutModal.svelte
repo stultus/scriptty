@@ -31,7 +31,7 @@
       </div>
 
       <h1 class="app-name">Scriptty</h1>
-      <p class="version">Version 0.4.0</p>
+      <p class="version">Version 0.5.0</p>
       <p class="tagline">Write in the language you dream in.</p>
 
       <hr class="divider" />

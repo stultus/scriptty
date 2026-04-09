@@ -127,35 +127,43 @@
         <!-- Story Panel -->
         <section class="help-section">
           <h3>Story Panel</h3>
-          <p>Switch to the <strong>Story</strong> tab in the left panel to work on your story's structure:</p>
-          <ul>
-            <li><strong>Idea</strong> — your logline or core premise (1–3 lines)</li>
-            <li><strong>Synopsis</strong> — the full story arc in prose (300–800 words)</li>
-            <li><strong>Treatment</strong> — detailed scene-by-scene narrative</li>
-            <li><strong>Narrative</strong> — full-length prose version of your story</li>
-          </ul>
-          <p>The panel widens automatically when the Story tab is active. Everything you write here is saved in the <code>.screenplay</code> file and can be included in PDF exports.</p>
+          <p>The <strong>Story</strong> tab in the left panel provides quick access to your story's structure (Idea, Synopsis, Treatment, Narrative). For a full-page writing experience, use the Story view instead.</p>
         </section>
 
-        <!-- Story Mode -->
+        <!-- Story View -->
         <section class="help-section">
-          <h3>Story Mode</h3>
-          <p>Press <kbd>Cmd+Shift+L</kbd> to enter Story Mode — a full-screen, distraction-free writing view for your narrative.</p>
-          <p>Story Mode has its own status bar with Malayalam input support (<kbd>Ctrl+Space</kbd> to toggle) and a live word count. Press <kbd>Escape</kbd> or click <strong>Back to Script</strong> to return to the screenplay editor.</p>
+          <h3>Story View</h3>
+          <p>Press <kbd>Cmd+Shift+L</kbd> or click the <strong>Story</strong> tab to enter Story view — all four story sections (Idea, Synopsis, Treatment, Narrative) in one continuous page.</p>
+          <p>Malayalam input is supported (<kbd>Ctrl+Space</kbd> to toggle). A word count is shown in the status bar.</p>
+        </section>
+
+        <!-- Views -->
+        <section class="help-section">
+          <h3>Views</h3>
+          <p>Scriptty has three views, switchable from the tab bar in the title bar:</p>
+          <ul>
+            <li><strong>Writing</strong> — the screenplay editor with scene annotations in the right margin</li>
+            <li><strong>Cards</strong> — a grid of scene cards for planning and production breakdown</li>
+            <li><strong>Story</strong> — a combined view for Idea, Synopsis, Treatment, and Narrative writing</li>
+          </ul>
+        </section>
+
+        <!-- Scene Annotations -->
+        <section class="help-section">
+          <h3>Scene Annotations</h3>
+          <p>In Writing view, scene descriptions and notes appear in the right margin alongside each scene heading. These annotations are editable and saved with your <code>.screenplay</code> file.</p>
+          <ul>
+            <li><kbd>Cmd+Shift+D</kbd> — add or edit the annotation for the current scene</li>
+            <li><kbd>Cmd+Shift+A</kbd> — toggle annotation visibility</li>
+          </ul>
+          <p>When an annotation is taller than its scene, the editor automatically adds space to keep everything aligned. You can also toggle annotations on or off from Settings.</p>
         </section>
 
         <!-- Scene Cards -->
         <section class="help-section">
           <h3>Scene Cards</h3>
-          <p>Press <kbd>Cmd+Shift+K</kbd> to open the Scene Cards view — a grid of cards for planning and production notes.</p>
-          <p>Each card automatically shows:</p>
-          <ul>
-            <li>Scene number and heading</li>
-            <li>Location and time of day (parsed from the heading)</li>
-            <li>Characters who appear in the scene</li>
-            <li>Estimated page count</li>
-          </ul>
-          <p>You can add a <strong>Description</strong> and <strong>Notes</strong> to each card. Drag the scene number badge to reorder cards — this reorders the scenes in your screenplay.</p>
+          <p>The Cards view shows a grid of cards for planning and production notes. Each card shows the scene heading, characters, description, notes, and a page estimate.</p>
+          <p>Click <strong>Add Scene</strong> to create a new scene from the Cards view. Drag the scene number badge to reorder cards — this reorders the scenes in your screenplay. Malayalam input is supported in card textareas (<kbd>Ctrl+Space</kbd> to toggle).</p>
         </section>
 
         <!-- Statistics -->
@@ -233,9 +241,11 @@
               <tr><td><kbd>Cmd+I</kbd></td><td>Italic text</td></tr>
               <tr><td><kbd>Cmd+U</kbd></td><td>Underline text</td></tr>
               <tr><td><kbd>Cmd+\</kbd></td><td>Toggle left panel</td></tr>
-              <tr><td><kbd>Cmd+Shift+K</kbd></td><td>Toggle scene cards</td></tr>
+              <tr><td><kbd>Cmd+Shift+K</kbd></td><td>Toggle Cards view</td></tr>
+              <tr><td><kbd>Cmd+Shift+L</kbd></td><td>Toggle Story view</td></tr>
+              <tr><td><kbd>Cmd+Shift+A</kbd></td><td>Toggle annotations</td></tr>
+              <tr><td><kbd>Cmd+Shift+D</kbd></td><td>Edit current scene annotation</td></tr>
               <tr><td><kbd>Cmd+Shift+I</kbd></td><td>Script statistics</td></tr>
-              <tr><td><kbd>Cmd+Shift+L</kbd></td><td>Story Mode</td></tr>
               <tr><td><kbd>Cmd+F</kbd></td><td>Find</td></tr>
               <tr><td><kbd>Cmd+Shift+H</kbd></td><td>Find and Replace</td></tr>
               <tr><td><kbd>Ctrl+Space</kbd></td><td>Toggle English / Malayalam</td></tr>

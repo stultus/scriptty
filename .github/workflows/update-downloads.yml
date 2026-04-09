@@ -30,9 +30,9 @@ jobs:
           fi
           VERSION_NUM="${VERSION#v}"
 
-          # Fetch all asset browser_download_url values
+          # Fetch all asset download URLs
           ASSETS_JSON=$(gh release view "$VERSION" --json assets \
-            --jq '[.assets[] | {name: .name, url: .browserDownloadUrl}]')
+            --jq '[.assets[] | {name: .name, url: .url}]')
 
           # Match assets to platform keys by filename pattern
           get_url() {

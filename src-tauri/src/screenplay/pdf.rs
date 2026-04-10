@@ -243,9 +243,11 @@ fn extract_elements(content: &Value) -> Vec<ScreenplayElement> {
 /// User-written screenplay text may contain these characters, so we need
 /// to prefix them with backslashes so Typst treats them as literal text.
 fn escape_typst(text: &str) -> String {
-    // Each `.replace()` call creates a new String with that character escaped.
-    // The chain processes all special characters in sequence.
-    text.replace('\\', "\\\\") // Backslash must be escaped first (before we add more backslashes)
+    // Preprocessing: normalize whitespace (non-breaking spaces → regular spaces
+    // so Typst can break lines properly) and normalize quotation marks.
+    let normalized = normalize_quotes(&normalize_whitespace(text));
+    normalized
+        .replace('\\', "\\\\") // Backslash must be escaped first (before we add more backslashes)
         .replace('#', "\\#")
         .replace('*', "\\*")
         .replace('_', "\\_")
@@ -253,6 +255,99 @@ fn escape_typst(text: &str) -> String {
         .replace('<', "\\<")
         .replace('>', "\\>")
         .replace('$', "\\$")
+}
+
+/// Normalizes whitespace in text:
+/// - U+00A0 NO-BREAK SPACE → regular space (would prevent line breaking)
+/// - U+2007 FIGURE SPACE → regular space
+/// - U+202F NARROW NO-BREAK SPACE → regular space
+/// - U+FEFF ZERO WIDTH NO-BREAK SPACE → removed
+///
+/// Many Malayalam keyboards and IMEs insert non-breaking spaces, which
+/// prevent Typst from wrapping text and cause it to overflow page margins.
+/// ZWJ (U+200D) and ZWNJ (U+200C) are kept — they're meaningful for
+/// Malayalam glyph rendering.
+fn normalize_whitespace(text: &str) -> String {
+    text.chars()
+        .filter_map(|c| match c {
+            '\u{00A0}' | '\u{2007}' | '\u{202F}' => Some(' '),
+            '\u{FEFF}' => None,
+            _ => Some(c),
+        })
+        .collect()
+}
+
+/// Ensures a dialogue line is wrapped in matching quotation marks.
+/// Detects existing opening/closing quotes and adds whichever is missing.
+/// Returns (prefix, suffix) to wrap around the existing dialogue markup.
+fn dialogue_quote_wrap(text: &str) -> (&'static str, &'static str) {
+    let trimmed = text.trim();
+    if trimmed.is_empty() {
+        return ("", "");
+    }
+
+    // Check for any opening quote at the start
+    let first = trimmed.chars().next().unwrap();
+    let has_open = matches!(first, '"' | '\u{201C}' | '\u{201D}' | '\'' | '\u{2018}' | '\u{2019}');
+
+    // Check for any closing quote at the end
+    let last = trimmed.chars().last().unwrap();
+    let has_close = matches!(last, '"' | '\u{201C}' | '\u{201D}' | '\'' | '\u{2018}' | '\u{2019}');
+
+    let prefix = if has_open { "" } else { "\u{201C}" };
+    let suffix = if has_close { "" } else { "\u{201D}" };
+    (prefix, suffix)
+}
+
+/// Normalizes quotation marks in text, converting straight quotes and
+/// mistakenly-typed opening quotes into proper open/close pairs.
+///
+/// Many users (especially with Malayalam keyboards) type the same quote
+/// character on both ends of a quoted phrase. This function detects context
+/// (whitespace before = opening, whitespace/punctuation after = closing)
+/// and replaces with proper "smart quotes":
+/// - `"` `"` `"` → `"` (open) or `"` (close) based on context
+/// - `'` `'` `'` → `'` (open) or `'` (close) based on context
+fn normalize_quotes(text: &str) -> String {
+    let chars: Vec<char> = text.chars().collect();
+    let mut result = String::with_capacity(text.len());
+
+    for (i, &c) in chars.iter().enumerate() {
+        // Any double-quote variant
+        if c == '"' || c == '\u{201C}' || c == '\u{201D}' {
+            let prev = if i > 0 { Some(chars[i - 1]) } else { None };
+            let is_opening = match prev {
+                None => true,
+                Some(p) if p.is_whitespace() => true,
+                Some('(') | Some('[') | Some('{') => true,
+                _ => false,
+            };
+            result.push(if is_opening { '\u{201C}' } else { '\u{201D}' });
+        }
+        // Any single-quote variant (but only treat as quote if not mid-word
+        // — apostrophes inside words like "don't" should stay as apostrophe)
+        else if c == '\u{2018}' || c == '\u{2019}' {
+            let prev = if i > 0 { Some(chars[i - 1]) } else { None };
+            let next = if i + 1 < chars.len() { Some(chars[i + 1]) } else { None };
+            let is_opening = match prev {
+                None => true,
+                Some(p) if p.is_whitespace() => true,
+                Some('(') | Some('[') | Some('{') => true,
+                _ => false,
+            };
+            // If both sides are letters, it's a mid-word apostrophe
+            let is_apostrophe = matches!((prev, next), (Some(p), Some(n)) if p.is_alphabetic() && n.is_alphabetic());
+            if is_apostrophe {
+                result.push('\u{2019}'); // Use closing form for apostrophe
+            } else {
+                result.push(if is_opening { '\u{2018}' } else { '\u{2019}' });
+            }
+        } else {
+            result.push(c);
+        }
+    }
+
+    result
 }
 
 /// Extracts inline content from a ProseMirror node and returns Typst markup
@@ -503,8 +598,8 @@ pub fn generate_typst_markup(content: &Value, font_name: &str, meta: &Screenplay
 // Generated by Scriptty. Do not edit manually.
 
 #set page(paper: "a4", margin: (top: 2.5cm, bottom: 2.5cm, left: 3cm, right: 2.5cm))
-#set text(font: "{}", size: 12pt)
-#set par(leading: 0.65em)
+#set text(font: "{}", size: 12pt, lang: "ml", hyphenate: true)
+#set par(leading: 0.85em, spacing: 1.2em, first-line-indent: 0pt, justify: false, linebreaks: "optimized")
 
 "#,
         font_name
@@ -538,13 +633,13 @@ pub fn generate_typst_markup(content: &Value, font_name: &str, meta: &Screenplay
                 // Wrap scene heading + first action in an unbreakable block so the
                 // heading never appears orphaned at the bottom of a page.
                 block.push_str(&format!(
-                    "#block(breakable: false)[\n  #v(1.5em)\n  #text(weight: \"bold\", size: 12pt)[{}. {}]\n  #v(0.5em)\n",
+                    "#block(breakable: false, width: 100%)[\n  #v(1.8em)\n  #text(weight: \"bold\", size: 12pt)[{}. {}]\n  #v(0.8em)\n",
                     scene_number,
                     escaped_heading.to_uppercase()
                 ));
                 if let Some(action_typst) = first_action_typst {
                     // Use typst_inline to preserve bold formatting in action text
-                    block.push_str(&format!("  {}\n", action_typst));
+                    block.push_str(&format!("  #par[{}]\n", action_typst));
                 }
                 block.push_str("]\n\n");
                 block
@@ -558,8 +653,11 @@ pub fn generate_typst_markup(content: &Value, font_name: &str, meta: &Screenplay
                 // - Character cue: 9cm from page left edge → pad(left: 6cm) from text area
                 // - Dialogue: 6.5cm–14.5cm from page left → pad(left: 3.5cm, right: 3cm)
                 // - Parenthetical: 7.5cm from page left → pad(left: 4.5cm, right: 3.5cm)
+                // Character cue: centered on the page. The outer block uses
+                // width: 100% so its content area equals the text area; without
+                // this, the block shrinks to fit content and gets left-aligned.
                 let mut block = format!(
-                    "#block(breakable: false)[\n  #v(1em)\n  #pad(left: 6cm)[#text(weight: \"bold\")[{}]]\n",
+                    "#block(breakable: false, width: 100%)[\n  #v(1.2em)\n  #align(center)[#text(weight: \"bold\")[{}]]\n  #v(0.2em)\n",
                     escaped_name.to_uppercase()
                 );
                 for line in lines {
@@ -573,30 +671,33 @@ pub fn generate_typst_markup(content: &Value, font_name: &str, meta: &Screenplay
                             } else {
                                 format!("({})", escaped)
                             };
-                            // Parentheticals: starts at 7.5cm from page left (4.5cm from text area left)
+                            // Parenthetical: 8cm centered block, italic
                             block.push_str(&format!(
-                                "  #pad(left: 4.5cm, right: 3.5cm)[#emph[{}]]\n",
+                                "  #align(center)[#block(width: 8cm)[#align(center)[#emph[{}]]]]\n",
                                 display
                             ));
                         }
-                        DialogueLine::Dialogue(_text, typst_inline) => {
-                            // Use typst_inline to preserve bold formatting in dialogue
+                        DialogueLine::Dialogue(text, typst_inline) => {
+                            // Auto-wrap dialogue in quotes if missing
+                            let (prefix, suffix) = dialogue_quote_wrap(text);
+                            // Dialogue: 9.5cm centered block (~60% of action width)
                             block.push_str(&format!(
-                                "  #pad(left: 3.5cm, right: 3cm)[{}]\n",
-                                typst_inline
+                                "  #align(center)[#block(width: 9.5cm)[#align(center)[{}{}{}]]]\n",
+                                prefix, typst_inline, suffix
                             ));
                         }
                     }
                 }
-                block.push_str("]\n\n");
+                block.push_str("  #v(0.4em)\n]\n\n");
                 block
             }
             ScreenplayGroup::Standalone(element) => {
                 let escaped = escape_typst(&element.text);
                 match element.element_type.as_str() {
                     "action" => {
-                        // Action lines: use typst_inline to preserve bold formatting
-                        format!("{}\n\n", element.typst_inline)
+                        // Action lines: use typst_inline to preserve bold formatting.
+                        // Wrap in #par() to ensure paragraph spacing applies consistently.
+                        format!("#par[{}]\n\n", element.typst_inline)
                     }
                     "transition" => {
                         // Transitions: right-aligned, uppercase (e.g., "CUT TO:")
@@ -615,15 +716,19 @@ pub fn generate_typst_markup(content: &Value, font_name: &str, meta: &Screenplay
                         )
                     }
                     "character" => {
-                        // Character cue: 9cm from page left → 6cm pad from text area left
+                        // Character cue: centered on the page
                         format!(
-                            "#v(1em)\n#pad(left: 6cm)[#text(weight: \"bold\")[{}]]\n",
+                            "#v(1em)\n#align(center)[#text(weight: \"bold\")[{}]]\n",
                             escaped.to_uppercase()
                         )
                     }
                     "dialogue" => {
-                        // Dialogue: use typst_inline to preserve bold formatting
-                        format!("#pad(left: 3.5cm, right: 3cm)[{}]\n", element.typst_inline)
+                        // Dialogue: 9.5cm centered block (~60% of action width)
+                        let (prefix, suffix) = dialogue_quote_wrap(&element.text);
+                        format!(
+                            "#align(center)[#block(width: 9.5cm)[#align(center)[{}{}{}]]]\n",
+                            prefix, element.typst_inline, suffix
+                        )
                     }
                     "parenthetical" => {
                         // Wrap in parentheses if not already present
@@ -632,9 +737,9 @@ pub fn generate_typst_markup(content: &Value, font_name: &str, meta: &Screenplay
                         } else {
                             format!("({})", escaped)
                         };
-                        // Parenthetical: 7.5cm from page left → pad(left: 4.5cm, right: 3.5cm)
+                        // Parenthetical: 8cm centered block
                         format!(
-                            "#pad(left: 4.5cm, right: 3.5cm)[#emph[{}]]\n",
+                            "#align(center)[#block(width: 8cm)[#align(center)[#emph[{}]]]]\n",
                             display
                         )
                     }
@@ -849,8 +954,8 @@ pub fn generate_indian_markup(content: &Value, font_name: &str, meta: &Screenpla
 // Generated by Scriptty. Do not edit manually.
 
 #set page(paper: "a4", margin: (top: 2cm, bottom: 2cm, left: 1.5cm, right: 1.5cm))
-#set text(font: "{}", size: 11pt)
-#set par(leading: 0.6em)
+#set text(font: "{}", size: 11pt, lang: "ml", hyphenate: true)
+#set par(leading: 0.6em, justify: false, linebreaks: "optimized")
 
 "#,
         font_name
@@ -1067,6 +1172,8 @@ pub fn generate_indian_markup(content: &Value, font_name: &str, meta: &Screenpla
                     }
                 }
                 "dialogue" => {
+                    // Auto-wrap dialogue in quotes if missing
+                    let (q_prefix, q_suffix) = dialogue_quote_wrap(&element.text);
                     // Use typst_inline to preserve bold formatting in dialogue
                     if let Some(char_name) = pending_character.take() {
                         // Dialogue right after a character name (no parenthetical in between):
@@ -1074,16 +1181,16 @@ pub fn generate_indian_markup(content: &Value, font_name: &str, meta: &Screenpla
                         // Right column = dialogue text (left-aligned)
                         let escaped_name = escape_typst(&char_name);
                         char_block_rows.push(format!(
-                            "#grid(\n  columns: (50%, 50%),\n  column-gutter: 1em,\n  align(right)[#pad(right: 0.5em)[*{}*]],\n  align(left)[#pad(left: 0.5em)[{}]]\n)\n",
+                            "#grid(\n  columns: (50%, 50%),\n  column-gutter: 1em,\n  align(right)[#pad(right: 0.5em)[*{}*]],\n  align(left)[#pad(left: 0.5em)[{}{}{}]]\n)\n",
                             escaped_name.to_uppercase(),
-                            element.typst_inline
+                            q_prefix, element.typst_inline, q_suffix
                         ));
                     } else {
                         // Dialogue after parenthetical already consumed the character:
                         // Left column = empty, right column = dialogue text
                         char_block_rows.push(format!(
-                            "#grid(\n  columns: (50%, 50%),\n  column-gutter: 1em,\n  [#pad(right: 0.5em)[]],\n  align(left)[#pad(left: 0.5em)[{}]]\n)\n",
-                            element.typst_inline
+                            "#grid(\n  columns: (50%, 50%),\n  column-gutter: 1em,\n  [#pad(right: 0.5em)[]],\n  align(left)[#pad(left: 0.5em)[{}{}{}]]\n)\n",
+                            q_prefix, element.typst_inline, q_suffix
                         ));
                     }
                 }
@@ -1286,8 +1393,8 @@ pub fn generate_prose_section_markup(section_name: &str, body: &str, font_name: 
     markup.push_str(&format!(
         r#"// Prose section: reset layout for readable prose typography
 #set page(margin: (top: 2.5cm, bottom: 2.5cm, left: 3cm, right: 3cm))
-#set text(font: "{}", size: 12pt)
-#set par(justify: true, leading: 0.8em, first-line-indent: 1cm)
+#set text(font: "{}", size: 12pt, lang: "ml", hyphenate: true)
+#set par(justify: true, leading: 0.8em, first-line-indent: 1cm, linebreaks: "optimized")
 
 "#,
         font_name
@@ -1385,8 +1492,8 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
     markup.push_str(&format!(
         r#"// Scene breakdown: reset layout
 #set page(margin: (top: 2.5cm, bottom: 2.5cm, left: 2.5cm, right: 2.5cm))
-#set text(font: "{}", size: 11pt)
-#set par(justify: false, first-line-indent: 0cm, leading: 0.65em)
+#set text(font: "{}", size: 11pt, lang: "ml", hyphenate: true)
+#set par(justify: false, first-line-indent: 0cm, leading: 0.65em, linebreaks: "optimized")
 
 "#,
         font_name

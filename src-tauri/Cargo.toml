@@ -1,6 +1,6 @@
 [package]
 name = "scriptty"
-version = "0.5.1"
+version = "0.5.2"
 description = "Offline screenwriting for Malayalam and English writers"
 authors = ["Hrishikesh Bhaskaran"]
 license = "MIT"

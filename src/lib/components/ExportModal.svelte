@@ -31,14 +31,18 @@
   let hasTreatment = $derived((documentStore.document?.story.treatment ?? '').trim().length > 0);
   let hasNarrative = $derived((documentStore.document?.story.narrative ?? '').trim().length > 0);
 
+  // Any in-flight export locks dismissal so users don't click away thinking
+  // the modal is stuck, and so we never leave a half-written file behind.
+  let anyExporting = $derived(exporting || exportingFountain || exportingPlaintext);
+
   function handleKeydown(event: KeyboardEvent) {
-    if (event.key === 'Escape') {
+    if (event.key === 'Escape' && !anyExporting) {
       open = false;
     }
   }
 
   function handleBackdropClick(event: MouseEvent) {
-    if (event.target === event.currentTarget) {
+    if (event.target === event.currentTarget && !anyExporting) {
       open = false;
     }
   }
@@ -252,9 +256,12 @@
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div class="modal-backdrop" onclick={handleBackdropClick} onkeydown={handleKeydown} role="dialog" aria-modal="true" tabindex="-1">
     <div class="modal-card">
+      {#if anyExporting}
+        <div class="progress-bar" aria-hidden="true"><span class="progress-bar-fill"></span></div>
+      {/if}
       <div class="modal-header">
         <h2>Export Document</h2>
-        <button class="btn-close" onclick={() => { open = false; }}>&times;</button>
+        <button class="btn-close" onclick={() => { open = false; }} disabled={anyExporting}>&times;</button>
       </div>
 
       <div class="section-label">What to include</div>
@@ -316,15 +323,15 @@
       {/if}
 
       <div class="modal-footer">
-        <button class="btn-ghost" onclick={() => { open = false; }}>Cancel</button>
-        <button class="btn-secondary" onclick={handlePlaintextExport} disabled={exportingPlaintext}>
-          {exportingPlaintext ? 'Exporting...' : 'Plain Text'}
+        <button class="btn-ghost" onclick={() => { open = false; }} disabled={anyExporting}>Cancel</button>
+        <button class="btn-secondary" onclick={handlePlaintextExport} disabled={anyExporting}>
+          {#if exportingPlaintext}<span class="spinner" aria-hidden="true"></span>Exporting{:else}Plain Text{/if}
         </button>
-        <button class="btn-secondary" onclick={handleFountainExport} disabled={exportingFountain}>
-          {exportingFountain ? 'Exporting...' : 'Fountain'}
+        <button class="btn-secondary" onclick={handleFountainExport} disabled={anyExporting}>
+          {#if exportingFountain}<span class="spinner" aria-hidden="true"></span>Exporting{:else}Fountain{/if}
         </button>
-        <button class="btn-primary" onclick={handleExport} disabled={exporting}>
-          {exporting ? 'Exporting...' : 'Export PDF'}
+        <button class="btn-primary" onclick={handleExport} disabled={anyExporting}>
+          {#if exporting}<span class="spinner spinner-on-primary" aria-hidden="true"></span>Generating PDF{:else}Export PDF{/if}
         </button>
       </div>
     </div>
@@ -344,6 +351,7 @@
   }
 
   .modal-card {
+    position: relative;
     background: var(--surface-float);
     border: 1px solid var(--border-medium);
     border-radius: 12px;
@@ -353,6 +361,53 @@
     box-shadow: 0 8px 32px var(--shadow-heavy);
     animation: modal-in 150ms ease-out;
     font-family: system-ui, -apple-system, sans-serif;
+  }
+
+  .progress-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    overflow: hidden;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    background: var(--surface-hover);
+  }
+
+  .progress-bar-fill {
+    display: block;
+    width: 40%;
+    height: 100%;
+    background: var(--accent);
+    animation: progress-slide 1.1s ease-in-out infinite;
+  }
+
+  @keyframes progress-slide {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(350%); }
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 6px;
+    border: 1.5px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spinner-spin 0.7s linear infinite;
+    vertical-align: -1px;
+    opacity: 0.8;
+  }
+
+  .spinner-on-primary {
+    border-color: #fff;
+    border-right-color: transparent;
+  }
+
+  @keyframes spinner-spin {
+    to { transform: rotate(360deg); }
   }
 
   @keyframes modal-in {
@@ -392,6 +447,16 @@
   .btn-close:hover {
     background: var(--surface-hover);
     color: var(--text-primary);
+  }
+
+  .btn-close:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .btn-ghost:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .section-label {

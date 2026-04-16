@@ -156,11 +156,13 @@
       onkeydown={handleFindKeydown}
       spellcheck={false}
     />
-    <span class="match-info">
+    <span class="match-info" class:hint={query.length === 0} class:empty={query.length > 0 && matchCount === 0}>
       {#if matchCount > 0}
         {currentIndex + 1} of {matchCount}
       {:else if query.length > 0}
         No matches
+      {:else}
+        Type to search
       {/if}
     </span>
     <button class="bar-btn" onclick={prev} title="Previous match (Shift+Enter)" disabled={matchCount === 0}>
@@ -236,12 +238,24 @@
   }
 
   .match-info {
-    min-width: 60px;
+    min-width: 76px;
     text-align: center;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     font-size: 11px;
     white-space: nowrap;
     user-select: none;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Soft placeholder when there's no query yet — shouldn't read as a
+     result, just as a hint. */
+  .match-info.hint {
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  .match-info.empty {
+    color: var(--text-muted);
   }
 
   .bar-btn {

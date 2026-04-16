@@ -499,11 +499,6 @@
     padding: 4px 0;
   }
 
-  .checkbox-row.disabled {
-    color: var(--text-muted);
-    cursor: default;
-  }
-
   .unavailable-hint {
     margin: -14px 0 18px;
     font-size: 11.5px;

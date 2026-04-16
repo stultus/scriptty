@@ -3,6 +3,7 @@
   import { TextSelection } from 'prosemirror-state';
   import { documentStore } from '$lib/stores/documentStore.svelte';
   import { editorStore } from '$lib/stores/editorStore.svelte';
+  import { screenplaySchema } from '$lib/editor/schema';
 
   // Scene heading extracted from ProseMirror JSON content
   interface SceneEntry {
@@ -48,6 +49,27 @@
 
     return entries;
   });
+
+  // Add a blank scene heading at the end of the document and focus it.
+  // Mirrors the Cards view's "Add Scene" behavior so both entry points
+  // stay in sync.
+  function addScene() {
+    const view = editorStore.view;
+    if (!view) return;
+
+    const doc = view.state.doc;
+    const endPos = doc.content.size;
+    const newHeading = screenplaySchema.node('scene_heading');
+    const tr = view.state.tr.insert(endPos, newHeading);
+    // Place cursor inside the new heading so the user can start typing
+    // immediately (endPos + 1 lands inside the newly inserted node).
+    tr.setSelection(TextSelection.create(tr.doc, endPos + 1));
+    tr.scrollIntoView();
+    view.dispatch(tr);
+    documentStore.setContent(view.state.doc.toJSON());
+    documentStore.markDirty();
+    view.focus();
+  }
 
   // Navigate to a scene heading in the editor
   function scrollToScene(sceneIndex: number) {
@@ -281,7 +303,14 @@
 
 <div class="navigator-content">
   {#if scenes.length === 0}
-    <p class="empty-message">No scenes yet</p>
+    <div class="empty-state">
+      <p class="empty-title">No scenes yet</p>
+      <p class="empty-hint">Start with a scene heading like <em>INT. ROOM — DAY</em>.</p>
+      <button class="empty-cta" onclick={addScene}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        Add scene
+      </button>
+    </div>
   {:else}
     <ul class="scene-list" bind:this={listEl}>
       {#each scenes as scene (scene.index)}
@@ -319,11 +348,60 @@
     height: 100%;
   }
 
-  .empty-message {
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 4px;
     font-family: system-ui, -apple-system, sans-serif;
+  }
+
+  .empty-title {
+    margin: 0;
     font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .empty-hint {
+    margin: 0;
+    font-size: 11px;
+    line-height: 1.45;
     color: var(--text-muted);
+  }
+
+  .empty-hint em {
+    font-style: normal;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 10.5px;
+    color: var(--text-secondary);
+    background: var(--surface-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: 3px;
     padding: 0 4px;
+  }
+
+  .empty-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 2px;
+    padding: 5px 10px;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--accent);
+    background: var(--accent-muted);
+    border: 1px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 120ms ease, border-color 120ms ease;
+  }
+
+  .empty-cta:hover {
+    background: var(--accent);
+    color: #fff;
   }
 
   .scene-list {

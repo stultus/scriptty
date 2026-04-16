@@ -451,8 +451,9 @@
 
   /* ─── Sidebar TOC ─── */
   .help-toc {
+    flex: 0 0 220px;
     width: 220px;
-    flex-shrink: 0;
+    min-width: 220px;
     border-right: 1px solid var(--border-subtle);
     background: var(--surface-elevated);
     padding: 16px 0;

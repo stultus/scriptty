@@ -45,6 +45,7 @@
     --text-primary: #e8e6e1;
     --text-secondary: #9e9a94;
     --text-muted: #5e5a55;
+    --text-caption: #9e9a94;
     --text-on-page: #1a1a1a;
 
     /* Accent — teal, consistent with app icon */
@@ -87,25 +88,26 @@
     --page-shadow: rgba(0, 0, 0, 0.12);
 
     --text-primary: #1a1916;
-    --text-secondary: #5c5852;
-    --text-muted: #9c9891;
+    --text-secondary: #4a4740;
+    --text-muted: #6b6860;
+    --text-caption: #6b6860;
     --text-on-page: #1a1a1a;
 
     --accent: #1e8070;
     --accent-hover: #237a6a;
     --accent-muted: rgba(30, 128, 112, 0.1);
 
-    --dirty: #c47f28;
+    --dirty: #b76d0f;
     --error: #a83c30;
     --success: #2e7d52;
 
-    --border-subtle: rgba(0, 0, 0, 0.08);
-    --border-medium: rgba(0, 0, 0, 0.14);
+    --border-subtle: rgba(0, 0, 0, 0.14);
+    --border-medium: rgba(0, 0, 0, 0.22);
 
-    --shadow-soft: rgba(0, 0, 0, 0.08);
-    --shadow-medium: rgba(0, 0, 0, 0.15);
-    --shadow-heavy: rgba(0, 0, 0, 0.25);
-    --backdrop: rgba(0, 0, 0, 0.4);
+    --shadow-soft: rgba(0, 0, 0, 0.1);
+    --shadow-medium: rgba(0, 0, 0, 0.2);
+    --shadow-heavy: rgba(0, 0, 0, 0.3);
+    --backdrop: rgba(0, 0, 0, 0.5);
 
     --text-on-accent: #ffffff;
 

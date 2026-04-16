@@ -70,12 +70,12 @@
       </div>
 
       <div class="form-group">
-        <label for="meta-author">Written by</label>
+        <label for="meta-author">Author</label>
         <input id="meta-author" type="text" bind:value={author} placeholder="Writer name(s)" />
       </div>
 
       <div class="form-group">
-        <label for="meta-director">Directed by</label>
+        <label for="meta-director">Director</label>
         <input id="meta-director" type="text" bind:value={director} placeholder="Director name" />
       </div>
 
@@ -86,11 +86,11 @@
 
       <div class="form-row">
         <div class="form-group half">
-          <label for="meta-draft">Draft #</label>
+          <label for="meta-draft">Draft number</label>
           <input id="meta-draft" type="number" min="1" bind:value={draftNumber} />
         </div>
         <div class="form-group half">
-          <label for="meta-date">Draft Date</label>
+          <label for="meta-date">Draft date</label>
           <input id="meta-date" type="date" bind:value={draftDate} />
         </div>
       </div>

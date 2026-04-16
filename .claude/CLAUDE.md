@@ -63,9 +63,8 @@ scriptty/
 │   │   └── components/           # UI components
 │   │       ├── Editor.svelte          # ProseMirror editor + status bar
 │   │       ├── TitleBar.svelte        # Top bar: actions, title, font/theme controls
-│   │       ├── LeftPanel.svelte       # Tabbed sidebar (Scenes | Story), auto-widening
+│   │       ├── LeftPanel.svelte       # Scene navigator sidebar
 │   │       ├── SceneNavigator.svelte  # Scene list with click-to-jump
-│   │       ├── StoryPanel.svelte      # Idea/Synopsis/Treatment text areas
 │   │       ├── SceneCardsView.svelte  # Full-panel grid of scene breakdown cards
 │   │       ├── StoryModeView.svelte  # Full-screen narrative writing view
 │   │       ├── MetadataModal.svelte   # Screenplay metadata editor
@@ -201,7 +200,7 @@ JSON with top-level keys:
 
 `content` is the ProseMirror document JSON serialization.
 `meta` includes `director` field (added with `#[serde(default)]` for backward compat).
-`story` holds Story Panel text sections plus full-length narrative.
+`story` holds Story view text sections (idea, synopsis, treatment, narrative).
 `scene_cards` holds per-scene descriptions and shoot notes.
 
 Full format spec: see `SCREENPLAY_FORMAT.md` at project root.
@@ -248,16 +247,6 @@ Full format spec: see `SCREENPLAY_FORMAT.md` at project root.
 - Persisted to `localStorage` under key `scriptty-theme`
 - Accessible via Settings modal (gear icon in status bar)
 - Warm Kerala-rooted palette: teal accent, cream page, amber dirty indicator
-
-### Story Panel
-
-- Collapsible left panel tab alongside Scene Navigator
-- Four sections: Idea (logline), Synopsis, Treatment (detailed story), Narrative (collapsed by default)
-- Tab switcher at top of left panel: Scenes | Story
-- Panel auto-widens to 420px on Story tab for more writing space
-- All sections support Malayalam input (Ctrl+Space toggle applies)
-- Data stored in `story` field of `.screenplay` file
-- Narrative section has "Cmd+Shift+L for full screen" hint
 
 ### Story Mode
 

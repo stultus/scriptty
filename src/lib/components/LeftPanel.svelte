@@ -1,39 +1,14 @@
 <script lang="ts">
   import SceneNavigator from './SceneNavigator.svelte';
-  import StoryPanel from './StoryPanel.svelte';
 
   let { isOpen }: { isOpen: boolean } = $props();
 
   let panelWidth = 320;
-
-  // Which tab is active: 'scenes' or 'story'
-  let activeTab = $state<'scenes' | 'story'>('scenes');
 </script>
 
 <aside class="left-panel" class:open={isOpen} style:--panel-width="{panelWidth}px">
   <div class="panel-content">
-    <!-- Tab switcher -->
-    <div class="tab-bar">
-      <button
-        class="tab-btn"
-        class:active={activeTab === 'scenes'}
-        onclick={() => { activeTab = 'scenes'; }}
-      >Scenes</button>
-      <button
-        class="tab-btn"
-        class:active={activeTab === 'story'}
-        onclick={() => { activeTab = 'story'; }}
-      >Story</button>
-    </div>
-
-    <!-- Tab content -->
-    <div class="tab-content">
-      {#if activeTab === 'scenes'}
-        <SceneNavigator />
-      {:else}
-        <StoryPanel />
-      {/if}
-    </div>
+    <SceneNavigator />
   </div>
 </aside>
 
@@ -64,46 +39,5 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-  }
-
-  .tab-bar {
-    display: flex;
-    padding: 8px 12px 0;
-    gap: 2px;
-    flex-shrink: 0;
-  }
-
-  .tab-btn {
-    flex: 1;
-    padding: 5px 0;
-    border: none;
-    border-bottom: 2px solid transparent;
-    border-radius: 0;
-    background: transparent;
-    color: var(--text-muted);
-    font-family: system-ui, -apple-system, sans-serif;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    cursor: pointer;
-    transition: color 120ms ease, border-color 120ms ease;
-  }
-
-  .tab-btn:hover {
-    color: var(--text-secondary);
-  }
-
-  .tab-btn.active {
-    color: var(--text-primary);
-    border-bottom-color: var(--accent);
-  }
-
-  .tab-content {
-    flex: 1;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
   }
 </style>

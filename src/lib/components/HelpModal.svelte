@@ -17,7 +17,6 @@
     { id: 'formatting', title: 'Text Formatting' },
     { id: 'find', title: 'Find and Replace' },
     { id: 'scene-nav', title: 'Scene Navigator' },
-    { id: 'story-panel', title: 'Story Panel' },
     { id: 'story-view', title: 'Story View' },
     { id: 'views', title: 'Views' },
     { id: 'annotations', title: 'Scene Annotations' },
@@ -208,18 +207,13 @@
 
           <section class="help-section" id="scene-nav">
             <h3>Scene Navigator</h3>
-            <p>Press <kbd>Cmd+\</kbd> to toggle the left panel. The <strong>Scenes</strong> tab shows all your scene headings with auto-numbered labels.</p>
+            <p>Press <kbd>Cmd+\</kbd> to toggle the left panel. It shows all your scene headings with auto-numbered labels.</p>
             <p>Click any scene to jump directly to it in the editor. Drag the handle (<strong>⠿</strong>) that appears on hover to reorder scenes — the entire scene (heading + all content until the next scene) moves as a single block, undoable with <kbd>Cmd+Z</kbd>.</p>
-          </section>
-
-          <section class="help-section" id="story-panel">
-            <h3>Story Panel</h3>
-            <p>The <strong>Story</strong> tab in the left panel provides quick access to your story's structure (Idea, Synopsis, Treatment, Narrative). For a full-page writing experience, use the Story view instead.</p>
           </section>
 
           <section class="help-section" id="story-view">
             <h3>Story View</h3>
-            <p>Press <kbd>Cmd+Shift+L</kbd> or click the <strong>Story</strong> tab to enter Story view — all four story sections (Idea, Synopsis, Treatment, Narrative) in one continuous page.</p>
+            <p>Press <kbd>Cmd+Shift+L</kbd> or click the <strong>Story</strong> tab in the title bar to enter Story view — all four story sections (Idea, Synopsis, Treatment, Narrative) in one full-page workspace.</p>
             <p>Malayalam input is supported (<kbd>Ctrl+Space</kbd> to toggle). A word count is shown in the status bar.</p>
           </section>
 
@@ -265,7 +259,7 @@
             <p>Choose what to include in your PDF:</p>
             <ul>
               <li><strong>Title Page</strong> — generated from your metadata (title, writer, director credits)</li>
-              <li><strong>Synopsis</strong>, <strong>Treatment</strong>, and <strong>Narrative</strong> — from the Story panel</li>
+              <li><strong>Synopsis</strong>, <strong>Treatment</strong>, and <strong>Narrative</strong> — from the Story view</li>
               <li><strong>Screenplay</strong> — the full script</li>
               <li><strong>Scene Cards</strong> — production breakdown table</li>
             </ul>

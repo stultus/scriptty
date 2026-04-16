@@ -111,6 +111,22 @@
   let gutterTopPad = $state(0);
   let annotationRafId = 0;
 
+  // Track which scenes have their annotation expanded. Collapsed slots limit
+  // description/notes to ~2 visible lines; expanded shows the full text.
+  let expandedSlots = $state(new Set<number>());
+
+  function toggleSlotExpanded(sceneOrder: number) {
+    const next = new Set(expandedSlots);
+    if (next.has(sceneOrder)) next.delete(sceneOrder);
+    else next.add(sceneOrder);
+    expandedSlots = next;
+    // Let layout settle before recomputing spacer heights so the editor
+    // grows/shrinks to match the new annotation footprint.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => measureAndApplySpacers());
+    });
+  }
+
   function scheduleAnnotationUpdate() {
     cancelAnimationFrame(annotationRafId);
     annotationRafId = requestAnimationFrame(updateAnnotationPositions);
@@ -527,13 +543,26 @@
       <div class="annotations-gutter" style="padding-top: {gutterTopPad}px" bind:this={gutterEl}>
         {#each sceneSlots as slot (slot.sceneOrder)}
           {@const showFields = slot.description || slot.shootNotes || editingSceneIndex === slot.sceneOrder}
+          {@const expanded = expandedSlots.has(slot.sceneOrder)}
           <div class="scene-slot" style="min-height: {slot.extent}px" data-scene={slot.sceneOrder}>
-            <div class="slot-content">
+            <div class="slot-content" class:expanded>
               {#if showFields}
+                <button
+                  type="button"
+                  class="ann-toggle"
+                  onclick={() => toggleSlotExpanded(slot.sceneOrder)}
+                  aria-label={expanded ? `Collapse annotation for scene ${slot.sceneOrder + 1}` : `Expand annotation for scene ${slot.sceneOrder + 1}`}
+                  title={expanded ? 'Collapse' : 'Expand'}
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="transform: rotate({expanded ? 180 : 0}deg); transition: transform 120ms ease;">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
                 <div class="ann-field">
                   <span class="ann-label">Description</span>
                   <textarea
                     class="ann-text"
+                    class:collapsed={!expanded}
                     placeholder="Scene description..."
                     value={slot.description}
                     oninput={(e: Event) => updateSceneCard(slot.sceneOrder, 'description', (e.target as HTMLTextAreaElement).value)}
@@ -544,6 +573,7 @@
                   <span class="ann-label">Notes</span>
                   <textarea
                     class="ann-text"
+                    class:collapsed={!expanded}
                     placeholder="Additional notes..."
                     value={slot.shootNotes}
                     oninput={(e: Event) => updateSceneCard(slot.sceneOrder, 'shoot_notes', (e.target as HTMLTextAreaElement).value)}
@@ -578,11 +608,14 @@
     padding: 40px 0;
   }
 
+  /* Flex-centered editor keeps the page in the viewport center regardless of
+     whether the annotation gutter is visible. The gutter is absolutely
+     positioned so toggling it on/off doesn't shift the editor horizontally. */
   .editor-with-annotations {
+    position: relative;
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    gap: 16px;
     min-height: 100%;
     padding: 0 20px;
   }
@@ -595,8 +628,11 @@
   }
 
   .annotations-gutter {
-    flex: 0 1 320px;
-    min-width: 0;
+    position: absolute;
+    top: 0;
+    /* Park the gutter just to the right of the centered 680px editor. */
+    left: calc(50% + 340px + 16px);
+    width: 320px;
   }
 
   .scene-slot {
@@ -609,6 +645,35 @@
   .scene-slot:has(.ann-field) + .scene-slot:has(.ann-field) {
     border-top-color: var(--border-subtle);
     padding-top: 8px;
+  }
+
+  .slot-content {
+    position: relative;
+  }
+
+  .ann-toggle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+    transition: opacity 120ms ease, background 120ms ease, color 120ms ease;
+  }
+
+  .ann-toggle:hover {
+    opacity: 1;
+    background: var(--accent-muted);
+    color: var(--accent);
   }
 
   .ann-field {
@@ -642,6 +707,14 @@
     overflow: hidden;
     field-sizing: content;
     min-height: 1.4em;
+  }
+
+  /* Collapsed state: limit the textarea to two lines of content. max-height
+     caps field-sizing: content from growing past two lines; overflow hidden
+     clips anything longer so the gutter stays compact. */
+  .ann-text.collapsed {
+    max-height: calc(1.4em * 2);
+    overflow: hidden;
   }
 
   .ann-text::placeholder {

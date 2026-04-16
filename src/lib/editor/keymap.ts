@@ -228,6 +228,24 @@ const handleShiftTab: Command = (state, dispatch) => {
 };
 
 /**
+ * Backspace handler: refuse to delete a scene_heading.
+ * Returning true when the cursor is at the start of a scene_heading
+ * swallows the keystroke so ProseMirror's default Backspace can't
+ * merge the scene into the previous block or remove its node.
+ * Anywhere else inside a scene_heading we let the default run so
+ * users can still erase text within the heading itself.
+ */
+const handleBackspace: Command = (state) => {
+	const $from = state.selection.$from;
+	// Only intercept collapsed selections — otherwise let range-delete proceed
+	if (!state.selection.empty) return false;
+	if (currentNodeTypeName(state) !== 'scene_heading') return false;
+	// parentOffset === 0 means the cursor sits at the very start of the heading
+	if ($from.parentOffset === 0) return true;
+	return false;
+};
+
+/**
  * Mod+T handler: converts the current element to a transition.
  * Transitions are rare, so they get a dedicated shortcut rather than a Tab cycle slot.
  */
@@ -251,6 +269,7 @@ export const screenplayKeymap = keymap({
 	'Shift-Enter': handleShiftEnter,
 	Tab: handleTab,
 	'Shift-Tab': handleShiftTab,
+	Backspace: handleBackspace,
 	'Shift-Mod-t': handleModT,
 	'Mod-z': undo,
 	'Shift-Mod-z': redo,

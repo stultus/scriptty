@@ -173,28 +173,19 @@
             <span class="setting-name">Characters under scene heading</span>
             <span class="setting-desc">Auto-list speaking characters</span>
           </div>
-          <div class="segmented">
-            <button
-              class="segmented-item"
-              class:active={documentStore.document?.settings.show_characters_below_header === true}
-              onclick={() => {
-                if (documentStore.document) {
-                  documentStore.document.settings.show_characters_below_header = true;
-                  documentStore.markDirty();
-                }
-              }}
-            >Show</button>
-            <button
-              class="segmented-item"
-              class:active={!documentStore.document?.settings.show_characters_below_header}
-              onclick={() => {
-                if (documentStore.document) {
-                  documentStore.document.settings.show_characters_below_header = false;
-                  documentStore.markDirty();
-                }
-              }}
-            >Hide</button>
-          </div>
+          <button
+            class="switch"
+            role="switch"
+            aria-checked={documentStore.document?.settings.show_characters_below_header === true}
+            aria-label="Show characters under scene heading"
+            onclick={() => {
+              if (documentStore.document) {
+                documentStore.document.settings.show_characters_below_header =
+                  !documentStore.document.settings.show_characters_below_header;
+                documentStore.markDirty();
+              }
+            }}
+          ><span class="switch-thumb"></span></button>
         </div>
 
         <div class="setting-row">
@@ -202,18 +193,16 @@
             <span class="setting-name">Scene annotations</span>
             <span class="setting-desc">Gutter beside the page</span>
           </div>
-          <div class="segmented">
-            <button
-              class="segmented-item"
-              class:active={showAnnotations}
-              onclick={() => { showAnnotations = true; localStorage.setItem('scriptty-annotations', 'true'); }}
-            >Show</button>
-            <button
-              class="segmented-item"
-              class:active={!showAnnotations}
-              onclick={() => { showAnnotations = false; localStorage.setItem('scriptty-annotations', 'false'); }}
-            >Hide</button>
-          </div>
+          <button
+            class="switch"
+            role="switch"
+            aria-checked={showAnnotations}
+            aria-label="Show scene annotations"
+            onclick={() => {
+              showAnnotations = !showAnnotations;
+              localStorage.setItem('scriptty-annotations', String(showAnnotations));
+            }}
+          ><span class="switch-thumb"></span></button>
         </div>
       </div>
 
@@ -458,6 +447,49 @@
     background: var(--surface-elevated);
     color: var(--text-primary);
     box-shadow: 0 1px 2px var(--shadow-soft);
+  }
+
+  /* iOS-style switch for true boolean settings. Named options stay on the
+     segmented control so Light/Dark and English/മലയാളം still read as choices,
+     not states. */
+  .switch {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    border-radius: 999px;
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-base);
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+    transition: background 140ms ease, border-color 140ms ease;
+  }
+
+  .switch[aria-checked="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .switch-thumb {
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--surface-float);
+    box-shadow: 0 1px 3px var(--shadow-soft);
+    transition: transform 140ms ease;
+  }
+
+  .switch[aria-checked="true"] .switch-thumb {
+    transform: translateX(16px);
+    background: #fff;
+  }
+
+  .switch:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
 
   .scene-start-input {

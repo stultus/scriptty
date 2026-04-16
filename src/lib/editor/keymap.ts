@@ -5,6 +5,7 @@
 //   Shift+Enter   → create new scene_heading below (universal "new scene" shortcut)
 //   Tab           → cycle element type: action→character, dialogue→parenthetical, parenthetical→character, character→action
 //   Shift+Tab     → revert to action (from character/dialogue), or action→scene_heading at cursor pos 0
+//   Mod+1..4      → convert current block to scene_heading / action / character / dialogue
 //   Shift+Mod+T   → convert current element to transition
 //   Mod+Z         → undo
 //   Shift+Mod+Z   → redo
@@ -261,6 +262,28 @@ const handleModT: Command = (state, dispatch) => {
 };
 
 /**
+ * Factory for Mod+1..Mod+4 element-type shortcuts. Converts the current
+ * block to the target type in place, matching how Tab/Shift-Tab work.
+ * Returning a Command (not invoking it) keeps each shortcut bindable
+ * individually in the keymap below.
+ */
+function convertCurrentBlockTo(typeName: keyof typeof screenplaySchema.nodes): Command {
+	return (state, dispatch) => {
+		const target = screenplaySchema.nodes[typeName];
+		if (!target) return false;
+		// Skip the work (but still consume the keystroke) when already that type
+		if (currentNodeTypeName(state) === typeName) return true;
+		if (dispatch) {
+			const pos = state.selection.$from.before();
+			const tr = state.tr.setNodeMarkup(pos, target);
+			tr.scrollIntoView();
+			dispatch(tr);
+		}
+		return true;
+	};
+}
+
+/**
  * The screenplay keymap plugin.
  * Binds Enter, Tab, Shift-Tab, and Mod-T to screenplay-specific navigation commands.
  */
@@ -271,6 +294,10 @@ export const screenplayKeymap = keymap({
 	'Shift-Tab': handleShiftTab,
 	Backspace: handleBackspace,
 	'Shift-Mod-t': handleModT,
+	'Mod-1': convertCurrentBlockTo('scene_heading'),
+	'Mod-2': convertCurrentBlockTo('action'),
+	'Mod-3': convertCurrentBlockTo('character'),
+	'Mod-4': convertCurrentBlockTo('dialogue'),
 	'Mod-z': undo,
 	'Shift-Mod-z': redo,
 	'Mod-b': toggleMark(screenplaySchema.marks.bold),

@@ -43,17 +43,50 @@
     return 'Untitled';
   });
 
+  // Two-phase flag: `visible` drives CSS opacity so Svelte can transition
+  // in (true) and out (false); we keep the text mounted for the fade-out
+  // window, then blank it.
   let statusMessage = $state('');
+  let statusVisible = $state(false);
   let statusTimeout: ReturnType<typeof setTimeout> | null = null;
+  let statusClearTimeout: ReturnType<typeof setTimeout> | null = null;
 
+  // `showStatus` is called from save + any future action that wants user feedback.
+  // Duration bumped to 4.5s per UX feedback.
   function showStatus(message: string) {
     statusMessage = message;
+    statusVisible = true;
     if (statusTimeout) clearTimeout(statusTimeout);
-    statusTimeout = setTimeout(() => { statusMessage = ''; }, 3000);
+    if (statusClearTimeout) clearTimeout(statusClearTimeout);
+    statusTimeout = setTimeout(() => {
+      statusVisible = false;
+      // Clear the text after the fade-out finishes so layout settles.
+      statusClearTimeout = setTimeout(() => { statusMessage = ''; }, 260);
+    }, 4500);
   }
 
+  // Show a persistent "Saved" tick on the Save button for a short window
+  // after a successful save, until the doc goes dirty again.
+  let recentlySaved = $state(false);
+  let savedResetTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  $effect(() => {
+    // Reset the tick the moment the document becomes dirty again.
+    if (documentStore.isDirty && recentlySaved) {
+      recentlySaved = false;
+      if (savedResetTimeout) { clearTimeout(savedResetTimeout); savedResetTimeout = null; }
+    }
+  });
+
   async function handleSave() {
+    const wasDirty = documentStore.isDirty;
     await documentStore.saveWithDialog();
+    if (!documentStore.isDirty && wasDirty) {
+      showStatus('Document saved');
+      recentlySaved = true;
+      if (savedResetTimeout) clearTimeout(savedResetTimeout);
+      savedResetTimeout = setTimeout(() => { recentlySaved = false; }, 6000);
+    }
   }
 
 </script>
@@ -100,7 +133,10 @@
       <span class="dirty-dot" title="Unsaved changes"></span>
     {/if}
     {#if statusMessage}
-      <span class="status-message">{statusMessage}</span>
+      <span class="status-message" class:visible={statusVisible} role="status" aria-live="polite">
+        <svg class="status-tick" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        {statusMessage}
+      </span>
     {/if}
   </div>
 
@@ -124,7 +160,17 @@
 
   <div class="btn-group right">
     <button class="btn-ghost" onclick={() => { showExport = true; }}>Export</button>
-    <button class="btn-primary" onclick={handleSave}>Save</button>
+    <button
+      class="btn-primary"
+      class:saved={recentlySaved && !documentStore.isDirty}
+      onclick={handleSave}
+      title={recentlySaved && !documentStore.isDirty ? 'Document saved' : 'Save (Cmd+S)'}
+    >
+      {#if recentlySaved && !documentStore.isDirty}
+        <svg class="save-tick" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      {/if}
+      Save
+    </button>
   </div>
 </div>
 
@@ -179,9 +225,37 @@
   }
 
   .status-message {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     font-size: 11px;
-    color: var(--text-muted);
+    color: var(--accent);
     letter-spacing: 0.02em;
+    opacity: 0;
+    transform: translateY(-2px);
+    transition: opacity 220ms ease, transform 220ms ease;
+    pointer-events: none;
+  }
+
+  .status-message.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .status-tick {
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .save-tick {
+    margin-right: 4px;
+    color: currentColor;
+    vertical-align: -1px;
+  }
+
+  .btn-primary.saved {
+    display: inline-flex;
+    align-items: center;
   }
 
   /* ─── View switcher tabs ─── */

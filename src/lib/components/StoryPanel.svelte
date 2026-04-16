@@ -108,7 +108,10 @@
     <button class="section-header" onclick={() => { narrativeOpen = !narrativeOpen; }}>
       <span class="chevron" class:open={narrativeOpen}>&#9654;</span>
       <span class="section-title">Narrative</span>
-      <span class="section-hint">Cmd+Shift+L for full screen</span>
+      <span class="section-hint">
+        <kbd>⌘⇧L</kbd>
+        <span class="hint-label">full screen</span>
+      </span>
     </button>
     {#if narrativeOpen}
       <div class="section-body treatment-body">
@@ -177,12 +180,28 @@
 
   .section-hint {
     margin-left: auto;
-    font-size: 10px;
-    font-weight: 400;
-    color: var(--text-muted);
-    opacity: 0.6;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     text-transform: none;
     letter-spacing: normal;
+  }
+
+  .section-hint kbd {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 10px;
+    font-weight: 500;
+    background: var(--surface-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: 3px;
+    padding: 1px 4px;
+    color: var(--text-secondary);
+  }
+
+  .hint-label {
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--text-secondary);
   }
 
   .section-body {

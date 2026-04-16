@@ -270,27 +270,39 @@
           <input type="checkbox" bind:checked={includeTitlePage} />
           <span>Title Page</span>
         </label>
-        <label class="checkbox-row" class:disabled={!hasSynopsis}>
-          <input type="checkbox" bind:checked={includeSynopsis} disabled={!hasSynopsis} />
-          <span>Synopsis{!hasSynopsis ? ' (empty)' : ''}</span>
-        </label>
-        <label class="checkbox-row" class:disabled={!hasTreatment}>
-          <input type="checkbox" bind:checked={includeTreatment} disabled={!hasTreatment} />
-          <span>Treatment{!hasTreatment ? ' (empty)' : ''}</span>
-        </label>
+        {#if hasSynopsis}
+          <label class="checkbox-row">
+            <input type="checkbox" bind:checked={includeSynopsis} />
+            <span>Synopsis</span>
+          </label>
+        {/if}
+        {#if hasTreatment}
+          <label class="checkbox-row">
+            <input type="checkbox" bind:checked={includeTreatment} />
+            <span>Treatment</span>
+          </label>
+        {/if}
         <label class="checkbox-row">
           <input type="checkbox" bind:checked={includeScreenplay} />
           <span>Screenplay</span>
         </label>
-        <label class="checkbox-row" class:disabled={!hasNarrative}>
-          <input type="checkbox" bind:checked={includeNarrative} disabled={!hasNarrative} />
-          <span>Narrative{!hasNarrative ? ' (empty)' : ''}</span>
-        </label>
+        {#if hasNarrative}
+          <label class="checkbox-row">
+            <input type="checkbox" bind:checked={includeNarrative} />
+            <span>Narrative</span>
+          </label>
+        {/if}
         <label class="checkbox-row">
           <input type="checkbox" bind:checked={includeSceneCards} />
           <span>Scene Cards</span>
         </label>
       </div>
+      {#if !hasSynopsis || !hasTreatment || !hasNarrative}
+        <p class="unavailable-hint">
+          Add text in the Story panel to include
+          {#if !hasSynopsis}synopsis{/if}{#if !hasSynopsis && (!hasTreatment || !hasNarrative)}{', '}{/if}{#if !hasTreatment}treatment{/if}{#if !hasTreatment && !hasNarrative}{', '}{/if}{#if !hasNarrative}narrative{/if}.
+        </p>
+      {/if}
 
       {#if includeScreenplay}
         <div class="section-label">Screenplay Format</div>
@@ -490,6 +502,13 @@
   .checkbox-row.disabled {
     color: var(--text-muted);
     cursor: default;
+  }
+
+  .unavailable-hint {
+    margin: -14px 0 18px;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    line-height: 1.45;
   }
 
   .checkbox-row input,

@@ -35,10 +35,14 @@
   function scrollToSection(id: string) {
     const el = contentEl?.querySelector(`#${id}`) as HTMLElement | null;
     if (!el || !contentEl) return;
-    // Compute the target scroll position manually because smooth
-    // scrollIntoView inside a nested scroll container has inconsistent
-    // behavior across WebKit/Blink — this works everywhere.
-    const top = el.offsetTop - 16;
+    // offsetTop is relative to the nearest positioned ancestor, which may
+    // not be the scroll container — compute the delta via bounding rects
+    // so the section top lands at the top of the content pane.
+    const top =
+      el.getBoundingClientRect().top -
+      contentEl.getBoundingClientRect().top +
+      contentEl.scrollTop -
+      12;
     contentEl.scrollTo({ top, behavior: 'smooth' });
     activeId = id;
   }
@@ -535,6 +539,9 @@
     overflow-y: auto;
     padding: 8px 40px 32px;
     scroll-behavior: smooth;
+    /* Make this the offsetParent for child sections so offsetTop is
+       correct relative to the scroll container. */
+    position: relative;
   }
 
   .help-section {

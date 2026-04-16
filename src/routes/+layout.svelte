@@ -124,6 +124,19 @@
     --label-color: var(--text-muted);
   }
 
+  /* ─── Disabled button baseline ───
+     Applies to every native <button> across the app so disabled state is
+     always visible even if the component didn't author its own :disabled
+     rule. Components may still add component-specific overrides, but this
+     guarantees the baseline. `pointer-events: none` also neutralizes any
+     :hover background changes on disabled buttons. */
+  :global(button:disabled),
+  :global(button[aria-disabled='true']) {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
   /* ─── Scrollbar styling ─── */
   :global(::-webkit-scrollbar) {
     width: 6px;

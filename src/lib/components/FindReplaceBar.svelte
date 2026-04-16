@@ -281,11 +281,6 @@
     color: var(--text-primary);
   }
 
-  .bar-btn:disabled {
-    opacity: 0.4;
-    cursor: default;
-  }
-
   .bar-btn.active {
     color: var(--accent);
     background: var(--accent-muted);

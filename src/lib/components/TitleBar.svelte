@@ -95,7 +95,6 @@
   <div class="btn-group left">
     <button
       class="btn-icon"
-      class:disabled={activeView !== 'writing'}
       onclick={onToggleSidebar}
       disabled={activeView !== 'writing'}
       title="Toggle Sidebar (⌘B) — Writing view only"
@@ -351,11 +350,6 @@
   .btn-icon:hover:not(:disabled) {
     background: var(--surface-hover);
     color: var(--text-primary);
-  }
-
-  .btn-icon:disabled {
-    opacity: 0.3;
-    cursor: default;
   }
 
   /* ─── Separator between sidebar toggle and format buttons ─── */

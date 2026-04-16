@@ -461,16 +461,6 @@
     color: var(--text-primary);
   }
 
-  .btn-close:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .btn-ghost:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
   .section-label {
     font-size: 11px;
     font-weight: 600;
@@ -562,11 +552,6 @@
     color: var(--text-primary);
   }
 
-  .btn-secondary:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
   .btn-primary {
     height: 28px;
     padding: 0 12px;
@@ -584,8 +569,4 @@
     background: var(--accent-hover);
   }
 
-  .btn-primary:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
 </style>

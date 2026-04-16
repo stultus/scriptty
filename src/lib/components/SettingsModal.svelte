@@ -255,20 +255,71 @@
 
   .modal-card {
     position: absolute;
+    /* Clamp both axes to viewport — on short windows the 48px safe area at
+       top + 40px above the gear stays respected; on narrow windows the card
+       shrinks instead of clipping off-screen. */
     bottom: 40px;
     left: 16px;
+    max-width: min(320px, calc(100vw - 32px));
+    width: 320px;
+    max-height: calc(100vh - 88px);
     background: var(--surface-float);
     border: 1px solid var(--border-subtle);
     border-radius: 10px;
     padding: 14px 16px 12px;
-    width: 320px;
-    max-height: calc(100vh - 80px);
     overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
     box-shadow: 0 12px 32px var(--shadow-heavy, rgba(0, 0, 0, 0.2)),
                 0 2px 8px var(--shadow-soft);
     animation: menu-in 120ms ease-out;
     font-family: system-ui, -apple-system, sans-serif;
     z-index: 1000;
+  }
+
+  /* Subtle fade at the bottom of the card hints there is more content
+     below when the settings list is taller than the viewport. The
+     pseudo-element is positioned fixed to the card's bottom so it stays
+     visible while the user scrolls internal content. */
+  .modal-card::after {
+    content: "";
+    position: sticky;
+    display: block;
+    bottom: -14px;
+    left: 0;
+    right: 0;
+    height: 14px;
+    margin: 0 -16px -12px -16px;
+    background: linear-gradient(to top, var(--surface-float) 20%, transparent);
+    pointer-events: none;
+  }
+
+  .modal-card::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .modal-card::-webkit-scrollbar-thumb {
+    background: var(--border-medium);
+    border-radius: 4px;
+    border: 2px solid var(--surface-float);
+  }
+
+  .modal-card::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+  }
+
+  .modal-card::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .modal-card::-webkit-scrollbar-thumb {
+    background: var(--border-medium);
+    border-radius: 4px;
+    border: 2px solid var(--surface-float);
+  }
+
+  .modal-card::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
   }
 
   @keyframes menu-in {

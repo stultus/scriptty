@@ -169,8 +169,8 @@
     <button class="bar-btn" onclick={next} title="Next match (Enter)" disabled={matchCount === 0}>
       <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
-    <button class="bar-btn" class:active={caseSensitive} onclick={toggleCase} title="Case sensitive">Aa</button>
-    <button class="bar-btn btn-close" onclick={close} title="Close (Escape)">&times;</button>
+    <button class="bar-btn" class:active={caseSensitive} onclick={toggleCase} title="Match case">Aa</button>
+    <button class="bar-btn btn-close" onclick={close} title="Close (Esc)">&times;</button>
   </div>
   {#if mode === 'replace'}
     <div class="replace-row">
@@ -181,8 +181,8 @@
         onkeydown={handleReplaceKeydown}
         spellcheck={false}
       />
-      <button class="bar-btn replace-action" onclick={handleReplace} disabled={matchCount === 0}>Replace</button>
-      <button class="bar-btn replace-action" onclick={handleReplaceAll} disabled={matchCount === 0}>Replace All</button>
+      <button class="bar-btn replace-action" onclick={handleReplace} disabled={matchCount === 0} title="Replace current match (Enter)">Replace</button>
+      <button class="bar-btn replace-action" onclick={handleReplaceAll} disabled={matchCount === 0} title="Replace every match">Replace All</button>
     </div>
   {/if}
 </div>

@@ -98,7 +98,7 @@
       class:disabled={activeView !== 'writing'}
       onclick={onToggleSidebar}
       disabled={activeView !== 'writing'}
-      title="Toggle Sidebar (Writing view only)"
+      title="Toggle Sidebar (⌘B) — Writing view only"
     >
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
     </button>
@@ -109,19 +109,19 @@
           class="btn-format"
           class:active={isBoldActive}
           onclick={() => applyMark('bold')}
-          title="Bold (Cmd+B)"
+          title="Bold (⌘B)"
         ><span class="fmt-bold">B</span></button>
         <button
           class="btn-format"
           class:active={isItalicActive}
           onclick={() => applyMark('italic')}
-          title="Italic (Cmd+I)"
+          title="Italic (⌘I)"
         ><span class="fmt-italic">I</span></button>
         <button
           class="btn-format"
           class:active={isUnderlineActive}
           onclick={() => applyMark('underline')}
-          title="Underline (Cmd+U)"
+          title="Underline (⌘U)"
         ><span class="fmt-underline">U</span></button>
       </div>
     {/if}
@@ -145,26 +145,29 @@
       class="view-tab"
       class:active={activeView === 'writing'}
       onclick={() => onViewChange?.('writing')}
+      title="Writing view"
     >Writing</button>
     <button
       class="view-tab"
       class:active={activeView === 'cards'}
       onclick={() => onViewChange?.('cards')}
+      title="Scene Cards (⌘⇧K)"
     >Cards</button>
     <button
       class="view-tab"
       class:active={activeView === 'story'}
       onclick={() => onViewChange?.('story')}
+      title="Story view (⌘⇧L)"
     >Story</button>
   </div>
 
   <div class="btn-group right">
-    <button class="btn-ghost" onclick={() => { showExport = true; }}>Export</button>
+    <button class="btn-ghost" onclick={() => { showExport = true; }} title="Export document">Export</button>
     <button
       class="btn-primary"
       class:saved={recentlySaved && !documentStore.isDirty}
       onclick={handleSave}
-      title={recentlySaved && !documentStore.isDirty ? 'Document saved' : 'Save (Cmd+S)'}
+      title={recentlySaved && !documentStore.isDirty ? 'Document saved' : 'Save (⌘S)'}
     >
       {#if recentlySaved && !documentStore.isDirty}
         <svg class="save-tick" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>

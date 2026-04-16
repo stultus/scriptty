@@ -38,20 +38,25 @@
 </aside>
 
 <style>
+  /* The panel floats over the editor area so opening/closing it doesn't
+     reflow the editor — the page stays centered in the viewport. */
   .left-panel {
-    width: 0;
-    min-width: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: var(--panel-width, 240px);
     overflow: hidden;
     background: var(--surface-base);
     border-right: 1px solid var(--border-subtle);
-    transition: width 200ms cubic-bezier(0.4, 0, 0.2, 1),
-                min-width 200ms cubic-bezier(0.4, 0, 0.2, 1);
-    flex-shrink: 0;
+    transform: translateX(-100%);
+    transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10;
+    box-shadow: 2px 0 8px var(--shadow-soft);
   }
 
   .left-panel.open {
-    width: var(--panel-width, 240px);
-    min-width: var(--panel-width, 240px);
+    transform: translateX(0);
   }
 
   .panel-content {

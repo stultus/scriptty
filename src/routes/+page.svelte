@@ -46,36 +46,41 @@
   // Set to true after menu-quit confirms — prevents onCloseRequested from prompting again
   let quitConfirmed = false;
 
-  onMount(async () => {
+  onMount(() => {
     // Initialize theme on first mount
     themeStore.init();
 
-    if (!appInitialized) {
-      appInitialized = true;
-      // Check if the app was launched by double-clicking a .screenplay file.
-      // The deep-link plugin buffers URLs on cold launch so getCurrent()
-      // returns them reliably after the frontend mounts.
-      let openedFile = false;
-      try {
-        const urls = await getDeepLinkUrls();
-        if (urls && urls.length > 0) {
-          for (const url of urls) {
-            // On macOS, file associations come as file:// URLs
-            const filePath = url.startsWith('file://') ? decodeURIComponent(url.replace('file://', '')) : url;
-            if (filePath.endsWith('.screenplay')) {
-              await documentStore.openDocument(filePath);
-              openedFile = true;
-              break;
+    // Kick off async startup in an IIFE so onMount itself stays synchronous.
+    // Svelte's onMount only treats a synchronously-returned function as its
+    // cleanup — returning a Promise would drop the cleanup on the floor.
+    (async () => {
+      if (!appInitialized) {
+        appInitialized = true;
+        // Check if the app was launched by double-clicking a .screenplay file.
+        // The deep-link plugin buffers URLs on cold launch so getCurrent()
+        // returns them reliably after the frontend mounts.
+        let openedFile = false;
+        try {
+          const urls = await getDeepLinkUrls();
+          if (urls && urls.length > 0) {
+            for (const url of urls) {
+              // On macOS, file associations come as file:// URLs
+              const filePath = url.startsWith('file://') ? decodeURIComponent(url.replace('file://', '')) : url;
+              if (filePath.endsWith('.screenplay')) {
+                await documentStore.openDocument(filePath);
+                openedFile = true;
+                break;
+              }
             }
           }
+        } catch {
+          // Plugin may not be available in dev mode — ignore
         }
-      } catch {
-        // Plugin may not be available in dev mode — ignore
+        if (!openedFile && !documentStore.document) {
+          await documentStore.newDocument();
+        }
       }
-      if (!openedFile && !documentStore.document) {
-        await documentStore.newDocument();
-      }
-    }
+    })();
 
     // Window-level keyboard shortcuts — works even when editor isn't focused.
     // Note: Cmd+N, Cmd+O, Cmd+S, Cmd+Shift+S are also handled by the native
@@ -355,6 +360,7 @@
   }
 
   .editor-area {
+    position: relative;
     display: flex;
     flex-direction: row;
     flex: 1;

@@ -93,7 +93,7 @@
       </div>
 
       <div class="modal-body">
-        <!-- Sidebar TOC — fixed width, non-scrolling within the body. -->
+        <!-- Sidebar TOC: fixed width, scrolls independently of content. -->
         <nav class="help-toc" aria-label="Help sections">
           <ul class="toc-list">
             {#each sections as section (section.id)}

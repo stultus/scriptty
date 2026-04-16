@@ -1,5 +1,8 @@
 <script lang="ts">
-  let { open = $bindable(false) } = $props<{ open: boolean }>();
+  let { open = $bindable(false), onShowAbout }: {
+    open: boolean;
+    onShowAbout?: () => void;
+  } = $props();
 
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Escape') {
@@ -11,6 +14,11 @@
     if (event.target === event.currentTarget) {
       open = false;
     }
+  }
+
+  function handleAboutClick() {
+    open = false;
+    onShowAbout?.();
   }
 </script>
 
@@ -261,6 +269,12 @@
           <p class="hint">On Windows/Linux, replace <kbd>Cmd</kbd> with <kbd>Ctrl</kbd>.</p>
         </section>
 
+        <div class="help-footer">
+          <button class="about-link" onclick={handleAboutClick}>About Scriptty</button>
+          <span class="help-footer-dot">·</span>
+          <span class="help-footer-version">v0.5.2</span>
+        </div>
+
       </div>
     </div>
   </div>
@@ -430,6 +444,36 @@
   .hint {
     font-size: 12px;
     font-style: italic;
+    color: var(--text-muted);
+  }
+
+  .help-footer {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .about-link {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    color: var(--accent);
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .about-link:hover {
+    text-decoration: underline;
+  }
+
+  .help-footer-dot {
     color: var(--text-muted);
   }
 </style>

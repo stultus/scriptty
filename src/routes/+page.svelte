@@ -326,7 +326,7 @@
       <Editor bind:findReplaceOpen bind:findReplaceMode {showAnnotations} isActive={activeView === 'writing'} bind:this={editorRef} />
     </div>
   </div>
-  <StatusBar bind:showAnnotations>
+  <StatusBar bind:showAnnotations onShowHelp={() => { showHelp = true; }}>
     {#snippet rightContent()}
       {#if activeView === 'writing'}
         <span class="status-info">{editorStore.currentElement}</span>
@@ -338,7 +338,7 @@
 </main>
 
 <AboutModal bind:open={showAbout} />
-<HelpModal bind:open={showHelp} />
+<HelpModal bind:open={showHelp} onShowAbout={() => { showAbout = true; }} />
 <StatisticsModal bind:open={showStatistics} />
 <MetadataModal bind:open={showMetadata} />
 

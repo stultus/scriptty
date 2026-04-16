@@ -37,16 +37,30 @@
     }
   });
 
-  // Push the current Show-Characters setting into the characterList plugin
-  // state whenever the setting flips. Reading the setting here creates the
-  // reactive dependency; we also re-measure annotations since the widget
-  // line changes the editor's vertical layout.
+  // Push the current Show-Characters setting + per-scene extras into the
+  // characterList plugin state whenever either changes. Reading both here
+  // creates the reactive dependency; we also re-measure annotations since
+  // the widget line changes the editor's vertical layout.
   $effect(() => {
     const enabled = documentStore.document?.settings.show_characters_below_header ?? false;
+    // Build a { sceneIndex: string[] } map from scene_cards so the plugin can
+    // merge user-supplied non-speaking characters with auto-detected speakers.
+    const extras: Record<number, string[]> = {};
+    const cards = documentStore.document?.scene_cards ?? [];
+    for (const card of cards) {
+      const raw = (card.extra_characters ?? '').trim();
+      if (raw.length === 0) continue;
+      extras[card.scene_index] = raw
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+    }
     if (!view) return;
     const current = characterListKey.getState(view.state);
-    if (current?.enabled === enabled) return;
-    view.dispatch(view.state.tr.setMeta(characterListKey, { enabled }));
+    const sameEnabled = current?.enabled === enabled;
+    const sameExtras = current ? JSON.stringify(current.extras) === JSON.stringify(extras) : false;
+    if (sameEnabled && sameExtras) return;
+    view.dispatch(view.state.tr.setMeta(characterListKey, { enabled, extras }));
     scheduleAnnotationUpdate();
   });
 
@@ -281,7 +295,7 @@
     // Ensure a scene_card entry exists
     const cards = documentStore.document.scene_cards;
     if (!cards.find((c: { scene_index: number }) => c.scene_index === sceneOrder)) {
-      cards.push({ scene_index: sceneOrder, description: '', shoot_notes: '' });
+      cards.push({ scene_index: sceneOrder, description: '', shoot_notes: '', extra_characters: '' });
     }
 
     // Show annotation fields for this scene and trigger update
@@ -311,6 +325,7 @@
         scene_index: sceneOrder,
         description: field === 'description' ? value : '',
         shoot_notes: field === 'shoot_notes' ? value : '',
+        extra_characters: '',
       });
     }
     documentStore.markDirty();

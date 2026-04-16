@@ -65,6 +65,8 @@
     description: string;
     /** Manually written shoot notes */
     shootNotes: string;
+    /** Comma-separated non-speaking characters (extras present in the scene) */
+    extraCharacters: string;
     /**
      * Stable identity for {#each}/animate:flip. Derived from the heading text
      * plus an occurrence counter so duplicate headings still get unique keys.
@@ -152,6 +154,7 @@
         contentIndex: currentContentIndex,
         description: storedCard?.description ?? '',
         shootNotes: storedCard?.shoot_notes ?? '',
+        extraCharacters: storedCard?.extra_characters ?? '',
         key: `${currentHeading}#${occurrence}`,
       });
     }
@@ -198,6 +201,7 @@
         scene_index: sceneIndex,
         description: value,
         shoot_notes: '',
+        extra_characters: '',
       });
     }
     documentStore.markDirty();
@@ -214,6 +218,24 @@
         scene_index: sceneIndex,
         description: '',
         shoot_notes: value,
+        extra_characters: '',
+      });
+    }
+    documentStore.markDirty();
+  }
+
+  /** Update the non-speaking characters list for a scene card */
+  function updateExtraCharacters(sceneIndex: number, value: string) {
+    if (!documentStore.document) return;
+    const existing = documentStore.document.scene_cards.find((c) => c.scene_index === sceneIndex);
+    if (existing) {
+      existing.extra_characters = value;
+    } else {
+      documentStore.document.scene_cards.push({
+        scene_index: sceneIndex,
+        description: '',
+        shoot_notes: '',
+        extra_characters: value,
       });
     }
     documentStore.markDirty();
@@ -527,6 +549,16 @@
             oninput={(e) => updateDescription(card.sceneOrder, (e.target as HTMLTextAreaElement).value)}
             onkeydown={handleKeydown}
           ></textarea>
+          <label class="field-label" for="extras-{card.sceneNumber}">Non-speaking characters</label>
+          <input
+            id="extras-{card.sceneNumber}"
+            class="card-input"
+            type="text"
+            placeholder="Comma-separated, e.g. Extras, Guard"
+            value={card.extraCharacters}
+            oninput={(e) => updateExtraCharacters(card.sceneOrder, (e.target as HTMLInputElement).value)}
+            onkeydown={handleKeydown}
+          />
           <label class="field-label" for="notes-{card.sceneNumber}">Notes</label>
           <textarea
             id="notes-{card.sceneNumber}"
@@ -781,6 +813,31 @@
   }
 
   .card-textarea::placeholder {
+    color: var(--text-muted);
+  }
+
+  /* Single-line input for non-speaking characters — shares surface + border
+     treatment with the textarea so the fields read as the same type. */
+  .card-input {
+    width: 100%;
+    padding: 6px 8px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-primary);
+    background: var(--surface-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    font-family: var(--editor-font), system-ui, -apple-system, sans-serif;
+    box-sizing: border-box;
+    transition: border-color 120ms ease;
+  }
+
+  .card-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .card-input::placeholder {
     color: var(--text-muted);
   }
 

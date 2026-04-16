@@ -130,6 +130,12 @@ pub struct SceneCard {
     pub description: String,
     /// Shoot notes — equipment, stunts, VFX flags, location notes
     pub shoot_notes: String,
+    /// Comma-separated list of characters who are physically in the scene but
+    /// never have a dialogue line (background extras, silent antagonists). The
+    /// character-list collector merges these with auto-detected speakers. Old
+    /// .screenplay files don't carry this, hence `#[serde(default)]`.
+    #[serde(default)]
+    pub extra_characters: String,
 }
 
 /// The complete `.screenplay` document — the top-level JSON structure.

@@ -36,6 +36,9 @@ export interface SceneCard {
   scene_index: number;
   description: string;
   shoot_notes: string;
+  /** Comma-separated characters present in the scene but with no dialogue.
+   *  Merged with auto-detected speakers when rendering the characters line. */
+  extra_characters: string;
 }
 
 export interface ScreenplayDocument {

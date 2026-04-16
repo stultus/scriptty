@@ -4,8 +4,9 @@
 // string formatted as a Hollywood single-column screenplay. The Typst markup is
 // compiled to PDF in memory using the Typst compiler and typst-pdf crate.
 
-use crate::screenplay::document::ScreenplayMeta;
+use crate::screenplay::document::{SceneCard, ScreenplayMeta};
 use chrono::Datelike;
+use std::collections::HashMap;
 use serde_json::Value;
 use typst::diag::FileResult;
 use typst::foundations::{Bytes, Datetime};
@@ -180,27 +181,25 @@ fn group_elements(elements: Vec<ScreenplayElement>, scene_number_start: u32) -> 
 ///
 /// Example: for a script with two scenes where scene 0 has RAHUL and JIBIN
 /// and scene 1 has JASEEM, this returns `["RAHUL, JIBIN", "JASEEM"]`.
-fn collect_scene_characters(elements: &[ScreenplayElement]) -> Vec<String> {
-    // `Vec<Vec<String>>` — one inner Vec per scene, preserving insertion order.
-    let mut per_scene: Vec<Vec<String>> = Vec::new();
-    // `Option<&mut Vec<String>>` — we use `is_some()` to know whether we've
-    // seen a scene_heading yet. Characters before any scene_heading are
-    // ignored, matching the editor's behavior.
+fn collect_scene_characters(
+    elements: &[ScreenplayElement],
+    extras: &HashMap<usize, Vec<String>>,
+) -> Vec<String> {
+    // Speakers collected per scene in insertion order.
+    let mut speakers: Vec<Vec<String>> = Vec::new();
     let mut current_idx: Option<usize> = None;
 
     for el in elements {
         match el.element_type.as_str() {
             "scene_heading" => {
-                per_scene.push(Vec::new());
-                current_idx = Some(per_scene.len() - 1);
+                speakers.push(Vec::new());
+                current_idx = Some(speakers.len() - 1);
             }
             "character" => {
                 if let Some(idx) = current_idx {
                     let name = el.text.trim().to_string();
-                    // Skip blanks and de-duplicate within the scene so each
-                    // character appears only once on the generated line.
-                    if !name.is_empty() && !per_scene[idx].contains(&name) {
-                        per_scene[idx].push(name);
+                    if !name.is_empty() && !speakers[idx].contains(&name) {
+                        speakers[idx].push(name);
                     }
                 }
             }
@@ -208,9 +207,51 @@ fn collect_scene_characters(elements: &[ScreenplayElement]) -> Vec<String> {
         }
     }
 
-    // `.into_iter().map(...).collect()` joins each scene's Vec<String>
-    // into a single comma-separated String. Returns Vec<String>.
-    per_scene.into_iter().map(|names| names.join(", ")).collect()
+    // Merge user-supplied extras with auto-detected speakers per scene.
+    // Extras come first so the author's ordering is preserved; speakers fill
+    // in after, skipping any name already included.
+    speakers
+        .into_iter()
+        .enumerate()
+        .map(|(scene_idx, scene_speakers)| {
+            let mut merged: Vec<String> = Vec::new();
+            if let Some(extra_list) = extras.get(&scene_idx) {
+                for name in extra_list {
+                    if !name.is_empty() && !merged.contains(name) {
+                        merged.push(name.clone());
+                    }
+                }
+            }
+            for name in scene_speakers {
+                if !merged.contains(&name) {
+                    merged.push(name);
+                }
+            }
+            merged.join(", ")
+        })
+        .collect()
+}
+
+/// Build a `{ scene_index: [names] }` map from the raw scene_cards list. Each
+/// card's `extra_characters` field is a user-typed comma-separated string; we
+/// split, trim, and drop blanks here so the generators can just look up.
+fn extras_from_scene_cards(scene_cards: &[SceneCard]) -> HashMap<usize, Vec<String>> {
+    let mut map: HashMap<usize, Vec<String>> = HashMap::new();
+    for card in scene_cards {
+        let trimmed = card.extra_characters.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        let names: Vec<String> = trimmed
+            .split(',')
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect();
+        if !names.is_empty() {
+            map.insert(card.scene_index, names);
+        }
+    }
+    map
 }
 
 /// Extracts screenplay elements from ProseMirror JSON document content.
@@ -613,15 +654,24 @@ pub fn generate_title_page_markup(meta: &ScreenplayMeta) -> String {
 /// - All screenplay elements formatted in Hollywood single-column style
 ///
 /// The returned string is valid Typst source that can be compiled to PDF.
-pub fn generate_typst_markup(content: &Value, font_name: &str, meta: &ScreenplayMeta, page_break_after_scene: bool, scene_number_start: u32, characters_below_heading: bool) -> String {
+pub fn generate_typst_markup(
+    content: &Value,
+    font_name: &str,
+    meta: &ScreenplayMeta,
+    page_break_after_scene: bool,
+    scene_number_start: u32,
+    characters_below_heading: bool,
+    scene_cards: &[SceneCard],
+) -> String {
     let elements = extract_elements(content);
 
     // Pre-compute the comma-separated character list for each scene so we can
     // emit it below the scene heading when `characters_below_heading` is on.
-    // `collect_scene_characters` walks elements in document order, so index N
-    // in this Vec corresponds to the N-th scene (0-based).
+    // Extras come from user-supplied scene_cards.extra_characters; speakers are
+    // detected from the ProseMirror content itself.
     let scene_characters = if characters_below_heading {
-        collect_scene_characters(&elements)
+        let extras = extras_from_scene_cards(scene_cards);
+        collect_scene_characters(&elements, &extras)
     } else {
         Vec::new()
     };
@@ -1005,15 +1055,23 @@ impl World for ScreenplayWorld {
 /// # Returns
 ///
 /// A complete Typst markup string ready for compilation to PDF.
-pub fn generate_indian_markup(content: &Value, font_name: &str, meta: &ScreenplayMeta, page_break_after_scene: bool, scene_number_start: u32, characters_below_heading: bool) -> String {
-    // Reuse the same element extraction as Hollywood format.
-    // `extract_elements` parses ProseMirror JSON into a flat list of ScreenplayElements.
+pub fn generate_indian_markup(
+    content: &Value,
+    font_name: &str,
+    meta: &ScreenplayMeta,
+    page_break_after_scene: bool,
+    scene_number_start: u32,
+    characters_below_heading: bool,
+    scene_cards: &[SceneCard],
+) -> String {
     let elements = extract_elements(content);
 
     // Pre-compute the characters line per scene if the option is enabled.
-    // We look it up by scene index when rendering each heading below.
+    // Auto-detected speakers are merged with any non-speaking characters the
+    // user has listed on the matching scene card.
     let scene_characters = if characters_below_heading {
-        collect_scene_characters(&elements)
+        let extras = extras_from_scene_cards(scene_cards);
+        collect_scene_characters(&elements, &extras)
     } else {
         Vec::new()
     };
@@ -1350,7 +1408,7 @@ pub fn generate_pdf_indian(
     // `meta` is passed through to include the title page in the PDF.
     // Standalone Indian PDF export doesn't have the page-break-per-scene option — pass false.
     // Standalone Indian PDF export uses default scene numbering starting at 1.
-    let markup = generate_indian_markup(content, font_name, meta, false, 1, false);
+    let markup = generate_indian_markup(content, font_name, meta, false, 1, false, &[]);
 
     // From here, the compilation pipeline is identical to `generate_pdf()`:
     // create a ScreenplayWorld, compile the Typst source, render to PDF bytes.
@@ -1411,7 +1469,7 @@ pub fn generate_pdf(
     // `meta` is passed through to include the title page in the PDF.
     // Standalone PDF export doesn't have the page-break-per-scene option — pass false.
     // Standalone Hollywood PDF export uses default scene numbering starting at 1.
-    let markup = generate_typst_markup(content, font_name, meta, false, 1, false);
+    let markup = generate_typst_markup(content, font_name, meta, false, 1, false, &[]);
 
     // Collect all font bytes — pass both regular and bold weights.
     // These are `&'static [u8]` slices embedded in the binary at compile time.
@@ -1812,7 +1870,7 @@ mod tests {
             ]
         });
 
-        let markup = generate_typst_markup(&doc, "Noto Sans Malayalam", &empty_meta(), false, 1, false);
+        let markup = generate_typst_markup(&doc, "Noto Sans Malayalam", &empty_meta(), false, 1, false, &[]);
         // Should contain the font setting
         assert!(markup.contains("Noto Sans Malayalam"));
         // Scene heading text should be uppercased
@@ -1845,7 +1903,7 @@ mod tests {
             ]
         });
 
-        let markup = generate_typst_markup(&doc, "Manjari", &empty_meta(), false, 1, false);
+        let markup = generate_typst_markup(&doc, "Manjari", &empty_meta(), false, 1, false, &[]);
         // Character name should be uppercase and left-padded to Hollywood spec position
         assert!(markup.contains("JOHN"));
         assert!(markup.contains("pad(left: 6cm)"));
@@ -1871,7 +1929,7 @@ mod tests {
             ]
         });
 
-        let markup = generate_typst_markup(&doc, "Noto Sans Malayalam", &empty_meta(), false, 1, false);
+        let markup = generate_typst_markup(&doc, "Noto Sans Malayalam", &empty_meta(), false, 1, false, &[]);
         // Malayalam text should pass through unmodified (no special chars to escape)
         assert!(markup.contains("രമേഷ് Flat ലേക്ക് നടന്നു"));
     }
@@ -2184,7 +2242,7 @@ mod tests {
             ]
         });
 
-        let markup = generate_typst_markup(&doc, "Noto Sans Malayalam", &empty_meta(), false, 1, false);
+        let markup = generate_typst_markup(&doc, "Noto Sans Malayalam", &empty_meta(), false, 1, false, &[]);
         // The scene heading and first action should be inside a single unbreakable block
         assert!(markup.contains("block(breakable: false)"));
         assert!(markup.contains("1. INT. OFFICE - DAY"));

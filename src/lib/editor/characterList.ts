@@ -8,47 +8,78 @@
 import { Plugin, PluginKey } from 'prosemirror-state';
 import { Decoration, DecorationSet } from 'prosemirror-view';
 
-export const characterListKey = new PluginKey<{ enabled: boolean }>('character-list');
+/** Plugin state carries two flags:
+ *   - enabled: whether to render the decoration at all
+ *   - extras: per-scene-index list of user-supplied non-speaking characters,
+ *             merged with auto-detected speakers at render time. Scene index is
+ *             the 0-based position of the scene_heading in the document. */
+export interface CharacterListState {
+	enabled: boolean;
+	extras: Record<number, string[]>;
+}
 
-/** Collect unique speaking characters for each scene in document order.
- *  Returns an array parallel to scene_heading positions; each entry is the
- *  comma-separated list to show below that scene. */
-function collectCharactersPerScene(doc: import('prosemirror-model').Node): string[] {
+export const characterListKey = new PluginKey<CharacterListState>('character-list');
+
+/** Collect unique characters for each scene in document order.
+ *  Speaking characters come from `character` nodes; any extras supplied by the
+ *  caller are merged per scene (user-supplied order wins — they appear first). */
+function collectCharactersPerScene(
+	doc: import('prosemirror-model').Node,
+	extras: Record<number, string[]>
+): string[] {
 	const perScene: string[] = [];
-	let currentSet: Set<string> | null = null;
+	let sceneIdx = -1;
+	let currentSpeakers: Set<string> | null = null;
+
+	const flush = () => {
+		if (currentSpeakers === null) return;
+		const extraList = extras[sceneIdx] ?? [];
+		const merged: string[] = [];
+		const seen = new Set<string>();
+		// Extras first so they keep their author-supplied order.
+		for (const name of extraList) {
+			if (name.length > 0 && !seen.has(name)) {
+				merged.push(name);
+				seen.add(name);
+			}
+		}
+		for (const name of currentSpeakers) {
+			if (!seen.has(name)) {
+				merged.push(name);
+				seen.add(name);
+			}
+		}
+		perScene.push(merged.join(', '));
+	};
 
 	doc.forEach((node) => {
 		const name = node.type.name;
 		if (name === 'scene_heading') {
-			// Close out the previous scene before starting the new one
-			if (currentSet !== null) {
-				perScene.push([...currentSet].join(', '));
-			}
-			currentSet = new Set<string>();
-		} else if (name === 'character' && currentSet !== null) {
+			flush();
+			sceneIdx++;
+			currentSpeakers = new Set<string>();
+		} else if (name === 'character' && currentSpeakers !== null) {
 			const text = node.textContent.trim();
-			if (text.length > 0) currentSet.add(text);
+			if (text.length > 0) currentSpeakers.add(text);
 		}
 	});
-	// Flush the last scene
-	if (currentSet !== null) {
-		perScene.push([...currentSet].join(', '));
-	}
+	flush();
 	return perScene;
 }
 
-export const characterListPlugin = new Plugin<{ enabled: boolean }>({
+export const characterListPlugin = new Plugin<CharacterListState>({
 	key: characterListKey,
 	state: {
-		init(): { enabled: boolean } {
-			return { enabled: false };
+		init(): CharacterListState {
+			return { enabled: false, extras: {} };
 		},
-		apply(tr, value): { enabled: boolean } {
-			const meta = tr.getMeta(characterListKey);
-			if (meta && typeof meta.enabled === 'boolean') {
-				return { enabled: meta.enabled };
-			}
-			return value;
+		apply(tr, value): CharacterListState {
+			const meta = tr.getMeta(characterListKey) as Partial<CharacterListState> | undefined;
+			if (!meta) return value;
+			return {
+				enabled: typeof meta.enabled === 'boolean' ? meta.enabled : value.enabled,
+				extras: meta.extras ?? value.extras
+			};
 		}
 	},
 	props: {
@@ -56,7 +87,7 @@ export const characterListPlugin = new Plugin<{ enabled: boolean }>({
 			const pluginState = characterListKey.getState(state);
 			if (!pluginState || !pluginState.enabled) return DecorationSet.empty;
 
-			const perScene = collectCharactersPerScene(state.doc);
+			const perScene = collectCharactersPerScene(state.doc, pluginState.extras);
 			const decos: Decoration[] = [];
 			let sceneIdx = 0;
 

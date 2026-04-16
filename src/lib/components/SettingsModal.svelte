@@ -191,7 +191,7 @@
         <div class="setting-row">
           <div class="setting-label">
             <span class="setting-name">Scene annotations</span>
-            <span class="setting-desc">Gutter beside the page</span>
+            <span class="setting-desc">Gutter beside the page · <kbd>⌘⇧A</kbd></span>
           </div>
           <button
             class="switch"

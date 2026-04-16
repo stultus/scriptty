@@ -174,6 +174,45 @@ fn group_elements(elements: Vec<ScreenplayElement>, scene_number_start: u32) -> 
     groups
 }
 
+/// Builds the comma-separated list of unique speaking character names for
+/// each scene, in document order. Returns a `Vec<String>` whose index N
+/// holds the characters line for the N-th scene (0-based).
+///
+/// Example: for a script with two scenes where scene 0 has RAHUL and JIBIN
+/// and scene 1 has JASEEM, this returns `["RAHUL, JIBIN", "JASEEM"]`.
+fn collect_scene_characters(elements: &[ScreenplayElement]) -> Vec<String> {
+    // `Vec<Vec<String>>` — one inner Vec per scene, preserving insertion order.
+    let mut per_scene: Vec<Vec<String>> = Vec::new();
+    // `Option<&mut Vec<String>>` — we use `is_some()` to know whether we've
+    // seen a scene_heading yet. Characters before any scene_heading are
+    // ignored, matching the editor's behavior.
+    let mut current_idx: Option<usize> = None;
+
+    for el in elements {
+        match el.element_type.as_str() {
+            "scene_heading" => {
+                per_scene.push(Vec::new());
+                current_idx = Some(per_scene.len() - 1);
+            }
+            "character" => {
+                if let Some(idx) = current_idx {
+                    let name = el.text.trim().to_string();
+                    // Skip blanks and de-duplicate within the scene so each
+                    // character appears only once on the generated line.
+                    if !name.is_empty() && !per_scene[idx].contains(&name) {
+                        per_scene[idx].push(name);
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    // `.into_iter().map(...).collect()` joins each scene's Vec<String>
+    // into a single comma-separated String. Returns Vec<String>.
+    per_scene.into_iter().map(|names| names.join(", ")).collect()
+}
+
 /// Extracts screenplay elements from ProseMirror JSON document content.
 ///
 /// ProseMirror stores documents as a tree of typed nodes. The top-level
@@ -574,8 +613,18 @@ pub fn generate_title_page_markup(meta: &ScreenplayMeta) -> String {
 /// - All screenplay elements formatted in Hollywood single-column style
 ///
 /// The returned string is valid Typst source that can be compiled to PDF.
-pub fn generate_typst_markup(content: &Value, font_name: &str, meta: &ScreenplayMeta, page_break_after_scene: bool, scene_number_start: u32) -> String {
+pub fn generate_typst_markup(content: &Value, font_name: &str, meta: &ScreenplayMeta, page_break_after_scene: bool, scene_number_start: u32, characters_below_heading: bool) -> String {
     let elements = extract_elements(content);
+
+    // Pre-compute the comma-separated character list for each scene so we can
+    // emit it below the scene heading when `characters_below_heading` is on.
+    // `collect_scene_characters` walks elements in document order, so index N
+    // in this Vec corresponds to the N-th scene (0-based).
+    let scene_characters = if characters_below_heading {
+        collect_scene_characters(&elements)
+    } else {
+        Vec::new()
+    };
 
     // Group elements for page break control — this ensures scene headings
     // stay with their first action, and character names stay with dialogue.
@@ -633,10 +682,27 @@ pub fn generate_typst_markup(content: &Value, font_name: &str, meta: &Screenplay
                 // Wrap scene heading + first action in an unbreakable block so the
                 // heading never appears orphaned at the bottom of a page.
                 block.push_str(&format!(
-                    "#block(breakable: false, width: 100%)[\n  #v(1.8em)\n  #text(weight: \"bold\", size: 12pt)[{}. {}]\n  #v(0.8em)\n",
+                    "#block(breakable: false, width: 100%)[\n  #v(1.8em)\n  #text(weight: \"bold\", size: 12pt)[{}. {}]\n",
                     scene_number,
                     escaped_heading.to_uppercase()
                 ));
+                // Emit the characters list directly under the heading (when enabled).
+                // `scene_number - scene_number_start` maps the 1-based scene number
+                // back to a 0-based index into `scene_characters`.
+                // Styling: small-caps-feel uppercase label + regular-weight names,
+                // matching the on-screen editor treatment for visual consistency.
+                if characters_below_heading {
+                    let idx = (*scene_number).saturating_sub(scene_number_start) as usize;
+                    if let Some(chars) = scene_characters.get(idx) {
+                        if !chars.is_empty() {
+                            block.push_str(&format!(
+                                "  #v(0.3em)\n  #text(size: 9pt, tracking: 0.12em, weight: \"bold\", fill: luma(40%))[CHARACTERS]#h(0.6em)#text(size: 10pt, fill: luma(30%))[{}]\n",
+                                escape_typst(chars)
+                            ));
+                        }
+                    }
+                }
+                block.push_str("  #v(0.8em)\n");
                 if let Some(action_typst) = first_action_typst {
                     // Use typst_inline to preserve bold formatting in action text
                     block.push_str(&format!("  #par[{}]\n", action_typst));
@@ -939,10 +1005,18 @@ impl World for ScreenplayWorld {
 /// # Returns
 ///
 /// A complete Typst markup string ready for compilation to PDF.
-pub fn generate_indian_markup(content: &Value, font_name: &str, meta: &ScreenplayMeta, page_break_after_scene: bool, scene_number_start: u32) -> String {
+pub fn generate_indian_markup(content: &Value, font_name: &str, meta: &ScreenplayMeta, page_break_after_scene: bool, scene_number_start: u32, characters_below_heading: bool) -> String {
     // Reuse the same element extraction as Hollywood format.
     // `extract_elements` parses ProseMirror JSON into a flat list of ScreenplayElements.
     let elements = extract_elements(content);
+
+    // Pre-compute the characters line per scene if the option is enabled.
+    // We look it up by scene index when rendering each heading below.
+    let scene_characters = if characters_below_heading {
+        collect_scene_characters(&elements)
+    } else {
+        Vec::new()
+    };
 
     let mut markup = String::new();
 
@@ -1013,24 +1087,43 @@ pub fn generate_indian_markup(content: &Value, font_name: &str, meta: &Screenpla
                 .map(|el| el.element_type == "action") // convert to `Option<bool>`
                 .unwrap_or(false); // default to false if body is empty
 
+            // Build the optional characters line once so both branches below
+            // can reuse it. Empty string when the option is off or the scene
+            // has no speaking characters — callers just concat it in.
+            let characters_line = if characters_below_heading {
+                let idx = scene_number.saturating_sub(scene_number_start) as usize;
+                scene_characters
+                    .get(idx)
+                    .filter(|s| !s.is_empty())
+                    .map(|s| format!(
+                        "#text(size: 8pt, tracking: 0.12em, weight: \"bold\", fill: luma(40%))[CHARACTERS]#h(0.5em)#text(size: 9pt, fill: luma(30%))[{}]\n\n",
+                        escape_typst(s)
+                    ))
+                    .unwrap_or_default()
+            } else {
+                String::new()
+            };
+
             if first_is_action {
                 // Wrap scene heading + first action in `#block(breakable: false)` to
                 // prevent a page break between them (no orphaned headings).
                 // Use typst_inline to preserve bold formatting in the first action.
                 let first_action_typst = &body[0].typst_inline;
                 markup.push_str(&format!(
-                    "#v(1.5em)\n#block(breakable: false)[\n#text(weight: \"bold\")[{}. {}]\n\n#grid(\n  columns: (50%, 50%),\n  column-gutter: 1em,\n  align(left)[{}],\n  []\n)\n]\n",
+                    "#v(1.5em)\n#block(breakable: false)[\n#text(weight: \"bold\")[{}. {}]\n\n{}#grid(\n  columns: (50%, 50%),\n  column-gutter: 1em,\n  align(left)[{}],\n  []\n)\n]\n",
                     scene_number,
                     escaped_heading.to_uppercase(),
+                    characters_line,
                     first_action_typst
                 ));
             } else {
                 // No first action to pair with — just render the heading.
                 // `#v(1.5em)` adds vertical space before the heading.
                 markup.push_str(&format!(
-                    "#v(1.5em)\n#text(weight: \"bold\")[{}. {}]\n\n",
+                    "#v(1.5em)\n#text(weight: \"bold\")[{}. {}]\n\n{}",
                     scene_number,
-                    escaped_heading.to_uppercase()
+                    escaped_heading.to_uppercase(),
+                    characters_line
                 ));
             }
         }
@@ -1257,7 +1350,7 @@ pub fn generate_pdf_indian(
     // `meta` is passed through to include the title page in the PDF.
     // Standalone Indian PDF export doesn't have the page-break-per-scene option — pass false.
     // Standalone Indian PDF export uses default scene numbering starting at 1.
-    let markup = generate_indian_markup(content, font_name, meta, false, 1);
+    let markup = generate_indian_markup(content, font_name, meta, false, 1, false);
 
     // From here, the compilation pipeline is identical to `generate_pdf()`:
     // create a ScreenplayWorld, compile the Typst source, render to PDF bytes.
@@ -1318,7 +1411,7 @@ pub fn generate_pdf(
     // `meta` is passed through to include the title page in the PDF.
     // Standalone PDF export doesn't have the page-break-per-scene option — pass false.
     // Standalone Hollywood PDF export uses default scene numbering starting at 1.
-    let markup = generate_typst_markup(content, font_name, meta, false, 1);
+    let markup = generate_typst_markup(content, font_name, meta, false, 1, false);
 
     // Collect all font bytes — pass both regular and bold weights.
     // These are `&'static [u8]` slices embedded in the binary at compile time.
@@ -1719,7 +1812,7 @@ mod tests {
             ]
         });
 
-        let markup = generate_typst_markup(&doc, "Noto Sans Malayalam", &empty_meta(), false, 1);
+        let markup = generate_typst_markup(&doc, "Noto Sans Malayalam", &empty_meta(), false, 1, false);
         // Should contain the font setting
         assert!(markup.contains("Noto Sans Malayalam"));
         // Scene heading text should be uppercased
@@ -1752,7 +1845,7 @@ mod tests {
             ]
         });
 
-        let markup = generate_typst_markup(&doc, "Manjari", &empty_meta());
+        let markup = generate_typst_markup(&doc, "Manjari", &empty_meta(), false, 1, false);
         // Character name should be uppercase and left-padded to Hollywood spec position
         assert!(markup.contains("JOHN"));
         assert!(markup.contains("pad(left: 6cm)"));
@@ -1778,7 +1871,7 @@ mod tests {
             ]
         });
 
-        let markup = generate_typst_markup(&doc, "Noto Sans Malayalam", &empty_meta(), false, 1);
+        let markup = generate_typst_markup(&doc, "Noto Sans Malayalam", &empty_meta(), false, 1, false);
         // Malayalam text should pass through unmodified (no special chars to escape)
         assert!(markup.contains("രമേഷ് Flat ലേക്ക് നടന്നു"));
     }
@@ -2091,7 +2184,7 @@ mod tests {
             ]
         });
 
-        let markup = generate_typst_markup(&doc, "Noto Sans Malayalam", &empty_meta(), false, 1);
+        let markup = generate_typst_markup(&doc, "Noto Sans Malayalam", &empty_meta(), false, 1, false);
         // The scene heading and first action should be inside a single unbreakable block
         assert!(markup.contains("block(breakable: false)"));
         assert!(markup.contains("1. INT. OFFICE - DAY"));

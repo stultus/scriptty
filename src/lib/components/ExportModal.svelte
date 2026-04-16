@@ -15,6 +15,11 @@
   let includeSceneCards = $state(false);
   let format = $state<'hollywood' | 'indian'>('hollywood');
   let pageBreakAfterScene = $state(false);
+  // Seed from the document setting so "Show characters" in settings carries
+  // over as the default export choice. User can still override per-export.
+  let charactersBelowHeading = $state(
+    documentStore.document?.settings.show_characters_below_header ?? false
+  );
 
   let exporting = $state(false);
   let exportingFountain = $state(false);
@@ -217,6 +222,7 @@
           include_scene_cards: includeSceneCards,
           format,
           page_break_after_scene: pageBreakAfterScene,
+          characters_below_heading: charactersBelowHeading,
           scene_cards_data: sceneCardsData,
         },
       });
@@ -297,6 +303,10 @@
           <label class="checkbox-row">
             <input type="checkbox" bind:checked={pageBreakAfterScene} />
             <span>Page break after each scene</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" bind:checked={charactersBelowHeading} />
+            <span>Characters list below scene heading</span>
           </label>
         </div>
       {/if}

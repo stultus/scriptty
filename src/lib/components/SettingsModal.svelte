@@ -56,127 +56,188 @@
     <div class="modal-card">
       <div class="modal-header">
         <h2>Settings</h2>
-        <button class="btn-close" onclick={() => { open = false; }}>&times;</button>
+        <button class="btn-close" onclick={() => { open = false; }} aria-label="Close settings">&times;</button>
       </div>
 
-      <div class="setting-row">
-        <div class="setting-name-group">
-          <span class="setting-name">Language</span>
-          <span class="setting-hint">⌃Space</span>
-        </div>
-        <div class="segmented">
-          <button
-            class="segmented-item"
-            class:active={currentMode === 'ENGLISH'}
-            onclick={() => setLanguageMode('ENGLISH')}
-          >English</button>
-          <button
-            class="segmented-item"
-            class:active={currentMode === 'MALAYALAM'}
-            onclick={() => setLanguageMode('MALAYALAM')}
-          >മലയാളം</button>
-        </div>
-      </div>
+      <!-- ── Writing ─────────────────────────────────────────── -->
+      <div class="section">
+        <div class="section-title">Writing</div>
 
-      {#if currentMode === 'MALAYALAM'}
-        <div class="setting-row nested">
-          <span class="setting-name">Keyboard</span>
-          
-          <div class="custom-select-container">
-            <button 
-              class="scheme-select" 
-              onclick={() => schemeDropdownOpen = !schemeDropdownOpen}
-            >
-              {currentScheme === 'mozhi' ? 'Mozhi Phonetic' : currentScheme === 'inscript2' ? 'Inscript Standard' : 'Inscript Legacy'}
-            </button>
-
-            {#if schemeDropdownOpen}
-              <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-              <div class="dropdown-backdrop" role="presentation" onclick={(e) => { e.stopPropagation(); schemeDropdownOpen = false; }} onkeydown={(e) => { if (e.key === 'Escape') schemeDropdownOpen = false; }}></div>
-              <div class="custom-options">
-                <button 
-                  class="custom-option" 
-                  class:selected={currentScheme === 'mozhi'}
-                  onclick={() => { setScheme('mozhi'); schemeDropdownOpen = false; }}
-                >Mozhi Phonetic</button>
-                <button 
-                  class="custom-option" 
-                  class:selected={currentScheme === 'inscript2'}
-                  onclick={() => { setScheme('inscript2'); schemeDropdownOpen = false; }}
-                >Inscript Standard</button>
-                <button 
-                  class="custom-option" 
-                  class:selected={currentScheme === 'inscript1'}
-                  onclick={() => { setScheme('inscript1'); schemeDropdownOpen = false; }}
-                >Inscript Legacy</button>
-              </div>
-            {/if}
+        <div class="setting-row">
+          <div class="setting-label">
+            <span class="setting-name">Language</span>
+            <span class="setting-desc">Toggle with <kbd>⌃Space</kbd></span>
+          </div>
+          <div class="segmented">
+            <button
+              class="segmented-item"
+              class:active={currentMode === 'ENGLISH'}
+              onclick={() => setLanguageMode('ENGLISH')}
+            >English</button>
+            <button
+              class="segmented-item"
+              class:active={currentMode === 'MALAYALAM'}
+              onclick={() => setLanguageMode('MALAYALAM')}
+            >മലയാളം</button>
           </div>
         </div>
-      {/if}
 
-      <div class="setting-row">
-        <span class="setting-name">Editor Font</span>
-        <div class="segmented">
-          <button
-            class="segmented-item"
-            class:active={documentStore.currentFont === 'noto-sans-malayalam'}
-            onclick={() => documentStore.setFont('noto-sans-malayalam')}
-          >Noto</button>
-          <button
-            class="segmented-item"
-            class:active={documentStore.currentFont === 'manjari'}
-            onclick={() => documentStore.setFont('manjari')}
-          >Manjari</button>
+        {#if currentMode === 'MALAYALAM'}
+          <div class="setting-row">
+            <div class="setting-label">
+              <span class="setting-name">Keyboard</span>
+              <span class="setting-desc">Malayalam input scheme</span>
+            </div>
+
+            <div class="custom-select-container">
+              <button
+                class="scheme-select"
+                onclick={() => schemeDropdownOpen = !schemeDropdownOpen}
+                aria-haspopup="listbox"
+                aria-expanded={schemeDropdownOpen}
+              >
+                {currentScheme === 'mozhi' ? 'Mozhi Phonetic' : currentScheme === 'inscript2' ? 'Inscript Standard' : 'Inscript Legacy'}
+              </button>
+
+              {#if schemeDropdownOpen}
+                <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+                <div class="dropdown-backdrop" role="presentation" onclick={(e) => { e.stopPropagation(); schemeDropdownOpen = false; }} onkeydown={(e) => { if (e.key === 'Escape') schemeDropdownOpen = false; }}></div>
+                <div class="custom-options" role="listbox">
+                  <button
+                    class="custom-option"
+                    class:selected={currentScheme === 'mozhi'}
+                    onclick={() => { setScheme('mozhi'); schemeDropdownOpen = false; }}
+                  >Mozhi Phonetic</button>
+                  <button
+                    class="custom-option"
+                    class:selected={currentScheme === 'inscript2'}
+                    onclick={() => { setScheme('inscript2'); schemeDropdownOpen = false; }}
+                  >Inscript Standard</button>
+                  <button
+                    class="custom-option"
+                    class:selected={currentScheme === 'inscript1'}
+                    onclick={() => { setScheme('inscript1'); schemeDropdownOpen = false; }}
+                  >Inscript Legacy</button>
+                </div>
+              {/if}
+            </div>
+          </div>
+        {/if}
+      </div>
+
+      <!-- ── Editor ──────────────────────────────────────────── -->
+      <div class="section">
+        <div class="section-title">Editor</div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <span class="setting-name">Font</span>
+            <span class="setting-desc">Used on screen and in exports</span>
+          </div>
+          <div class="segmented">
+            <button
+              class="segmented-item"
+              class:active={documentStore.currentFont === 'noto-sans-malayalam'}
+              onclick={() => documentStore.setFont('noto-sans-malayalam')}
+            >Noto</button>
+            <button
+              class="segmented-item"
+              class:active={documentStore.currentFont === 'manjari'}
+              onclick={() => documentStore.setFont('manjari')}
+            >Manjari</button>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <span class="setting-name">First scene number</span>
+            <span class="setting-desc">Handy when co-writing a range</span>
+          </div>
+          <input
+            class="scene-start-input"
+            type="number"
+            min="1"
+            value={documentStore.document?.settings.scene_number_start ?? 1}
+            onchange={(e: Event) => {
+              const val = parseInt((e.target as HTMLInputElement).value, 10);
+              if (documentStore.document && val >= 1) {
+                documentStore.document.settings.scene_number_start = val;
+                documentStore.markDirty();
+              }
+            }}
+          />
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <span class="setting-name">Characters under scene heading</span>
+            <span class="setting-desc">Auto-list speaking characters</span>
+          </div>
+          <div class="segmented">
+            <button
+              class="segmented-item"
+              class:active={documentStore.document?.settings.show_characters_below_header === true}
+              onclick={() => {
+                if (documentStore.document) {
+                  documentStore.document.settings.show_characters_below_header = true;
+                  documentStore.markDirty();
+                }
+              }}
+            >Show</button>
+            <button
+              class="segmented-item"
+              class:active={!documentStore.document?.settings.show_characters_below_header}
+              onclick={() => {
+                if (documentStore.document) {
+                  documentStore.document.settings.show_characters_below_header = false;
+                  documentStore.markDirty();
+                }
+              }}
+            >Hide</button>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <span class="setting-name">Scene annotations</span>
+            <span class="setting-desc">Gutter beside the page</span>
+          </div>
+          <div class="segmented">
+            <button
+              class="segmented-item"
+              class:active={showAnnotations}
+              onclick={() => { showAnnotations = true; localStorage.setItem('scriptty-annotations', 'true'); }}
+            >Show</button>
+            <button
+              class="segmented-item"
+              class:active={!showAnnotations}
+              onclick={() => { showAnnotations = false; localStorage.setItem('scriptty-annotations', 'false'); }}
+            >Hide</button>
+          </div>
         </div>
       </div>
 
-      <div class="setting-row">
-        <span class="setting-name">Scene Start #</span>
-        <input
-          class="scene-start-input"
-          type="number"
-          min="1"
-          value={documentStore.document?.settings.scene_number_start ?? 1}
-          onchange={(e: Event) => {
-            const val = parseInt((e.target as HTMLInputElement).value, 10);
-            if (documentStore.document && val >= 1) {
-              documentStore.document.settings.scene_number_start = val;
-              documentStore.markDirty();
-            }
-          }}
-        />
-      </div>
+      <!-- ── Appearance ──────────────────────────────────────── -->
+      <div class="section">
+        <div class="section-title">Appearance</div>
 
-      <div class="setting-row">
-        <span class="setting-name">Theme</span>
-        <div class="segmented">
-          <button
-            class="segmented-item"
-            class:active={!themeStore.isDark}
-            onclick={() => { if (themeStore.isDark) themeStore.toggle(); }}
-          >Light</button>
-          <button
-            class="segmented-item"
-            class:active={themeStore.isDark}
-            onclick={() => { if (!themeStore.isDark) themeStore.toggle(); }}
-          >Dark</button>
-        </div>
-      </div>
-
-      <div class="setting-row">
-        <span class="setting-name">Annotations</span>
-        <div class="segmented">
-          <button
-            class="segmented-item"
-            class:active={showAnnotations}
-            onclick={() => { showAnnotations = true; localStorage.setItem('scriptty-annotations', 'true'); }}
-          >Show</button>
-          <button
-            class="segmented-item"
-            class:active={!showAnnotations}
-            onclick={() => { showAnnotations = false; localStorage.setItem('scriptty-annotations', 'false'); }}
-          >Hide</button>
+        <div class="setting-row">
+          <div class="setting-label">
+            <span class="setting-name">Theme</span>
+            <span class="setting-desc">Applies across the app</span>
+          </div>
+          <div class="segmented">
+            <button
+              class="segmented-item"
+              class:active={!themeStore.isDark}
+              onclick={() => { if (themeStore.isDark) themeStore.toggle(); }}
+            >Light</button>
+            <button
+              class="segmented-item"
+              class:active={themeStore.isDark}
+              onclick={() => { if (!themeStore.isDark) themeStore.toggle(); }}
+            >Dark</button>
+          </div>
         </div>
       </div>
 
@@ -194,21 +255,24 @@
 
   .modal-card {
     position: absolute;
-    bottom: 36px;
+    bottom: 40px;
     left: 16px;
     background: var(--surface-float);
     border: 1px solid var(--border-subtle);
-    border-radius: 8px;
-    padding: 6px 14px;
-    width: 250px;
-    box-shadow: 0 4px 24px var(--shadow-soft), 0 1px 4px var(--shadow-soft);
-    animation: menu-in 100ms ease-out;
+    border-radius: 10px;
+    padding: 14px 16px 12px;
+    width: 320px;
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+    box-shadow: 0 12px 32px var(--shadow-heavy, rgba(0, 0, 0, 0.2)),
+                0 2px 8px var(--shadow-soft);
+    animation: menu-in 120ms ease-out;
     font-family: system-ui, -apple-system, sans-serif;
     z-index: 1000;
   }
 
   @keyframes menu-in {
-    from { opacity: 0; transform: translateY(4px); }
+    from { opacity: 0; transform: translateY(6px); }
     to { opacity: 1; transform: translateY(0); }
   }
 
@@ -216,8 +280,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 8px;
-    padding-bottom: 8px;
+    margin: -2px -4px 10px -4px;
+    padding: 0 4px 10px 4px;
     border-bottom: 1px solid var(--border-subtle);
   }
 
@@ -226,20 +290,23 @@
     font-size: 13px;
     color: var(--text-primary);
     font-weight: 600;
+    letter-spacing: -0.01em;
   }
 
   .btn-close {
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
     display: flex;
     align-items: center;
     justify-content: center;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     background: transparent;
     color: var(--text-muted);
-    font-size: 16px;
+    font-size: 18px;
+    line-height: 1;
     cursor: pointer;
+    transition: background 100ms ease, color 100ms ease;
   }
 
   .btn-close:hover {
@@ -247,37 +314,63 @@
     color: var(--text-primary);
   }
 
+  .section {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .section + .section {
+    margin-top: 6px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .section-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin: 2px 0 6px 0;
+  }
+
   .setting-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 0;
+    gap: 12px;
+    padding: 6px 0;
   }
 
-  .setting-row.nested {
-    padding-left: 12px;
-  }
-
-  .setting-name-group {
+  .setting-label {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
+    min-width: 0;
+    flex: 1;
   }
 
   .setting-name {
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 500;
     color: var(--text-primary);
+    line-height: 1.3;
   }
 
-  .setting-hint {
-    font-size: 10px;
+  .setting-desc {
+    font-size: 10.5px;
     color: var(--text-muted);
+    line-height: 1.3;
+  }
+
+  .setting-desc kbd {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 10px;
     background: var(--surface-base);
-    padding: 2px 4px;
-    border-radius: 3px;
     border: 1px solid var(--border-subtle);
+    border-radius: 3px;
+    padding: 1px 4px;
+    color: var(--text-secondary);
   }
 
   .segmented {
@@ -288,6 +381,7 @@
     gap: 1px;
     border: 1px solid var(--border-subtle);
     width: 140px;
+    flex-shrink: 0;
   }
 
   .segmented-item {
@@ -316,16 +410,18 @@
   }
 
   .scene-start-input {
-    width: 60px;
+    width: 72px;
+    flex-shrink: 0;
     background: var(--surface-base);
     color: var(--text-primary);
     border: 1px solid var(--border-subtle);
-    border-radius: 4px;
-    padding: 4px 8px;
+    border-radius: 6px;
+    padding: 5px 8px;
     font-size: 12px;
     font-family: inherit;
     text-align: center;
     outline: none;
+    transition: border-color 100ms ease;
   }
 
   .scene-start-input:focus {

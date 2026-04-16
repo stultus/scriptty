@@ -62,6 +62,11 @@ pub struct ScreenplaySettings {
     /// Uses `default` so old .screenplay files without this field still load.
     #[serde(default = "default_scene_number_start")]
     pub scene_number_start: u32,
+    /// When true, the editor shows an auto-generated "characters: …" line
+    /// below each scene heading listing every character who speaks in that
+    /// scene. Defaults to false so existing files behave exactly as before.
+    #[serde(default)]
+    pub show_characters_below_header: bool,
 }
 
 /// Default value for `scene_number_start` — returns 1 so scenes start at 1
@@ -77,6 +82,7 @@ impl Default for ScreenplaySettings {
             default_language: "malayalam".to_string(),
             input_scheme: "mozhi".to_string(),
             scene_number_start: 1,
+            show_characters_below_header: false,
         }
     }
 }

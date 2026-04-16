@@ -22,6 +22,7 @@ export interface ScreenplaySettings {
   default_language: string;
   input_scheme: string;
   scene_number_start: number;
+  show_characters_below_header: boolean;
 }
 
 export interface ScreenplayStory {

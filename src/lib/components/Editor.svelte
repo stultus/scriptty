@@ -10,6 +10,7 @@
   import { screenplayKeymap } from '$lib/editor/keymap';
   import { autoUppercasePlugin } from '$lib/editor/autoUppercase';
   import { characterAutocompletePlugin, autocompleteKey } from '$lib/editor/characterAutocomplete';
+  import { characterListPlugin, characterListKey } from '$lib/editor/characterList';
   import { findReplacePlugin } from '$lib/editor/findReplace';
   import FindReplaceBar from '$lib/components/FindReplaceBar.svelte';
   import { InputModeManager } from '$lib/editor/input/InputModeManager';
@@ -34,6 +35,19 @@
     if (isActive && showAnnotations) {
       scheduleAnnotationUpdate();
     }
+  });
+
+  // Push the current Show-Characters setting into the characterList plugin
+  // state whenever the setting flips. Reading the setting here creates the
+  // reactive dependency; we also re-measure annotations since the widget
+  // line changes the editor's vertical layout.
+  $effect(() => {
+    const enabled = documentStore.document?.settings.show_characters_below_header ?? false;
+    if (!view) return;
+    const current = characterListKey.getState(view.state);
+    if (current?.enabled === enabled) return;
+    view.dispatch(view.state.tr.setMeta(characterListKey, { enabled }));
+    scheduleAnnotationUpdate();
   });
 
   let editorElement: HTMLDivElement;
@@ -396,6 +410,7 @@
         autoUppercasePlugin,
         findReplacePlugin,
         annotationSpacerPlugin,
+        characterListPlugin,
       ]
     });
 
@@ -762,6 +777,41 @@
     font-size: 16px;
     font-weight: bold;
     margin-right: 4px;
+  }
+
+  :global(.ProseMirror .scene-characters-line) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 11px;
+    line-height: 1.5;
+    margin: 0 0 0.9em 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  :global(.ProseMirror .scene-characters-label) {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+  }
+
+  :global(.ProseMirror .scene-characters-sep) {
+    color: var(--text-muted);
+    opacity: 0.5;
+    font-weight: 700;
+  }
+
+  :global(.ProseMirror .scene-characters-names) {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--text-on-page);
+    opacity: 0.75;
   }
 
   :global(.ProseMirror .action) {

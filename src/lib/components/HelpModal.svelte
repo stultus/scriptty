@@ -184,6 +184,7 @@
           <section class="help-section" id="autocomplete">
             <h3>Character Autocomplete</h3>
             <p>When typing a character name, Scriptty suggests names already used in your screenplay after 2 characters. Use <kbd>↑</kbd> / <kbd>↓</kbd> to navigate, <kbd>Enter</kbd> or <kbd>Tab</kbd> to accept, <kbd>Escape</kbd> to dismiss.</p>
+            <p><strong>Malayalam names:</strong> matching ignores vowel signs and virama, so typing the consonant skeleton (e.g., <code>ram</code> → രമ) will match <strong>രാമൻ</strong>, <strong>രമേഷ്</strong>, and any other name built from those consonants. Partial middle matches also show up as suggestions — you don't need to start from the first consonant.</p>
           </section>
 
           <section class="help-section" id="formatting">

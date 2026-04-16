@@ -35,17 +35,52 @@ function collectCharacterNames(state: EditorState): string[] {
 }
 
 /**
- * Case-insensitive prefix match that works with Unicode (Malayalam etc.)
+ * Build a matchable "skeleton" of a Malayalam (or Latin) string.
  *
- * For Malayalam input via Mozhi, intermediate states often have a trailing
- * virama (്, U+0D4D) that won't appear in the final word. For example,
- * typing "ram" produces "രമ്" but the target name "രമേഷ്" starts with "രമേ".
- * We strip trailing virama from the query so "രമ്" matches "രമേഷ്".
+ * The skeleton preserves the consonant / base-letter sequence while
+ * dropping vowel marks, virama, and joiners. This matters because when
+ * writers type via Mozhi they progress consonant → vowel-sign whereas
+ * Malayalam encodes the vowel sign AFTER the consonant — so the literal
+ * intermediate text "രമ്" is not a prefix of the final name "രാമൻ"
+ * (which encodes as ര, ാ, മ, ൻ). Both reduce to the same skeleton "രമൻ"
+ * vs query "രമ", making prefix search behave as writers expect.
+ *
+ * Stripped ranges (Malayalam block, U+0D00–U+0D7F):
+ *   U+0D3E–U+0D4C dependent vowel signs (matras)
+ *   U+0D4D        virama (chandrakkala)
+ *   U+0D57        au length mark
+ *   U+0D62–U+0D63 vocalic-l vowel signs
+ *   U+0D81–U+0D83 sign chars (candrabindu etc.)
+ * Plus ZWJ (U+200D) and ZWNJ (U+200C) which appear in Mozhi intermediates
+ * (e.g. `c` → "ക്\u200D" before the `h`) but never carry lexical weight.
  */
-function matchesQuery(name: string, query: string): boolean {
-  // Strip trailing virama (്) from the query — it's an intermediate Mozhi state
-  const cleanQuery = query.replace(/\u0D4D$/, '');
-  return name.toLowerCase().startsWith(cleanQuery.toLowerCase());
+function skeleton(s: string): string {
+  return s
+    .normalize('NFC')
+    .replace(/[\u0D3E-\u0D4D\u0D57\u0D62\u0D63\u0D81-\u0D83\u200C\u200D]/g, '')
+    .toLowerCase();
+}
+
+interface MatchResult {
+  /** Whether the name is a candidate suggestion */
+  match: boolean;
+  /** 0 = prefix match (strongest), 1 = substring match (weaker) */
+  rank: number;
+}
+
+/**
+ * Match a stored character name against the writer's in-progress query
+ * using consonant-skeleton comparison. Prefix beats substring.
+ */
+function matchesQuery(name: string, query: string): MatchResult {
+  const nname = skeleton(name);
+  const nquery = skeleton(query);
+  if (nquery.length === 0) return { match: false, rank: 99 };
+  // Don't suggest the exact same name the writer has already fully typed
+  if (nname === nquery) return { match: false, rank: 99 };
+  if (nname.startsWith(nquery)) return { match: true, rank: 0 };
+  if (nname.includes(nquery)) return { match: true, rank: 1 };
+  return { match: false, rank: 99 };
 }
 
 /** Compute the autocomplete state from the current editor state */
@@ -66,22 +101,23 @@ function computeState(editorState: EditorState): AutocompleteState {
 
   const query = $from.parent.textContent;
 
-  // Need at least 2 characters to trigger. For Malayalam, strip trailing
-  // virama before checking — "ര്" (r + virama) is just one logical character
-  // and shouldn't trigger the autocomplete by itself.
-  const queryForLength = query.replace(/\u0D4D$/, '');
-  if (queryForLength.length < 2) return inactive;
+  // Need at least 2 skeletal chars to trigger. A single Malayalam
+  // consonant ("ക്") skeletonizes to 1 char — too broad to suggest on.
+  const querySkeleton = skeleton(query);
+  if (querySkeleton.length < 2) return inactive;
 
-  // Collect all character names and filter by query prefix.
-  // Strip trailing virama from query for the exact-match exclusion too —
-  // otherwise a partial Malayalam word with trailing virama would never
-  // match the exact name (which has no trailing virama in that position).
-  const cleanQuery = query.replace(/\u0D4D$/, '');
   const allNames = collectCharacterNames(editorState);
-  const suggestions = allNames
-    .filter((name) => matchesQuery(name, query) && name !== cleanQuery)
-    .sort((a, b) => a.localeCompare(b));
+  const scored = allNames
+    .map((name) => ({ name, result: matchesQuery(name, query) }))
+    .filter((entry) => entry.result.match);
 
+  // Sort: prefix matches first, then substring matches; alphabetically within each rank.
+  scored.sort((a, b) => {
+    if (a.result.rank !== b.result.rank) return a.result.rank - b.result.rank;
+    return a.name.localeCompare(b.name);
+  });
+
+  const suggestions = scored.map((entry) => entry.name);
   if (suggestions.length === 0) return inactive;
 
   return {

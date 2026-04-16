@@ -3,6 +3,7 @@
   import { save } from '@tauri-apps/plugin-dialog';
   import { writeFile } from '@tauri-apps/plugin-fs';
   import { documentStore } from '$lib/stores/documentStore.svelte';
+  import { focusTrap } from '$lib/actions/focusTrap';
 
   let { open = $bindable(false) } = $props<{ open: boolean }>();
 
@@ -255,7 +256,7 @@
 {#if open}
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div class="modal-backdrop" onclick={handleBackdropClick} onkeydown={handleKeydown} role="dialog" aria-modal="true" tabindex="-1">
-    <div class="modal-card">
+    <div class="modal-card" use:focusTrap>
       {#if anyExporting}
         <div class="progress-bar" aria-hidden="true"><span class="progress-bar-fill"></span></div>
       {/if}

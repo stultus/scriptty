@@ -2,6 +2,7 @@
   import { documentStore } from '$lib/stores/documentStore.svelte';
   import { themeStore } from '$lib/stores/themeStore.svelte';
   import { InputModeManager } from '$lib/editor/input/InputModeManager';
+  import { focusTrap } from '$lib/actions/focusTrap';
 
   let { open = $bindable(false), showAnnotations = $bindable(true) } = $props<{
     open: boolean;
@@ -53,7 +54,7 @@
 {#if open}
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div class="modal-backdrop" onclick={handleBackdropClick} onkeydown={handleKeydown} role="dialog" aria-modal="true" tabindex="-1">
-    <div class="modal-card">
+    <div class="modal-card" use:focusTrap>
       <div class="modal-header">
         <h2>Settings</h2>
         <button class="btn-close" onclick={() => { open = false; }} aria-label="Close settings">&times;</button>

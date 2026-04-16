@@ -1,5 +1,6 @@
 <script lang="ts">
   import { documentStore } from '$lib/stores/documentStore.svelte';
+  import { focusTrap } from '$lib/actions/focusTrap';
 
   // Props using Svelte 5 $props rune
   let { open = $bindable(false) } = $props<{ open: boolean }>();
@@ -58,7 +59,7 @@
 {#if open}
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div class="modal-backdrop" onclick={handleBackdropClick} onkeydown={handleKeydown} role="dialog" aria-modal="true" tabindex="-1">
-    <div class="modal-card">
+    <div class="modal-card" use:focusTrap>
       <div class="modal-header">
         <h2>Screenplay Info</h2>
         <button class="btn-close" onclick={handleCancel}>&times;</button>

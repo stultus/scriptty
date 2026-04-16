@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { focusTrap } from '$lib/actions/focusTrap';
+
   let { open = $bindable(false), onShowAbout }: {
     open: boolean;
     onShowAbout?: () => void;
@@ -25,7 +27,7 @@
 {#if open}
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div class="modal-backdrop" onclick={handleBackdropClick} onkeydown={handleKeydown} role="dialog" aria-modal="true" tabindex="-1">
-    <div class="modal-card">
+    <div class="modal-card" use:focusTrap>
       <div class="modal-header">
         <h2>How to Use Scriptty</h2>
         <button class="btn-close" onclick={() => { open = false; }}>&times;</button>

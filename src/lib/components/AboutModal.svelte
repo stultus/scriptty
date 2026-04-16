@@ -1,5 +1,6 @@
 <script lang="ts">
   import { invoke } from '@tauri-apps/api/core';
+  import { focusTrap } from '$lib/actions/focusTrap';
 
   let { open = $bindable(false) } = $props<{ open: boolean }>();
 
@@ -25,7 +26,7 @@
 {#if open}
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div class="modal-backdrop" onclick={handleBackdropClick} onkeydown={handleKeydown} role="dialog" aria-modal="true" tabindex="-1">
-    <div class="modal-card">
+    <div class="modal-card" use:focusTrap>
       <div class="logo-area">
         <img src="/app-icon.png" alt="Scriptty" class="logo-img" />
       </div>

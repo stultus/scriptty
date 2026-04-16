@@ -1,5 +1,6 @@
 <script lang="ts">
   import { documentStore } from '$lib/stores/documentStore.svelte';
+  import { focusTrap } from '$lib/actions/focusTrap';
 
   let { open = $bindable(false) } = $props<{ open: boolean }>();
 
@@ -171,7 +172,7 @@
 {#if open}
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div class="modal-backdrop" onclick={handleBackdropClick} onkeydown={handleKeydown} role="dialog" aria-modal="true" tabindex="-1">
-    <div class="modal-card">
+    <div class="modal-card" use:focusTrap>
       <div class="modal-header">
         <h2>Script Statistics</h2>
         <div class="header-actions">

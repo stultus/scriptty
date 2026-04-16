@@ -697,14 +697,15 @@
     margin-bottom: 8px;
   }
 
+  /* Shared tokens — keep in lock-step with .field-label in SceneCardsView.svelte */
   .ann-label {
     display: block;
     font-family: system-ui, -apple-system, sans-serif;
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--text-muted);
+    font-size: var(--label-font-size);
+    font-weight: var(--label-font-weight);
+    color: var(--label-color);
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: var(--label-tracking);
     margin-bottom: 2px;
   }
 

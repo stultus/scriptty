@@ -741,14 +741,15 @@
     flex-direction: column;
   }
 
+  /* Shared tokens — keep in lock-step with .ann-label in Editor.svelte */
   .field-label {
     display: block;
     font-family: system-ui, -apple-system, sans-serif;
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--text-muted);
+    font-size: var(--label-font-size);
+    font-weight: var(--label-font-weight);
+    color: var(--label-color);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: var(--label-tracking);
     margin-bottom: 4px;
     margin-top: 8px;
   }

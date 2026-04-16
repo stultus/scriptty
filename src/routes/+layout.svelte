@@ -113,6 +113,17 @@
     --find-match-current: rgba(255, 140, 0, 0.5);
   }
 
+  /* ─── Shared typography tokens for small form labels ───
+     Used by SceneCardsView's Description/Notes labels and the annotation
+     gutter in Editor.svelte so the same data reads as the same system in
+     both places. */
+  :global(:root) {
+    --label-font-size: 10px;
+    --label-font-weight: 700;
+    --label-tracking: 0.06em;
+    --label-color: var(--text-muted);
+  }
+
   /* ─── Scrollbar styling ─── */
   :global(::-webkit-scrollbar) {
     width: 6px;

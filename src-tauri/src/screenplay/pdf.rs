@@ -651,18 +651,20 @@ pub fn generate_title_page_markup(meta: &ScreenplayMeta, page_numbers: bool) -> 
         page.push_str("  ]\n"); // close #align(left)
     }
 
-    page.push_str("]\n"); // close #page(...)
-    page.push_str("#pagebreak()\n");
     // Restart page numbering for the screenplay body — the title page is
-    // unnumbered, and by convention the first page of the script itself is
-    // page 1. `update(0)` means the next page will increment to 1.
-    // Only emit the counter reset when numbering is actually enabled,
-    // otherwise there's nothing to reset.
+    // unnumbered, and by convention the first page of the script itself
+    // reads as page 1. The reset MUST fire inside the title page's content
+    // (before the `]` that closes `#page(...)[...]`) so that the subsequent
+    // `#pagebreak()` steps the counter from 0 to 1 on the first body page.
+    // Placing it after the pagebreak would run on the body's first page
+    // — the header for that page has already been laid out with the
+    // pre-update value, so the first body page would show "2" and the
+    // second body page would show "1". See the bug report on #35.
     if page_numbers {
-        page.push_str("#counter(page).update(0)\n\n");
-    } else {
-        page.push_str("\n");
+        page.push_str("  #counter(page).update(0)\n");
     }
+    page.push_str("]\n"); // close #page(...)
+    page.push_str("#pagebreak()\n\n");
 
     page
 }

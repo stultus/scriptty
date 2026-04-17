@@ -366,22 +366,33 @@
     window.addEventListener('keydown', handleGlobalKeydown);
 
     let unlistens: (() => void)[] = [];
+    // Cleanup may run before the async IIFE below finishes populating
+    // `unlistens`. Once that happens, the remaining `await listen(...)`
+    // calls would resolve into a detached array and leak their handlers.
+    // Flipping this flag in the cleanup — and checking it after each
+    // await — lets us short-circuit and immediately unlisten anything
+    // the backend already wired up.
+    let cancelled = false;
+    const track = (fn: () => void) => {
+      if (cancelled) fn();
+      else unlistens.push(fn);
+    };
 
     // Listen for native menu events emitted from the Rust backend.
     // Each custom menu item (New, Open, Save, Save As) emits an event
     // that we handle here to call the appropriate store method.
     (async () => {
-      unlistens.push(await listen('menu-new-film', async () => {
+      track(await listen('menu-new-film', async () => {
         if (!(await documentStore.confirmIfDirty())) return;
         await documentStore.newDocument();
       }));
 
-      unlistens.push(await listen('menu-new-series', async () => {
+      track(await listen('menu-new-series', async () => {
         if (!(await documentStore.confirmIfDirty())) return;
         showSeriesDialog = true;
       }));
 
-      unlistens.push(await listen('menu-open', async () => {
+      track(await listen('menu-open', async () => {
         if (!(await documentStore.confirmIfDirty())) return;
         const path = await open({
           multiple: false,
@@ -393,23 +404,23 @@
         }
       }));
 
-      unlistens.push(await listen('menu-save', () => {
+      track(await listen('menu-save', () => {
         documentStore.saveWithDialog();
       }));
 
-      unlistens.push(await listen('menu-save-as', () => {
+      track(await listen('menu-save-as', () => {
         documentStore.saveAsDialog();
       }));
 
-      unlistens.push(await listen('menu-about', () => {
+      track(await listen('menu-about', () => {
         showAbout = true;
       }));
 
-      unlistens.push(await listen('menu-help-guide', () => {
+      track(await listen('menu-help-guide', () => {
         showHelp = true;
       }));
 
-      unlistens.push(await listen('menu-check-updates', async () => {
+      track(await listen('menu-check-updates', async () => {
         const result = await updateStore.check();
         if (result === 'current') {
           await message("You're on the latest version of Scriptty.", {
@@ -424,59 +435,59 @@
         }
       }));
 
-      unlistens.push(await listen('menu-statistics', () => {
+      track(await listen('menu-statistics', () => {
         showStatistics = true;
       }));
 
-      unlistens.push(await listen('menu-scene-cards', () => {
+      track(await listen('menu-scene-cards', () => {
         activeView = activeView === 'cards' ? 'writing' : 'cards';
       }));
 
-      unlistens.push(await listen('menu-story-mode', () => {
+      track(await listen('menu-story-mode', () => {
         activeView = activeView === 'story' ? 'writing' : 'story';
       }));
 
-      unlistens.push(await listen('menu-find', () => {
+      track(await listen('menu-find', () => {
         findReplaceOpen = true;
         findReplaceMode = 'find';
       }));
 
-      unlistens.push(await listen('menu-find-replace', () => {
+      track(await listen('menu-find-replace', () => {
         findReplaceOpen = true;
         findReplaceMode = 'replace';
       }));
 
       // Format menu — toggle inline marks on the editor
-      unlistens.push(await listen('menu-bold', () => {
+      track(await listen('menu-bold', () => {
         if (editorStore.view) {
           toggleMark(screenplaySchema.marks.bold)(editorStore.view.state, editorStore.view.dispatch);
           editorStore.view.focus();
         }
       }));
 
-      unlistens.push(await listen('menu-italic', () => {
+      track(await listen('menu-italic', () => {
         if (editorStore.view) {
           toggleMark(screenplaySchema.marks.italic)(editorStore.view.state, editorStore.view.dispatch);
           editorStore.view.focus();
         }
       }));
 
-      unlistens.push(await listen('menu-underline', () => {
+      track(await listen('menu-underline', () => {
         if (editorStore.view) {
           toggleMark(screenplaySchema.marks.underline)(editorStore.view.state, editorStore.view.dispatch);
           editorStore.view.focus();
         }
       }));
 
-      unlistens.push(await listen('menu-toggle-sidebar', () => {
+      track(await listen('menu-toggle-sidebar', () => {
         if (activeView === 'writing') panelOpen = !panelOpen;
       }));
 
-      unlistens.push(await listen('menu-edit-meta', () => {
+      track(await listen('menu-edit-meta', () => {
         showMetadata = true;
       }));
 
-      unlistens.push(await listen('menu-quit', async () => {
+      track(await listen('menu-quit', async () => {
         if (!(await documentStore.confirmIfDirty())) return;
         quitConfirmed = true;
         await getCurrentWindow().close();
@@ -486,7 +497,7 @@
       // font slug isn't in the bundled set — we surface a native dialog so
       // the user knows the exported PDF won't match what they expected
       // instead of shipping a silently different-looking file (issue #50).
-      unlistens.push(await listen<{ requested: string; fallback: string }>('font-fallback', (event) => {
+      track(await listen<{ requested: string; fallback: string }>('font-fallback', (event) => {
         const { requested, fallback } = event.payload;
         message(
           `The font "${requested}" isn't bundled with this version of Scriptty, so "${fallback}" was used for the export instead. Pick a bundled font in Settings if the PDF should match your document.`,
@@ -498,7 +509,7 @@
       // The deep-link plugin calls this when macOS sends an Apple Event
       // for opening a .screenplay file while the app is in the foreground.
       try {
-        unlistens.push(await onOpenUrl(async (urls) => {
+        track(await onOpenUrl(async (urls) => {
           for (const url of urls) {
             const filePath = url.startsWith('file://') ? decodeURIComponent(url.replace('file://', '')) : url;
             if (filePath.endsWith('.screenplay')) {
@@ -513,7 +524,7 @@
       }
 
       // Intercept window close to prompt for unsaved changes
-      unlistens.push(await getCurrentWindow().onCloseRequested(async (event) => {
+      track(await getCurrentWindow().onCloseRequested(async (event) => {
         if (quitConfirmed) return; // Already confirmed via menu-quit
         if (!(await documentStore.confirmIfDirty())) {
           event.preventDefault();
@@ -522,6 +533,7 @@
     })();
 
     return () => {
+      cancelled = true;
       clearTimeout(updateCheckTimer);
       window.removeEventListener('keydown', handleGlobalKeydown);
       unlistens.forEach((fn) => fn());

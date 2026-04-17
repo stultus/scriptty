@@ -10,6 +10,10 @@ use crate::screenplay::fountain;
 use crate::screenplay::plaintext;
 use crate::screenplay::pdf;
 use serde::Deserialize;
+// `Emitter` is a Tauri trait that adds the `.emit(event, payload)` method
+// onto AppHandle — it lets Rust push a named event to the frontend webview
+// so the UI can show a toast/warning without blocking the export.
+use tauri::Emitter;
 
 /// The set of font slugs the app recognizes. Kept in sync with
 /// `src/lib/components/SettingsModal.svelte` — if a new bundled font is
@@ -25,20 +29,37 @@ const FALLBACK_FONT_NAME: &str = "Noto Sans Malayalam";
 
 /// Map a font slug from `document.settings.font` to the Typst font family name.
 ///
-/// Unknown slugs fall back to `FALLBACK_FONT_NAME` and log a warning to stderr
-/// so a misconfigured document still exports, but the divergence shows up in
-/// Tauri's log stream during development and in packaged crash logs.
-fn resolve_font_name(slug: &str) -> &'static str {
+/// Returns the resolved family plus `Some(slug)` when the slug wasn't
+/// recognized — callers use that to emit a `font-fallback` event so the
+/// UI can surface a toast instead of the old silent stderr-only warning
+/// (issue #50). In packaged builds stderr is hidden, so without the event
+/// the user would get a silently-different PDF.
+fn resolve_font_name(slug: &str) -> (&'static str, Option<String>) {
     for (known_slug, family) in KNOWN_FONT_SLUGS {
         if slug == *known_slug {
-            return family;
+            return (family, None);
         }
     }
     eprintln!(
         "[scriptty] export: unknown font slug {:?}, falling back to {:?}",
         slug, FALLBACK_FONT_NAME
     );
-    FALLBACK_FONT_NAME
+    (FALLBACK_FONT_NAME, Some(slug.to_string()))
+}
+
+/// If `resolve_font_name` fell back, push a `font-fallback` event to the
+/// frontend so the UI can show a toast. `let _ = ...` swallows emit
+/// failures — a missed warning is cosmetic, never worth aborting an export.
+fn warn_font_fallback(app: &tauri::AppHandle, unknown_slug: Option<String>) {
+    if let Some(slug) = unknown_slug {
+        let _ = app.emit(
+            "font-fallback",
+            serde_json::json!({
+                "requested": slug,
+                "fallback": FALLBACK_FONT_NAME,
+            }),
+        );
+    }
 }
 
 /// Generates Typst markup from a screenplay document.
@@ -56,11 +77,15 @@ fn resolve_font_name(slug: &str) -> &'static str {
 /// * `Ok(String)` — The generated Typst markup source code.
 /// * `Err(String)` — An error message if markup generation fails.
 #[tauri::command]
-pub fn export_typst_markup(document: ScreenplayDocument) -> Result<String, String> {
-    // Map the font setting slug to the human-readable font name that Typst expects.
-    // `resolve_font_name` logs a warning if the slug isn't recognized and falls
-    // back to the default font, rather than silently using a wrong font.
-    let font_name = resolve_font_name(&document.settings.font);
+pub fn export_typst_markup(
+    document: ScreenplayDocument,
+    app: tauri::AppHandle,
+) -> Result<String, String> {
+    // `resolve_font_name` returns `(name, Option<unknown_slug>)`; the helper
+    // emits a `font-fallback` event when the slug wasn't recognized so the
+    // UI can show a toast instead of producing a silently-different PDF.
+    let (font_name, unknown) = resolve_font_name(&document.settings.font);
+    warn_font_fallback(&app, unknown);
 
     // `&document.content` passes a reference (borrow) to the content field.
     // We don't need to take ownership — we just need to read the JSON.
@@ -84,13 +109,18 @@ pub fn export_typst_markup(document: ScreenplayDocument) -> Result<String, Strin
 /// * `Ok(Vec<u8>)` — The raw PDF file bytes ready to write to disk.
 /// * `Err(String)` — An error message if PDF generation fails.
 #[tauri::command]
-pub fn export_pdf(document: ScreenplayDocument) -> Result<Vec<u8>, String> {
+pub fn export_pdf(
+    document: ScreenplayDocument,
+    app: tauri::AppHandle,
+) -> Result<Vec<u8>, String> {
     // `bundled_fonts()` returns a Vec<BundledFont> — all fonts compiled into the binary.
     let bundled = fonts::bundled_fonts();
 
-    // Resolve the font slug once through the shared helper — unknown slugs
-    // log a warning and fall back, instead of silently using Noto Sans Malayalam.
-    let font_name = resolve_font_name(&document.settings.font);
+    // Resolve + emit a `font-fallback` event when the slug isn't recognized,
+    // so the frontend can warn the user instead of producing a silently
+    // different PDF.
+    let (font_name, unknown) = resolve_font_name(&document.settings.font);
+    warn_font_fallback(&app, unknown);
     let font = bundled.iter().find(|f| f.name == font_name);
 
     // `ok_or_else` converts an Option to a Result:
@@ -129,13 +159,16 @@ pub fn export_pdf(document: ScreenplayDocument) -> Result<Vec<u8>, String> {
 /// * `Ok(Vec<u8>)` — The raw PDF file bytes in Indian two-column format, ready to write to disk.
 /// * `Err(String)` — An error message if PDF generation fails.
 #[tauri::command]
-pub fn export_pdf_indian(document: ScreenplayDocument) -> Result<Vec<u8>, String> {
+pub fn export_pdf_indian(
+    document: ScreenplayDocument,
+    app: tauri::AppHandle,
+) -> Result<Vec<u8>, String> {
     // `bundled_fonts()` returns all fonts compiled into the binary as a Vec<BundledFont>.
     let bundled = fonts::bundled_fonts();
 
-    // Resolve the slug via the shared helper — unknown slugs warn and fall back
-    // rather than silently mapping to the default.
-    let font_name = resolve_font_name(&document.settings.font);
+    // Resolve + warn on unknown slug — same pattern as `export_pdf`.
+    let (font_name, unknown) = resolve_font_name(&document.settings.font);
+    warn_font_fallback(&app, unknown);
     let font = bundled.iter().find(|f| f.name == font_name);
 
     // `ok_or_else` converts Option to Result: Some(val) → Ok(val), None → Err(...).
@@ -208,11 +241,13 @@ pub struct ExportOptions {
 pub fn export_combined_pdf(
     document: ScreenplayDocument,
     options: ExportOptions,
+    app: tauri::AppHandle,
 ) -> Result<Vec<u8>, String> {
     let bundled = fonts::bundled_fonts();
 
-    // Resolve the font — shared helper logs on unknown slugs.
-    let font_name = resolve_font_name(&document.settings.font);
+    // Resolve + warn on unknown slug so the UI can surface a toast.
+    let (font_name, unknown) = resolve_font_name(&document.settings.font);
+    warn_font_fallback(&app, unknown);
     let font = bundled.iter().find(|f| f.name == font_name);
 
     let font = font.ok_or_else(|| "Selected font not found in bundled fonts".to_string())?;
@@ -275,8 +310,11 @@ pub fn export_combined_pdf(
         }
     }
 
-    // Append synopsis section if requested
-    if options.include_synopsis && !document.story.synopsis.is_empty() {
+    // Append synopsis section if requested.
+    // `.trim().is_empty()` (not just `.is_empty()`) skips whitespace-only
+    // bodies so a section heading isn't rendered with a blank page below it
+    // when the user has typed and then deleted the prose (issue #47).
+    if options.include_synopsis && !document.story.synopsis.trim().is_empty() {
         markup.push_str(&pdf::generate_prose_section_markup(
             "Synopsis",
             &document.story.synopsis,
@@ -291,7 +329,7 @@ pub fn export_combined_pdf(
     }
 
     // Append treatment section if requested
-    if options.include_treatment && !document.story.treatment.is_empty() {
+    if options.include_treatment && !document.story.treatment.trim().is_empty() {
         markup.push_str(&pdf::generate_prose_section_markup(
             "Treatment",
             &document.story.treatment,
@@ -306,7 +344,7 @@ pub fn export_combined_pdf(
     }
 
     // Append narrative (full-length story) section if requested
-    if options.include_narrative && !document.story.narrative.is_empty() {
+    if options.include_narrative && !document.story.narrative.trim().is_empty() {
         markup.push_str(&pdf::generate_prose_section_markup(
             "Narrative",
             &document.story.narrative,

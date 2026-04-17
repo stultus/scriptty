@@ -50,7 +50,24 @@
     }
   }
 
-  /** Build scene cards data with auto-populated fields derived from the screenplay */
+  /**
+   * Build scene cards data with auto-populated fields derived from the screenplay.
+   *
+   * Tracks two numbers per scene:
+   *   - `sceneIndex` — 0-based document position (used for scene_cards[] lookups
+   *     and for writing into the cards[] array). Independent of `scene_number_start`.
+   *   - `scene_number` — the display number, offset by `scene_number_start` so
+   *     co-writing files that cover scenes 5–14 render as "Scene 5".
+   *
+   * Keeping these separate fixes the misalignment that showed up when
+   * `scene_number_start > 1`: the old code used display-number math for
+   * array writes, which left every card's character list (and page
+   * estimate) empty (issues #46, #54).
+   *
+   * Merges `extra_characters` from manual scene cards into the speaker
+   * list so non-speaking characters the user added (background extras,
+   * silent antagonists) still appear on the breakdown card.
+   */
   function buildSceneCardsData(): Array<Record<string, unknown>> {
     const doc = documentStore.document;
     if (!doc || !doc.content) return [];
@@ -66,31 +83,48 @@
 
     const cards: Array<Record<string, unknown>> = [];
     const startNum = doc.settings?.scene_number_start ?? 1;
-    let sceneNumber = startNum - 1;
+    let sceneIndex = -1; // -1 means "no scene heading seen yet"
     let currentSceneCharacters: string[] = [];
     let currentSceneCharCount = 0;
 
-    for (let i = 0; i < content.content.length; i++) {
-      const node = content.content[i];
+    const finalizePreviousScene = () => {
+      if (sceneIndex < 0 || sceneIndex >= cards.length) return;
 
+      // Merge auto-detected speakers with user-supplied `extra_characters`
+      // (non-speaking roles) — matches the editor's below-heading widget
+      // behavior so the PDF and the editor show the same list.
+      const manual = doc.scene_cards.find((c) => c.scene_index === sceneIndex);
+      const extras = (manual?.extra_characters ?? '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+      const merged = [...currentSceneCharacters];
+      for (const name of extras) {
+        if (!merged.includes(name)) merged.push(name);
+      }
+
+      cards[sceneIndex].characters = merged.join(', ');
+      // Rough page estimate: ~3000 chars per page
+      const pages = Math.max(0.1, currentSceneCharCount / 3000);
+      cards[sceneIndex].page_estimate = `~${pages.toFixed(1)} pages`;
+    };
+
+    for (const node of content.content) {
       if (node.type === 'scene_heading') {
-        // If there was a previous scene, finalize it
-        if (sceneNumber >= startNum) {
-          finalizeCard(cards, sceneNumber, currentSceneCharacters, currentSceneCharCount);
-        }
-
-        sceneNumber++;
+        finalizePreviousScene();
+        sceneIndex++;
         currentSceneCharacters = [];
         currentSceneCharCount = 0;
 
         const headingText = (node.content ?? []).map((c) => c.text ?? '').join('');
         const { location, time } = parseSceneHeading(headingText);
 
-        // Find matching manually-written scene card data
-        const manualCard = doc.scene_cards.find((c) => c.scene_index === sceneNumber - 1);
+        // scene_index is 0-based document position → matches how Rust stores
+        // it on SceneCard. The display `scene_number` includes the startNum offset.
+        const manualCard = doc.scene_cards.find((c) => c.scene_index === sceneIndex);
 
         cards.push({
-          scene_number: sceneNumber,
+          scene_number: startNum + sceneIndex,
           heading: headingText,
           location,
           time,
@@ -112,27 +146,9 @@
       }
     }
 
-    // Finalize last scene
-    if (sceneNumber >= startNum) {
-      finalizeCard(cards, sceneNumber, currentSceneCharacters, currentSceneCharCount);
-    }
+    finalizePreviousScene();
 
     return cards;
-  }
-
-  function finalizeCard(
-    cards: Array<Record<string, unknown>>,
-    sceneNumber: number,
-    characters: string[],
-    charCount: number
-  ) {
-    const cardIndex = sceneNumber - 1;
-    if (cardIndex < cards.length) {
-      cards[cardIndex].characters = characters.join(', ');
-      // Rough page estimate: ~3000 chars per page
-      const pages = Math.max(0.1, charCount / 3000);
-      cards[cardIndex].page_estimate = `~${pages.toFixed(1)} pages`;
-    }
   }
 
   /** Parse INT./EXT., location, and time from a scene heading */

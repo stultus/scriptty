@@ -415,6 +415,18 @@
         await getCurrentWindow().close();
       }));
 
+      // The Rust export pipeline emits `font-fallback` when a document's
+      // font slug isn't in the bundled set — we surface a native dialog so
+      // the user knows the exported PDF won't match what they expected
+      // instead of shipping a silently different-looking file (issue #50).
+      unlistens.push(await listen<{ requested: string; fallback: string }>('font-fallback', (event) => {
+        const { requested, fallback } = event.payload;
+        message(
+          `The font "${requested}" isn't bundled with this version of Scriptty, so "${fallback}" was used for the export instead. Pick a bundled font in Settings if the PDF should match your document.`,
+          { title: 'Font not available', kind: 'warning' }
+        ).catch(() => {});
+      }));
+
       // Handle file open when app is already running (warm launch).
       // The deep-link plugin calls this when macOS sends an Apple Event
       // for opening a .screenplay file while the app is in the foreground.

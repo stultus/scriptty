@@ -4,14 +4,21 @@ use crate::screenplay::document::ScreenplayDocument;
 
 /// Creates a brand-new screenplay with default metadata and settings.
 ///
-/// The `content` field is set to `serde_json::Value::Null` because no editor
-/// content exists yet — the frontend will populate it once the user starts writing.
+/// `content` is seeded with a minimal ProseMirror doc (one empty scene
+/// heading) rather than `Value::Null`, so an export triggered before the
+/// editor has written anything still produces a PDF with a blank scene
+/// instead of an empty body (see issue #44).
 ///
 /// `#[tauri::command]` marks this function as callable from the frontend via `invoke()`.
 #[tauri::command]
 pub fn new_screenplay() -> Result<ScreenplayDocument, String> {
     Ok(ScreenplayDocument {
-        content: serde_json::Value::Null,
+        content: serde_json::json!({
+            "type": "doc",
+            "content": [
+                { "type": "scene_heading" }
+            ]
+        }),
         meta: Default::default(),       // Uses the Default impl we defined
         settings: Default::default(),
         story: Default::default(),      // Empty story sections

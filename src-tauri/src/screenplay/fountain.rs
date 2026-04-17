@@ -244,20 +244,36 @@ fn is_auto_detected_heading(text: &str) -> bool {
         || upper.starts_with("I/E.")
 }
 
-/// Check if a string contains only uppercase ASCII letters, spaces, digits,
-/// and common punctuation — i.e., no lowercase ASCII letters.
+/// Check if a cue name is safe to write without a `@` Fountain prefix.
+///
+/// Fountain's auto-detection only recognizes pure all-caps ASCII cues;
+/// anything mixed-script (e.g. `"രാജ് KUMAR"`) or fully non-ASCII must
+/// carry the explicit `@` prefix so downstream Fountain tools don't
+/// misread the cue as action text (issue #48).
+///
+/// Returns true only when every character is either an uppercase ASCII
+/// letter, an ASCII digit, or ASCII whitespace/punctuation — i.e. nothing
+/// outside the alphabet Fountain's heuristic can recognize.
 /// Returns false for empty strings.
 fn is_all_ascii_upper(text: &str) -> bool {
     if text.is_empty() {
         return false;
     }
-    // Only check ASCII letters — non-ASCII (Malayalam) chars don't have
-    // upper/lower distinction, so we consider them "not all ASCII upper".
-    let has_ascii_letters = text.chars().any(|c| c.is_ascii_alphabetic());
-    if !has_ascii_letters {
-        return false;
+    let mut has_ascii_letter = false;
+    for c in text.chars() {
+        if !c.is_ascii() {
+            // Any non-ASCII char (Malayalam, accented Latin, etc.) defeats
+            // Fountain's auto-detection — force the `@` prefix.
+            return false;
+        }
+        if c.is_ascii_lowercase() {
+            return false;
+        }
+        if c.is_ascii_uppercase() {
+            has_ascii_letter = true;
+        }
     }
-    !text.chars().any(|c| c.is_ascii_lowercase())
+    has_ascii_letter
 }
 
 #[cfg(test)]

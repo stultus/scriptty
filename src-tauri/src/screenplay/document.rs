@@ -160,6 +160,37 @@ pub struct SceneCard {
     pub extra_characters: String,
 }
 
+/// Default ProseMirror document JSON — a single empty scene heading.
+///
+/// Matches the frontend's `createInitialDoc()` shape so a missing or null
+/// `content` field deserializes to something the PDF pipeline can walk
+/// (and the editor can render) instead of an empty/broken state.
+fn default_content() -> serde_json::Value {
+    serde_json::json!({
+        "type": "doc",
+        "content": [
+            { "type": "scene_heading" }
+        ]
+    })
+}
+
+/// Map JSON `null` to `default_content()` while preserving every other
+/// value as-is. Serde's own `default` only fires when the field is
+/// absent, not when it's present-but-null — which is exactly what
+/// `new_screenplay()` historically wrote. This hook covers both cases
+/// at the same boundary.
+fn deserialize_content<'de, D>(deserializer: D) -> Result<serde_json::Value, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let raw = serde_json::Value::deserialize(deserializer)?;
+    if raw.is_null() {
+        Ok(default_content())
+    } else {
+        Ok(raw)
+    }
+}
+
 /// The complete `.screenplay` document — the top-level JSON structure.
 ///
 /// The `content` field holds the ProseMirror editor state as arbitrary JSON.
@@ -168,7 +199,14 @@ pub struct SceneCard {
 /// schema, not by Rust types.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScreenplayDocument {
-    /// The ProseMirror document JSON — an arbitrary JSON value
+    /// The ProseMirror document JSON — an arbitrary JSON value.
+    /// Older `.screenplay` files written before the editor schema stabilized
+    /// may omit this field entirely, and `new_screenplay()` historically wrote
+    /// an explicit `null` here. The custom `deserialize_with` hook maps both
+    /// cases to a minimal doc with one empty scene heading (matching the
+    /// editor's `createInitialDoc()` shape), so the PDF pipeline renders a
+    /// blank scene instead of an empty body (see issues #44/#45).
+    #[serde(default = "default_content", deserialize_with = "deserialize_content")]
     pub content: serde_json::Value,
     /// Screenplay metadata (title, author, draft info)
     pub meta: ScreenplayMeta,

@@ -127,7 +127,7 @@ These are final. Do not suggest alternatives unless explicitly asked.
 | Dialogue | Tab | Parenthetical |
 | Parenthetical | Enter | Dialogue |
 | Parenthetical | Tab | Character |
-| Transition | Enter | SceneHeading |
+| Transition | Enter | Action (Shift+Enter for a new scene — mid-scene transitions / montage) |
 | Any element | Shift+Enter | SceneHeading (new scene) |
 | Any element | Cmd+Shift+T | Transition |
 | Character/Dialogue | Shift+Tab | Action |

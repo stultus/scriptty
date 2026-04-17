@@ -103,7 +103,11 @@ const handleEnter: Command = (state, dispatch) => {
 		character: screenplaySchema.nodes.dialogue,
 		dialogue: screenplaySchema.nodes.character,
 		parenthetical: screenplaySchema.nodes.dialogue,
-		transition: screenplaySchema.nodes.scene_heading
+		// Transitions drop back into Action so mid-scene transitions (SMASH CUT TO:,
+		// MATCH CUT:, montage beats) don't force a new scene. For the classic
+		// scene-ending "CUT TO: / INT. NEXT LOCATION" flow, Shift+Enter still
+		// creates a fresh scene_heading from anywhere.
+		transition: screenplaySchema.nodes.action
 	};
 
 	const targetType = enterTargets[typeName];

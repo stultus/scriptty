@@ -160,7 +160,7 @@
                 <tr><td>Parenthetical</td><td><kbd>Enter</kbd></td><td>Dialogue</td></tr>
                 <tr><td>Parenthetical</td><td><kbd>Tab</kbd></td><td>Character</td></tr>
                 <tr><td>Any element</td><td><kbd>Cmd+Shift+T</kbd></td><td>Transition</td></tr>
-                <tr><td>Transition</td><td><kbd>Enter</kbd></td><td>Scene Heading</td></tr>
+                <tr><td>Transition</td><td><kbd>Enter</kbd></td><td>Action</td></tr>
               </tbody>
             </table>
 
@@ -172,6 +172,7 @@
 
             <p><strong>Dialogue loop:</strong> Character → Dialogue → Character flows continuously. Press <kbd>Enter</kbd> on an empty Character to break out to Action. Press <kbd>Enter</kbd> on an empty Dialogue to return to the Character above.</p>
             <p><strong>Paragraph splitting:</strong> Press <kbd>Enter</kbd> in the middle of an Action element to split it into two paragraphs.</p>
+            <p><strong>Transitions:</strong> Use <kbd>Cmd+Shift+T</kbd> to turn the current block into a Transition ("CUT TO:", "SMASH CUT TO:", "MATCH CUT:"). Pressing <kbd>Enter</kbd> after a Transition continues with Action — useful for mid-scene transitions and montage beats. Press <kbd>Shift+Enter</kbd> instead when the Transition ends the scene.</p>
             <p>Scene headings and character names are automatically uppercased as you type.</p>
             <p>Parentheticals are automatically wrapped in parentheses — just type the direction (e.g., "whispering") and the app adds <strong>(</strong> and <strong>)</strong> for you.</p>
           </section>

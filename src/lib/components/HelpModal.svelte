@@ -222,7 +222,7 @@
           <section class="help-section" id="scene-nav">
             <h3>Scene Navigator</h3>
             <p>Press <kbd>Cmd+\</kbd> to toggle the left panel. It shows all your scene headings with auto-numbered labels.</p>
-            <p>Click any scene to jump directly to it in the editor. Drag the handle (<strong>⠿</strong>) that appears on hover to reorder scenes — the entire scene (heading + all content until the next scene) moves as a single block, undoable with <kbd>Cmd+Z</kbd>.</p>
+            <p>Click any scene to jump directly to it in the editor. Drag the six-dot handle that appears on hover to reorder scenes — the entire scene (heading + all content until the next scene) moves as a single block, undoable with <kbd>Cmd+Z</kbd>.</p>
           </section>
 
           <section class="help-section" id="story-view">

@@ -38,7 +38,7 @@
   let editorRef: { editCurrentSceneAnnotation: () => void } | undefined;
   let showMetadata = $state(false);
   let showAnnotations = $state(typeof localStorage !== 'undefined' ? localStorage.getItem('scriptty-annotations') !== 'false' : true);
-  let showOutlinePeek = $state(typeof localStorage !== 'undefined' ? localStorage.getItem('scriptty-outline-peek') !== 'false' : true);
+  let showOutlinePeek = $state(typeof localStorage !== 'undefined' ? localStorage.getItem('scriptty-outline-peek') === 'true' : false);
   let showSettings = $state(false);
   let showExport = $state(false);
   let showCommandPalette = $state(false);

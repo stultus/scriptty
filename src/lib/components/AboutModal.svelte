@@ -1,8 +1,19 @@
 <script lang="ts">
   import { invoke } from '@tauri-apps/api/core';
+  import { getVersion } from '@tauri-apps/api/app';
+  import { onMount } from 'svelte';
   import { focusTrap } from '$lib/actions/focusTrap';
 
   let { open = $bindable(false) } = $props<{ open: boolean }>();
+
+  let version = $state('');
+  onMount(async () => {
+    try {
+      version = await getVersion();
+    } catch {
+      version = '';
+    }
+  });
 
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Escape') {
@@ -32,7 +43,7 @@
       </div>
 
       <h1 class="app-name">Scriptty</h1>
-      <p class="version">Version 0.6.0</p>
+      {#if version}<p class="version">Version {version}</p>{/if}
       <p class="tagline">Write in the language you dream in.</p>
 
       <hr class="divider" />

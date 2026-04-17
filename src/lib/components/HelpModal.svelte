@@ -1,10 +1,21 @@
 <script lang="ts">
   import { focusTrap } from '$lib/actions/focusTrap';
+  import { getVersion } from '@tauri-apps/api/app';
+  import { onMount } from 'svelte';
 
   let { open = $bindable(false), onShowAbout }: {
     open: boolean;
     onShowAbout?: () => void;
   } = $props();
+
+  let version = $state('');
+  onMount(async () => {
+    try {
+      version = await getVersion();
+    } catch {
+      version = '';
+    }
+  });
 
   // TOC entries. Order matches the on-screen order of sections in the
   // right pane, and drives both the sidebar links and the active-section
@@ -112,7 +123,7 @@
 
           <div class="toc-footer">
             <button class="about-link" onclick={handleAboutClick}>About Scriptty</button>
-            <span class="toc-footer-version">v0.6.0</span>
+            {#if version}<span class="toc-footer-version">v{version}</span>{/if}
           </div>
         </nav>
 

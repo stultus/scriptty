@@ -121,6 +121,7 @@
         class="series-title"
         onclick={beginSeriesRename}
         title="Rename series"
+        aria-label="Rename series"
       >{seriesTitle || 'Untitled Series'}</button>
     {/if}
     <button class="icon-btn" onclick={addEpisode} title="Add episode" aria-label="Add episode">
@@ -172,13 +173,13 @@
               <span class="episode-title">{ep.title || 'Untitled'}</span>
             </button>
             <div class="episode-actions">
-              <button class="tiny-btn" onclick={() => moveUp(index)} disabled={index === 0} title="Move up" aria-label="Move up">
+              <button class="tiny-btn" onclick={() => moveUp(index)} disabled={index === 0} title="Move up" aria-label={`Move Episode ${ep.number} up`}>
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><path d="M5 2 L9 7 L1 7 Z" /></svg>
               </button>
-              <button class="tiny-btn" onclick={() => moveDown(index)} disabled={index === episodes.length - 1} title="Move down" aria-label="Move down">
+              <button class="tiny-btn" onclick={() => moveDown(index)} disabled={index === episodes.length - 1} title="Move down" aria-label={`Move Episode ${ep.number} down`}>
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><path d="M5 8 L1 3 L9 3 Z" /></svg>
               </button>
-              <button class="tiny-btn" onclick={() => beginRename(index, ep.title)} title="Rename" aria-label="Rename">
+              <button class="tiny-btn" onclick={() => beginRename(index, ep.title)} title="Rename" aria-label={`Rename Episode ${ep.number}`}>
                 <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 2 L14 4 L5 13 L2 14 L3 11 Z" />
                 </svg>
@@ -188,7 +189,7 @@
                 onclick={() => removeEpisode(index)}
                 disabled={episodes.length <= 1}
                 title={episodes.length <= 1 ? 'Cannot delete the last episode' : 'Delete episode'}
-                aria-label="Delete"
+                aria-label={`Delete Episode ${ep.number}`}
               >
                 <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M3 4 L13 4 M6 4 V2 H10 V4 M5 4 L6 14 H10 L11 4" />

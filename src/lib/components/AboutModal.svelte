@@ -27,10 +27,16 @@
     }
   }
 
-  function openExternal(event: MouseEvent, url: string) {
+  async function openExternal(event: MouseEvent, url: string) {
     event.preventDefault();
     event.stopPropagation();
-    invoke('open_external_url', { url });
+    try {
+      await invoke('open_external_url', { url });
+    } catch (err) {
+      // If the OS blocks the open (sandbox rejection, missing xdg-open, etc.)
+      // at least leave a breadcrumb in the console instead of looking frozen.
+      console.error('Failed to open external URL', url, err);
+    }
   }
 </script>
 

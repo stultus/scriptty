@@ -102,7 +102,7 @@
   <div class="title-zone">
     <span class="title">{displayTitle}</span>
     {#if episodeLabel}
-      <span class="episode-label" title="Active episode">{episodeLabel}</span>
+      <span class="episode-label" title={`Active episode — ${episodeLabel}`}>{episodeLabel}</span>
     {/if}
     {#if documentStore.isDirty}
       <span class="dirty-dot" title="Unsaved changes"></span>
@@ -209,9 +209,13 @@
     background: var(--surface-base);
     letter-spacing: 0.02em;
     white-space: nowrap;
-    max-width: 160px;
+    /* Let the label use whatever space the title bar has. The outer
+       flex row still truncates the series title first, so the episode
+       badge only starts shrinking when there is genuinely no room. */
+    max-width: min(320px, 40vw);
     overflow: hidden;
     text-overflow: ellipsis;
+    flex-shrink: 1;
   }
 
   .dirty-dot {

@@ -309,13 +309,24 @@ class DocumentStore {
   }
 
   private createEmptyEpisode(number: number, title: string): Episode {
+    // Episodes inherit the document's current font, default language,
+    // and input scheme so the series stays typographically coherent —
+    // falling back to blank defaults only when there is no document yet
+    // (e.g. creating the very first episode of a brand-new series).
+    const docSettings = this.document?.settings;
+    const settings = this.blankSettings();
+    if (docSettings) {
+      settings.font = docSettings.font;
+      settings.default_language = docSettings.default_language;
+      settings.input_scheme = docSettings.input_scheme;
+    }
     return {
       id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
       number,
       title,
       content: { type: 'doc', content: [{ type: 'scene_heading' }] },
       meta: this.blankMeta(),
-      settings: this.blankSettings(),
+      settings,
       story: { idea: '', synopsis: '', treatment: '', narrative: '' },
       scene_cards: [],
     };

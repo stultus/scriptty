@@ -12,6 +12,7 @@
     "dialog:allow-save",
     "dialog:allow-open",
     "dialog:allow-message",
+    "dialog:allow-confirm",
     "fs:allow-write-file",
     "fs:allow-write-text-file",
     "opener:allow-open-url",

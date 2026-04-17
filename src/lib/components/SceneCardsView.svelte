@@ -452,10 +452,17 @@
     const view = editorStore.view;
     if (!view) return;
 
-    const ok = await confirm(
-      `Delete scene ${sceneNumber} and its contents? This cannot be undone from the cards view.`,
-      { title: 'Delete scene', kind: 'warning', okLabel: 'Delete', cancelLabel: 'Cancel' }
-    );
+    let ok: boolean;
+    try {
+      ok = await confirm(
+        `Delete scene ${sceneNumber} and its contents? This cannot be undone from the cards view.`,
+        { title: 'Delete scene', kind: 'warning', okLabel: 'Delete', cancelLabel: 'Cancel' }
+      );
+    } catch (err) {
+      // Surface permission / plugin errors instead of silently dropping the click.
+      console.error('Delete confirmation dialog failed', err);
+      return;
+    }
     if (!ok) return;
 
     const doc = view.state.doc;

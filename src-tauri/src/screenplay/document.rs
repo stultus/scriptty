@@ -207,6 +207,62 @@ where
     }
 }
 
+/// Top-level kind of the document. Films are single screenplays (the
+/// original and still default shape); Series projects hold multiple
+/// episodes, each of which is a complete screenplay of its own.
+///
+/// Serialized as lowercase JSON strings — `"film"` or `"series"` — so the
+/// on-disk format reads naturally. Defaults to `Film` so every existing
+/// `.screenplay` file opens unchanged (issue: series support).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ProjectType {
+    Film,
+    Series,
+}
+
+impl Default for ProjectType {
+    fn default() -> Self {
+        ProjectType::Film
+    }
+}
+
+/// One episode inside a Series project. Mirrors the film-level fields so
+/// every existing editor feature (scene navigator, export, scene cards,
+/// story panel) can operate on an episode without changing its code path.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Episode {
+    /// UUID minted by the frontend when the episode is created. Stable
+    /// across renames and reorders so UI state (expanded/collapsed folder,
+    /// active selection) survives edits.
+    pub id: String,
+    /// Display number, typically 1-based and sequential after reorder.
+    pub number: u32,
+    /// Episode title (e.g. "Pilot", "The Return"). Can be empty.
+    pub title: String,
+    #[serde(default = "default_content", deserialize_with = "deserialize_content")]
+    pub content: serde_json::Value,
+    pub meta: ScreenplayMeta,
+    pub settings: ScreenplaySettings,
+    #[serde(default)]
+    pub story: ScreenplayStory,
+    #[serde(default)]
+    pub scene_cards: Vec<SceneCard>,
+}
+
+/// Series-level container. Only present when the document's `project_type`
+/// is `Series`; in Film mode the top-level meta/settings/story/content/
+/// scene_cards are used directly.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct SeriesData {
+    /// The series name (e.g. "The Return"). Shown above the episode list
+    /// and used as the series-level title page on full-series exports.
+    pub title: String,
+    /// Ordered list of episodes. Order is authoritative; `number` tracks
+    /// the display number and is resynced by the frontend on reorder.
+    pub episodes: Vec<Episode>,
+}
+
 /// The complete `.screenplay` document — the top-level JSON structure.
 ///
 /// The `content` field holds the ProseMirror editor state as arbitrary JSON.
@@ -215,6 +271,15 @@ where
 /// schema, not by Rust types.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScreenplayDocument {
+    /// `"film"` (default) or `"series"`. Films use the top-level meta/
+    /// settings/story/content/scene_cards fields directly; series files use
+    /// the `series` container and the top-level fields are placeholders.
+    #[serde(default, rename = "type")]
+    pub project_type: ProjectType,
+    /// Series container — only meaningful when `project_type` is `Series`.
+    /// Absent on every film file (including all existing ones).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub series: Option<SeriesData>,
     /// The ProseMirror document JSON — an arbitrary JSON value.
     /// Older `.screenplay` files written before the editor schema stabilized
     /// may omit this field entirely, and `new_screenplay()` historically wrote

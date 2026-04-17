@@ -1,6 +1,6 @@
 // Tauri commands for saving and opening .screenplay files
 
-use crate::screenplay::document::ScreenplayDocument;
+use crate::screenplay::document::{ProjectType, ScreenplayDocument};
 
 /// Creates a brand-new screenplay with default metadata and settings.
 ///
@@ -13,6 +13,8 @@ use crate::screenplay::document::ScreenplayDocument;
 #[tauri::command]
 pub fn new_screenplay() -> Result<ScreenplayDocument, String> {
     Ok(ScreenplayDocument {
+        project_type: ProjectType::Film,
+        series: None,
         content: serde_json::json!({
             "type": "doc",
             "content": [

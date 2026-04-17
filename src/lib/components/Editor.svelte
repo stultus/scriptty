@@ -142,15 +142,17 @@
   let spacerRafId = 0;
   let gutterResizeObserver: ResizeObserver | null = null;
 
-  // Track which scenes have their annotation expanded. Collapsed slots limit
-  // description/notes to ~2 visible lines; expanded shows the full text.
-  let expandedSlots = $state(new Set<number>());
+  // Track which scenes have had their annotation explicitly collapsed.
+  // Expanded is the default; users opt into the compact two-line view.
+  // Collapsed slots limit description/notes to ~2 visible lines; expanded
+  // shows the full text.
+  let collapsedSlots = $state(new Set<number>());
 
   function toggleSlotExpanded(sceneOrder: number) {
-    const next = new Set(expandedSlots);
+    const next = new Set(collapsedSlots);
     if (next.has(sceneOrder)) next.delete(sceneOrder);
     else next.add(sceneOrder);
-    expandedSlots = next;
+    collapsedSlots = next;
     // Svelte flushes the state change in the same microtask; a single RAF
     // is enough to let layout settle before we measure.
     scheduleSpacerRecalc();
@@ -583,13 +585,13 @@
     <FindReplaceBar mode={findReplaceMode} onclose={() => { findReplaceOpen = false; }} />
   {/if}
   <div class="editor-scroll">
-    <div class="editor-with-annotations">
-      <div class="editor-container" bind:this={editorElement} style="--editor-font: '{fontFamily}'; --scene-counter-start: {(documentStore.document?.settings.scene_number_start ?? 1) - 1}"></div>
+    <div class="editor-with-annotations" style="--editor-font: '{fontFamily}'">
+      <div class="editor-container" bind:this={editorElement} style="--scene-counter-start: {(documentStore.document?.settings.scene_number_start ?? 1) - 1}"></div>
       {#if showAnnotations}
       <div class="annotations-gutter" style="padding-top: {gutterTopPad}px" bind:this={gutterEl}>
         {#each sceneSlots as slot (slot.sceneOrder)}
           {@const showFields = slot.description || slot.shootNotes || editingSceneIndex === slot.sceneOrder}
-          {@const expanded = expandedSlots.has(slot.sceneOrder)}
+          {@const expanded = !collapsedSlots.has(slot.sceneOrder)}
           <div class="scene-slot" style="min-height: {slot.extent}px" data-scene={slot.sceneOrder}>
             <div class="slot-content" class:expanded>
               {#if showFields}
@@ -747,9 +749,12 @@
     border: none;
     background: transparent;
     color: var(--text-secondary);
-    font-family: system-ui, -apple-system, sans-serif;
+    /* Inherit the editor font so annotations render Malayalam text with
+       the same shaping as the page — otherwise the system font renders
+       Malayalam in an entirely different style from the screenplay. */
+    font-family: var(--editor-font), system-ui, -apple-system, sans-serif;
     font-size: 12px;
-    line-height: 1.4;
+    line-height: 1.5;
     padding: 0;
     outline: none;
     overflow: hidden;

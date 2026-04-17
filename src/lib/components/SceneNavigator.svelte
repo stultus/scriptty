@@ -392,67 +392,11 @@
           </span>
           <button
             class="scene-item"
+            data-time={scene.time ?? ''}
             onclick={() => scrollToScene(scene.index)}
+            title={scene.time ? `${scene.text.toUpperCase()} — ~${scene.pages} pages` : `${scene.text.toUpperCase()} — ~${scene.pages} pages`}
           >
             <span class="scene-number">{scene.number}.</span>
-            {#if scene.setting === 'INT'}
-              <span class="signal signal-setting" title="Interior" aria-label="Interior">
-                <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M2 6 L7 2 L12 6 L12 12 L2 12 Z"/>
-                  <line x1="7" y1="8" x2="7" y2="12"/>
-                </svg>
-              </span>
-            {:else if scene.setting === 'EXT'}
-              <span class="signal signal-setting" title="Exterior" aria-label="Exterior">
-                <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <circle cx="7" cy="6" r="2.2"/>
-                  <line x1="7" y1="1.5" x2="7" y2="3"/>
-                  <line x1="7" y1="9" x2="7" y2="10.5"/>
-                  <line x1="1.5" y1="6" x2="3" y2="6"/>
-                  <line x1="11" y1="6" x2="12.5" y2="6"/>
-                  <line x1="3.3" y1="2.3" x2="4.3" y2="3.3"/>
-                  <line x1="9.7" y1="8.7" x2="10.7" y2="9.7"/>
-                  <line x1="3.3" y1="9.7" x2="4.3" y2="8.7"/>
-                  <line x1="9.7" y1="3.3" x2="10.7" y2="2.3"/>
-                </svg>
-              </span>
-            {:else if scene.setting === 'INT_EXT'}
-              <span class="signal signal-setting" title="Interior / Exterior" aria-label="Interior and exterior">
-                <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M1.5 7 L5 4 L8.5 7 L8.5 12 L1.5 12 Z"/>
-                  <circle cx="11" cy="4" r="1.6"/>
-                </svg>
-              </span>
-            {/if}
-            {#if scene.time === 'NIGHT' || scene.time === 'DUSK' || scene.time === 'EVENING'}
-              <span class="signal signal-time" title={scene.time} aria-label={scene.time.toLowerCase()}>
-                <svg width="10" height="10" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
-                  <path d="M11.5 8.5 A5 5 0 1 1 5.5 2.5 A4 4 0 0 0 11.5 8.5 Z"/>
-                </svg>
-              </span>
-            {:else if scene.time === 'DAWN' || scene.time === 'MORNING'}
-              <span class="signal signal-time time-warm" title={scene.time} aria-label={scene.time.toLowerCase()}>
-                <svg width="10" height="10" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true">
-                  <circle cx="7" cy="9" r="2.4"/>
-                  <line x1="1" y1="12" x2="13" y2="12"/>
-                  <line x1="2.8" y1="6.5" x2="4" y2="7.5"/>
-                  <line x1="11.2" y1="6.5" x2="10" y2="7.5"/>
-                </svg>
-              </span>
-            {:else if scene.time === 'DAY' || scene.time === 'AFTERNOON'}
-              <span class="signal signal-time time-warm" title={scene.time} aria-label={scene.time.toLowerCase()}>
-                <svg width="10" height="10" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
-                  <circle cx="7" cy="7" r="3"/>
-                </svg>
-              </span>
-            {:else if scene.time === 'CONTINUOUS' || scene.time === 'LATER'}
-              <span class="signal signal-time" title={scene.time} aria-label={scene.time.toLowerCase()}>
-                <svg width="10" height="10" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <circle cx="7" cy="7" r="5"/>
-                  <polyline points="7,4 7,7 9,8.5"/>
-                </svg>
-              </span>
-            {/if}
             <span class="scene-text">{scene.text.toUpperCase()}</span>
             <span class="page-pill" title="~{scene.pages} pages">{scene.pages}p</span>
           </button>
@@ -589,13 +533,14 @@
   }
 
   .scene-item {
+    position: relative;
     display: flex;
     align-items: baseline;
     gap: 6px;
     flex: 1;
     min-width: 0;
     height: 32px;
-    padding: 0 8px 0 4px;
+    padding: 0 8px 0 8px;
     border: none;
     border-left: 2px solid transparent;
     border-radius: 0 4px 4px 0;
@@ -607,6 +552,47 @@
     cursor: pointer;
     line-height: 32px;
     transition: background 120ms ease, color 120ms ease;
+  }
+
+  /* Time-of-day stripe: a 2px bar at the left edge of the row so the
+     outline reads as a rhythm of warm/cool blocks at a glance. No extra
+     horizontal space is consumed. */
+  .scene-item[data-time='DAY']::before,
+  .scene-item[data-time='MORNING']::before,
+  .scene-item[data-time='AFTERNOON']::before,
+  .scene-item[data-time='DAWN']::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 6px;
+    bottom: 6px;
+    width: 2px;
+    border-radius: 1px;
+    background: var(--accent-warm);
+  }
+  .scene-item[data-time='NIGHT']::before,
+  .scene-item[data-time='DUSK']::before,
+  .scene-item[data-time='EVENING']::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 6px;
+    bottom: 6px;
+    width: 2px;
+    border-radius: 1px;
+    background: var(--accent-deep);
+  }
+  .scene-item[data-time='CONTINUOUS']::before,
+  .scene-item[data-time='LATER']::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 6px;
+    bottom: 6px;
+    width: 2px;
+    border-radius: 1px;
+    background: var(--text-muted);
+    opacity: 0.5;
   }
 
   .scene-item:hover {
@@ -635,49 +621,26 @@
     min-width: 0;
   }
 
-  /* Setting/time signals — subtle glyphs that help a writer scan the
-     outline spatially. Muted at rest so they never out-shout the heading
-     text; strengthen slightly on hover together with the row. */
-  .signal {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    width: 14px;
-    height: 14px;
-    color: var(--text-muted);
-    opacity: 0.65;
-    transition: opacity 120ms ease, color 120ms ease;
-  }
-
-  .scene-item:hover .signal {
-    opacity: 1;
-  }
-
-  .signal-time.time-warm {
-    color: var(--accent-warm);
-  }
-
-  /* Page pill — sits at the far right of the row, always visible so the
-     writer can see at a glance which scenes are heavy. Tabular nums keep
-     "0.8p" and "1.2p" vertically aligned across rows. */
+  /* Page pill — compact marker at the far right. Muted at rest, shows
+     on hover so it doesn't compete with the heading text at rest. */
   .page-pill {
     flex-shrink: 0;
     margin-left: auto;
-    padding: 1px 6px;
-    border-radius: 8px;
-    background: var(--surface-base);
-    border: 1px solid var(--border-subtle);
+    padding: 0 4px;
+    border-radius: 6px;
     color: var(--text-muted);
     font-size: 10px;
     font-weight: 500;
     font-variant-numeric: tabular-nums;
     line-height: 1.4;
     letter-spacing: 0.02em;
+    opacity: 0;
+    transition: opacity 120ms ease, color 120ms ease;
   }
 
-  .scene-item:hover .page-pill {
-    background: var(--surface-float);
+  .scene-item:hover .page-pill,
+  .scene-item:focus-visible .page-pill {
+    opacity: 0.8;
     color: var(--text-secondary);
   }
 </style>

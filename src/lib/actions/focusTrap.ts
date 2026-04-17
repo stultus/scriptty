@@ -36,15 +36,18 @@ export function focusTrap(node: HTMLElement) {
 
 	// Defer the initial focus move so any animation-in transform doesn't
 	// interfere with the browser's scroll-into-view on focus.
+	// `preventScroll` stops the viewport from jumping to the modal —
+	// the modal is already centered on screen by its own positioning,
+	// and any extra scroll just disrupts the writer's place in the doc.
 	queueMicrotask(() => {
 		const focusable = getFocusable(node);
 		if (focusable.length > 0) {
-			focusable[0].focus();
+			focusable[0].focus({ preventScroll: true });
 		} else {
 			// Ensure the node itself can receive focus so keydown handlers
 			// attached to it (Escape, etc.) still fire.
 			if (!node.hasAttribute('tabindex')) node.setAttribute('tabindex', '-1');
-			node.focus();
+			node.focus({ preventScroll: true });
 		}
 	});
 
@@ -64,12 +67,12 @@ export function focusTrap(node: HTMLElement) {
 		if (event.shiftKey) {
 			if (active === first || !node.contains(active)) {
 				event.preventDefault();
-				last.focus();
+				last.focus({ preventScroll: true });
 			}
 		} else {
 			if (active === last || !node.contains(active)) {
 				event.preventDefault();
-				first.focus();
+				first.focus({ preventScroll: true });
 			}
 		}
 	}
@@ -80,9 +83,20 @@ export function focusTrap(node: HTMLElement) {
 		destroy() {
 			node.removeEventListener('keydown', handleKeydown);
 			// Restore focus to whatever was focused before the modal opened.
-			// Guard against the element being gone from the DOM.
-			if (previouslyFocused && document.contains(previouslyFocused)) {
-				previouslyFocused.focus();
+			// Guards:
+			//   - element still in the DOM
+			//   - element still focusable (not disabled/hidden)
+			//   - preventScroll so the viewport stays put — modal-triggering
+			//     controls live in the title bar / status bar, which are
+			//     already visible, and we don't want to fight the writer's
+			//     scroll position.
+			if (
+				previouslyFocused &&
+				document.contains(previouslyFocused) &&
+				!(previouslyFocused as HTMLButtonElement).disabled &&
+				previouslyFocused.offsetParent !== null
+			) {
+				previouslyFocused.focus({ preventScroll: true });
 			}
 		}
 	};

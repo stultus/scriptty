@@ -56,10 +56,13 @@
       screenTimeMinutes: 0, characters: [],
     };
 
-    const doc = documentStore.document;
-    if (!doc || !doc.content) return empty;
+    // Stats reflect the active episode in series projects, not the top-level
+    // film placeholder. Using activeContent keeps the numbers in sync with
+    // what the writer is actually editing.
+    const activeContent = documentStore.activeContent;
+    if (!activeContent) return empty;
 
-    const content = doc.content as {
+    const content = activeContent as {
       type?: string;
       content?: Array<{
         type?: string;

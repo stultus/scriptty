@@ -15,13 +15,16 @@
   }
 
   let scenes = $derived.by<OutlineScene[]>(() => {
-    const doc = documentStore.document;
-    if (!doc || !doc.content) return [];
-    const content = doc.content as { content?: Array<{ type?: string; content?: Array<{ text?: string }> }> };
+    // Drive the outline from the active episode (series) or top-level doc
+    // (film) — reading doc.content directly would pin the strip to the
+    // film-placeholder content in series mode.
+    const activeContent = documentStore.activeContent;
+    if (!activeContent) return [];
+    const content = activeContent as { content?: Array<{ type?: string; content?: Array<{ text?: string }> }> };
     const children = content.content ?? [];
 
     const out: OutlineScene[] = [];
-    const startNum = doc.settings?.scene_number_start ?? 1;
+    const startNum = documentStore.activeSettings?.scene_number_start ?? 1;
     let sceneNumber = startNum - 1;
 
     const nodeText = (n: { content?: Array<{ text?: string }> }): string =>

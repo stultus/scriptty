@@ -44,10 +44,14 @@
   let showCommandPalette = $state(false);
 
   const inputManager = InputModeManager.getInstance();
-  // Reactive mirror of isMalayalam so the command palette label stays in
-  // sync with ⌃Space toggles happening anywhere in the app.
+  // Reactive mirror of isMalayalam and scheme so command palette labels
+  // stay in sync with ⌃Space + scheme toggles happening anywhere in the app.
   let isMalayalam = $state(inputManager.isMalayalam);
-  $effect(() => inputManager.subscribe(() => { isMalayalam = inputManager.isMalayalam; }));
+  let inputScheme = $state(inputManager.scheme);
+  $effect(() => inputManager.subscribe(() => {
+    isMalayalam = inputManager.isMalayalam;
+    inputScheme = inputManager.scheme;
+  }));
 
   // Word count for story view
   let storyWordCount = $derived(() => {
@@ -124,6 +128,18 @@
       action: () => { themeStore.toggle(); } },
     { id: 'settings.lang', group: 'Settings', label: `Switch to ${isMalayalam ? 'English' : 'Malayalam'} Input`, hint: '⌃Space', keywords: 'mal eng mode',
       action: () => { inputManager.toggle(); } },
+    { id: 'settings.scheme.mozhi', group: 'Settings',
+      label: inputScheme === 'mozhi' ? 'Malayalam Scheme: Mozhi (active)' : 'Use Malayalam Scheme: Mozhi',
+      keywords: 'keyboard transliteration phonetic',
+      action: () => { inputManager.setScheme('mozhi'); if (!isMalayalam) inputManager.toggle(); } },
+    { id: 'settings.scheme.inscript2', group: 'Settings',
+      label: inputScheme === 'inscript2' ? 'Malayalam Scheme: Inscript 2 (active)' : 'Use Malayalam Scheme: Inscript 2',
+      keywords: 'keyboard layout',
+      action: () => { inputManager.setScheme('inscript2'); if (!isMalayalam) inputManager.toggle(); } },
+    { id: 'settings.scheme.inscript1', group: 'Settings',
+      label: inputScheme === 'inscript1' ? 'Malayalam Scheme: Inscript 1 (active)' : 'Use Malayalam Scheme: Inscript 1',
+      keywords: 'keyboard layout legacy',
+      action: () => { inputManager.setScheme('inscript1'); if (!isMalayalam) inputManager.toggle(); } },
 
     // Help
     { id: 'help.guide', group: 'Help', label: 'How to Use Scriptty', keywords: 'help guide shortcuts',
@@ -456,7 +472,11 @@
   {#if showOutlinePeek && activeView === 'writing'}
     <OutlinePeek />
   {/if}
-  <StatusBar onOpenPalette={() => { showCommandPalette = true; }}>
+  <StatusBar
+    onOpenPalette={() => { showCommandPalette = true; }}
+    onOpenSettings={() => { showSettings = true; }}
+    onShowHelp={() => { showHelp = true; }}
+  >
     {#snippet rightContent()}
       {#if activeView === 'writing'}
         <span class="status-info">{editorStore.currentElement}</span>

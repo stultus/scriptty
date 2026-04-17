@@ -1,12 +1,17 @@
 <script lang="ts">
   import { InputModeManager } from '$lib/editor/input/InputModeManager';
+  import { documentStore } from '$lib/stores/documentStore.svelte';
 
   let {
     rightContent,
     onOpenPalette,
+    onOpenSettings,
+    onShowHelp,
   }: {
     rightContent?: import('svelte').Snippet;
     onOpenPalette?: () => void;
+    onOpenSettings?: () => void;
+    onShowHelp?: () => void;
   } = $props();
 
   const inputManager = InputModeManager.getInstance();
@@ -19,23 +24,89 @@
       isMalayalam = inputManager.isMalayalam;
     });
   });
+
+  // Ticking clock for the "Saved N min ago" relative timestamp.
+  let nowTick = $state(Date.now());
+  $effect(() => {
+    const id = setInterval(() => { nowTick = Date.now(); }, 20_000);
+    return () => clearInterval(id);
+  });
+
+  function formatRelative(from: number, now: number): string {
+    const diffMs = Math.max(0, now - from);
+    const sec = Math.floor(diffMs / 1000);
+    if (sec < 10) return 'Saved just now';
+    if (sec < 60) return `Saved ${sec}s ago`;
+    const min = Math.floor(sec / 60);
+    if (min < 60) return `Saved ${min} min ago`;
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return `Saved ${hr} hr ago`;
+    const day = Math.floor(hr / 24);
+    return `Saved ${day}d ago`;
+  }
+
+  let saveLabel = $derived.by(() => {
+    if (documentStore.isDirty) return 'Unsaved changes';
+    if (documentStore.lastSavedAt === null) return '';
+    return formatRelative(documentStore.lastSavedAt, nowTick);
+  });
+
+  let saveState = $derived.by<'dirty' | 'saved' | 'idle'>(() => {
+    if (documentStore.isDirty) return 'dirty';
+    if (documentStore.lastSavedAt !== null) return 'saved';
+    return 'idle';
+  });
 </script>
 
 <div class="status-bar">
   <div class="status-left">
     <button
+      class="icon-btn"
+      onclick={() => onOpenSettings?.()}
+      title="Settings — language, input scheme, font, theme"
+      aria-label="Open settings"
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line>
+        <line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line>
+        <line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line>
+        <line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line>
+        <line x1="17" y1="16" x2="23" y2="16"></line>
+      </svg>
+    </button>
+    {#if onShowHelp}
+      <button
+        class="icon-btn"
+        onclick={() => onShowHelp?.()}
+        title="How to use Scriptty"
+        aria-label="Open help"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+      </button>
+    {/if}
+    <button
       class="palette-hint"
       onclick={() => onOpenPalette?.()}
-      title="Open the command palette (⌘K) to access settings, export, help, and all other actions"
+      title="Open the command palette (⌘K) to run any action"
     >
       <span class="kbd">⌘K</span>
-      <span class="palette-hint-label">Commands</span>
+      <span>Commands</span>
     </button>
     <span class="status-lang" class:malayalam={isMalayalam} title="Input language — toggle with ⌃Space">
       {isMalayalam ? 'MAL' : 'ENG'}
     </span>
   </div>
   <div class="status-right">
+    {#if saveLabel}
+      <span class="status-save" data-state={saveState} title={saveState === 'dirty' ? 'You have unsaved changes — ⌘S to save' : 'Last successful save'}>
+        <span class="status-save-dot" aria-hidden="true"></span>
+        {saveLabel}
+      </span>
+    {/if}
     {#if rightContent}
       {@render rightContent()}
     {/if}
@@ -62,7 +133,7 @@
   .status-left {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
   }
 
   .status-right {
@@ -71,9 +142,28 @@
     gap: 12px;
   }
 
-  /* The palette hint replaces the cluster of icon buttons — it surfaces
-     the one shortcut the writer needs to reach every other action, and
-     stays visually quiet so it doesn't compete with the writing surface. */
+  .icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    transition: background 120ms ease, color 120ms ease;
+  }
+
+  .icon-btn:hover {
+    color: var(--text-primary);
+    background: var(--surface-hover);
+  }
+
+  /* Palette hint sits alongside the icon cluster — the ⌘K kbd pill is
+     the discoverability surface for the command palette without pushing
+     out the familiar Settings/Help buttons the writer already knows. */
   .palette-hint {
     display: inline-flex;
     align-items: center;
@@ -122,5 +212,32 @@
   .status-lang.malayalam {
     color: var(--accent);
     background: var(--accent-muted);
+  }
+
+  .status-save {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
+    transition: color 160ms ease;
+  }
+
+  .status-save-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    transition: background 160ms ease, box-shadow 160ms ease;
+  }
+
+  .status-save[data-state='saved'] { color: var(--text-secondary); }
+  .status-save[data-state='saved'] .status-save-dot { background: var(--success); }
+
+  .status-save[data-state='dirty'] { color: var(--accent-warm); }
+  .status-save[data-state='dirty'] .status-save-dot {
+    background: var(--accent-warm);
+    box-shadow: 0 0 0 3px var(--accent-warm-muted);
   }
 </style>

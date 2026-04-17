@@ -184,12 +184,12 @@
   }
 
   /* Heading readout — shows the hovered scene (or the current scene when
-     idle) so the writer can orient without clicking. Truncates so long
-     headings don't push the layout around. */
+     idle) so the writer can orient without clicking. Fixed width so the
+     content flipping as hover moves never resizes the timeline and makes
+     the strip jitter. Truncates long headings with an ellipsis. */
   .peek-heading {
-    flex-shrink: 1;
+    flex: 0 0 34%;
     min-width: 0;
-    max-width: 40%;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;

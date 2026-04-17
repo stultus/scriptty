@@ -15,9 +15,11 @@
   import StatisticsModal from '$lib/components/StatisticsModal.svelte';
   import MetadataModal from '$lib/components/MetadataModal.svelte';
   import StatusBar from '$lib/components/StatusBar.svelte';
+  import UpdateToast from '$lib/components/UpdateToast.svelte';
   import { documentStore } from '$lib/stores/documentStore.svelte';
   import { editorStore } from '$lib/stores/editorStore.svelte';
   import { themeStore } from '$lib/stores/themeStore.svelte';
+  import { updateStore } from '$lib/stores/updateStore.svelte';
   import { toggleMark } from 'prosemirror-commands';
   import { screenplaySchema } from '$lib/editor/schema';
 
@@ -81,6 +83,13 @@
         }
       }
     })();
+
+    // Check for a newer release once, a few seconds after launch so we don't
+    // compete with file I/O or editor mount. Silent on failure — the app is
+    // fully usable offline and we don't want a nag on first-run network issues.
+    const updateCheckTimer = setTimeout(() => {
+      updateStore.check();
+    }, 3000);
 
     // Window-level keyboard shortcuts — works even when editor isn't focused.
     // Note: Cmd+N, Cmd+O, Cmd+S, Cmd+Shift+S are also handled by the native
@@ -302,6 +311,7 @@
     })();
 
     return () => {
+      clearTimeout(updateCheckTimer);
       window.removeEventListener('keydown', handleGlobalKeydown);
       unlistens.forEach((fn) => fn());
     };
@@ -341,6 +351,7 @@
 <HelpModal bind:open={showHelp} onShowAbout={() => { showAbout = true; }} />
 <StatisticsModal bind:open={showStatistics} />
 <MetadataModal bind:open={showMetadata} />
+<UpdateToast />
 
 <style>
   main {

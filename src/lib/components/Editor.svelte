@@ -868,16 +868,17 @@
   :global(.ProseMirror .scene-heading::before) {
     content: counter(scene-counter);
     position: absolute;
-    left: -56px;
-    width: 40px;
-    top: 0.1em;
+    left: -60px;
+    width: 44px;
+    top: 0;
     text-align: right;
     font-family: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
     font-style: italic;
     font-weight: 400;
-    font-size: 13px;
+    font-size: 15px;
+    line-height: inherit;
     color: var(--text-muted);
-    opacity: 0.75;
+    opacity: 0.8;
     letter-spacing: 0.01em;
     pointer-events: none;
     user-select: none;

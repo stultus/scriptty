@@ -119,10 +119,15 @@ fn default_scene_number_start() -> u32 {
     1
 }
 
+/// The one-and-only default font slug. Both `#[serde(default = ...)]` and
+/// `impl Default for ScreenplaySettings` reference this constant so the
+/// load path and the "brand new settings" path can't drift apart.
+pub const DEFAULT_FONT: &str = "manjari";
+
 /// Default font when `.screenplay` files omit `settings.font`. Matches
 /// `ScreenplaySettings::default()` so all load paths agree.
 fn default_font() -> String {
-    "manjari".to_string()
+    DEFAULT_FONT.to_string()
 }
 
 /// Default writing language when `.screenplay` files omit
@@ -159,7 +164,7 @@ where
 impl Default for ScreenplaySettings {
     fn default() -> Self {
         Self {
-            font: "manjari".to_string(),
+            font: DEFAULT_FONT.to_string(),
             default_language: "malayalam".to_string(),
             input_scheme: "mozhi".to_string(),
             scene_number_start: 1,

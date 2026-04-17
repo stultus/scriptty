@@ -974,7 +974,17 @@ pub fn generate_typst_markup(
                             display
                         )
                     }
-                    _ => continue, // Skip unknown node types
+                    other => {
+                        // Unknown node types shouldn't reach the PDF pipeline, but if
+                        // the ProseMirror schema grows a new element before pdf.rs
+                        // learns about it we want a breadcrumb in the logs instead
+                        // of silent data loss in the export.
+                        eprintln!(
+                            "pdf.rs: skipping unknown element type \"{}\" (text: {:?})",
+                            other, element.text
+                        );
+                        continue;
+                    }
                 }
             }
         };

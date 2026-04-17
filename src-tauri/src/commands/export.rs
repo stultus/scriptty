@@ -3,6 +3,15 @@
 // These commands are called from the Svelte frontend via `invoke()`.
 // Each command receives a ScreenplayDocument, processes it, and returns
 // the exported data or an error string.
+//
+// Invariant: the frontend always sends a *film-shaped* document (i.e.
+// `project_type == Film` with real content in the top-level fields).
+// For series projects the Export modal flattens the active episode (or
+// the whole series with `episode_boundary` markers between episodes)
+// via `documentStore.activeExportDocument` / `buildSeriesExportDocument`
+// before invoking any of these commands. That keeps this file free of
+// ProjectType branching — the PDF pipeline walks a single
+// content/meta/settings/scene_cards tuple regardless of source.
 
 use crate::fonts;
 use crate::screenplay::document::ScreenplayDocument;

@@ -260,6 +260,14 @@ fn collect_scene_characters(
 /// Build a `{ scene_index: [names] }` map from the raw scene_cards list. Each
 /// card's `extra_characters` field is a user-typed comma-separated string; we
 /// split, trim, and drop blanks here so the generators can just look up.
+///
+/// `scene_index` is a flat 0-based count across *every* scene_heading in the
+/// document we're handed, not per-episode. For series exports the frontend
+/// pre-shifts each episode's cards by the running scene-heading count before
+/// concatenating, so the key this map produces still lines up with the
+/// `current_idx` that `collect_scene_characters` increments (which ignores
+/// `episode_boundary` nodes and only ticks on scene_heading). Keep both
+/// sides in sync if you ever touch the series flattening.
 fn extras_from_scene_cards(scene_cards: &[SceneCard]) -> HashMap<usize, Vec<String>> {
     let mut map: HashMap<usize, Vec<String>> = HashMap::new();
     for card in scene_cards {

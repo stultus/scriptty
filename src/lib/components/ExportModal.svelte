@@ -2,7 +2,7 @@
   import { invoke } from '@tauri-apps/api/core';
   import { save } from '@tauri-apps/plugin-dialog';
   import { writeFile } from '@tauri-apps/plugin-fs';
-  import { documentStore, type ScreenplayDocument } from '$lib/stores/documentStore.svelte';
+  import { documentStore, type ScreenplayDocument, type ScreenplayMeta } from '$lib/stores/documentStore.svelte';
   import { focusTrap } from '$lib/actions/focusTrap';
 
   let {
@@ -278,11 +278,32 @@
       font: doc.settings.font || firstEp.settings.font,
     };
 
+    // Pick a series-level credit by collapsing the per-episode fields. If
+    // every episode shares the same author (or director, contact, …) we
+    // show that value on the series cover; otherwise we blank it so the
+    // cover doesn't misattribute the whole series to whoever wrote Ep 1.
+    // A dedicated per-series metadata UI would be nicer eventually, but
+    // this is a safe default that respects what writers already typed.
+    const uniqueOrBlank = (pick: (m: ScreenplayMeta) => string): string => {
+      const vals = new Set(episodes.map((ep) => pick(ep.meta).trim()).filter(Boolean));
+      return vals.size === 1 ? [...vals][0] : '';
+    };
+    const seriesMeta: ScreenplayMeta = {
+      ...firstEp.meta,
+      title: seriesTitle,
+      tagline: uniqueOrBlank((m) => m.tagline),
+      author: uniqueOrBlank((m) => m.author),
+      director: uniqueOrBlank((m) => m.director),
+      contact: uniqueOrBlank((m) => m.contact),
+      registration_number: uniqueOrBlank((m) => m.registration_number),
+      footnote: uniqueOrBlank((m) => m.footnote),
+    };
+
     return {
       type: 'film',
       series: null,
       content: { type: 'doc', content: combinedBlocks },
-      meta: { ...firstEp.meta, title: seriesTitle },
+      meta: seriesMeta,
       settings: mergedSettings,
       story: firstEp.story,
       scene_cards: combinedSceneCards,

@@ -766,7 +766,10 @@
     color: var(--text-on-page);
     background: var(--page-bg);
     border-radius: 2px;
-    box-shadow: 0 4px 24px var(--page-shadow), 0 1px 4px var(--shadow-soft);
+    box-shadow:
+      inset 0 1px 0 var(--page-edge-highlight),
+      0 1px 2px var(--page-shadow-close),
+      0 12px 32px var(--page-shadow);
     direction: ltr;
     unicode-bidi: normal;
     counter-reset: scene-counter var(--scene-counter-start, 0);

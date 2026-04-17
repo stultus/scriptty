@@ -40,6 +40,8 @@
     /* The screenplay page — warm, paper-like */
     --page-bg: #f5f0e8;
     --page-shadow: rgba(0, 0, 0, 0.5);
+    --page-shadow-close: rgba(0, 0, 0, 0.22);
+    --page-edge-highlight: rgba(255, 255, 255, 0.04);
 
     /* Text — off-white hierarchy */
     --text-primary: #e8e6e1;
@@ -73,7 +75,7 @@
 
     /* Find/replace highlights */
     --find-match: rgba(255, 213, 79, 0.35);
-    --find-match-current: rgba(255, 152, 0, 0.55);
+    --find-match-current: rgba(45, 155, 138, 0.30);
   }
 
   /* ─── Light mode ─── */
@@ -85,7 +87,9 @@
     --surface-active: #d2cdc7;
 
     --page-bg: #ffffff;
-    --page-shadow: rgba(0, 0, 0, 0.12);
+    --page-shadow: rgba(0, 0, 0, 0.18);
+    --page-shadow-close: rgba(0, 0, 0, 0.08);
+    --page-edge-highlight: rgba(255, 255, 255, 0.9);
 
     --text-primary: #1a1916;
     --text-secondary: #4a4740;
@@ -112,7 +116,7 @@
     --text-on-accent: #ffffff;
 
     --find-match: rgba(255, 200, 50, 0.4);
-    --find-match-current: rgba(255, 140, 0, 0.5);
+    --find-match-current: rgba(30, 128, 112, 0.22);
   }
 
   /* ─── Shared typography tokens for small form labels ───

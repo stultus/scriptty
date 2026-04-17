@@ -327,7 +327,16 @@
             role="button"
             tabindex="-1"
             aria-label="Drag to reorder scene {scene.number}"
-          >⠿</span>
+          >
+            <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor" aria-hidden="true">
+              <circle cx="2" cy="3" r="1.1"/>
+              <circle cx="8" cy="3" r="1.1"/>
+              <circle cx="2" cy="7" r="1.1"/>
+              <circle cx="8" cy="7" r="1.1"/>
+              <circle cx="2" cy="11" r="1.1"/>
+              <circle cx="8" cy="11" r="1.1"/>
+            </svg>
+          </span>
           <button
             class="scene-item"
             onclick={() => scrollToScene(scene.index)}
@@ -452,10 +461,9 @@
     width: 16px;
     height: 32px;
     flex-shrink: 0;
-    font-size: 10px;
     color: var(--text-muted);
     cursor: grab;
-    opacity: 0;
+    opacity: 0.35;
     transition: opacity 120ms ease;
     user-select: none;
   }

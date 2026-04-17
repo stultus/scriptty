@@ -174,7 +174,10 @@
     max-width: 680px;
     background: var(--page-bg);
     border-radius: 2px;
-    box-shadow: 0 4px 24px var(--page-shadow), 0 1px 4px var(--shadow-soft);
+    box-shadow:
+      inset 0 1px 0 var(--page-edge-highlight),
+      0 1px 2px var(--page-shadow-close),
+      0 12px 32px var(--page-shadow);
     padding: 32px 72px 60px;
     display: flex;
     flex-direction: column;

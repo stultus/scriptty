@@ -558,6 +558,12 @@
       </div>
 
       <div class="feature-card">
+        <span class="feat-icon">&#128253;</span>
+        <h3>Web Series</h3>
+        <p>Write a multi-episode series in a single file. Each episode has its own screenplay, metadata, story notes, and scene cards. Export the active episode or the entire series as one PDF with per-episode headers and scene numbering.</p>
+      </div>
+
+      <div class="feature-card">
         <span class="feat-icon">&#128462;</span>
         <h3>PDF, Fountain &amp; Plain Text</h3>
         <p>Export combined PDFs with title page, synopsis, screenplay, and scene cards. Fountain format for interop with Highland, Fade In, and others.</p>
@@ -584,12 +590,24 @@
         <h3>Getting Started</h3>
         <p>Scriptty is an offline screenwriting app for Malayalam and English writers. Your work is saved locally as <code>.screenplay</code> files — no cloud, no account needed.</p>
         <ol>
-          <li>Click <strong>New</strong> to create a blank screenplay.</li>
-          <li>Go to <strong>View &rarr; Edit Meta Data</strong> to set your title, writer, director, and draft info.</li>
+          <li>On the Welcome screen, pick <strong>New Film</strong> for a single screenplay or <strong>New Series</strong> for a multi-episode project. You can also trigger these later with <kbd>Cmd+N</kbd> and <kbd>Cmd+Shift+N</kbd>.</li>
+          <li>Go to <strong>File &rarr; Metadata</strong> to set your title, writer, director, and draft info.</li>
           <li>Start writing — the editor begins in Action mode. Press <kbd>Tab</kbd> to switch to a Character name, then <kbd>Enter</kbd> to write Dialogue.</li>
           <li>Use <kbd>Cmd+B</kbd>, <kbd>Cmd+I</kbd>, <kbd>Cmd+U</kbd> or the <strong>B I U</strong> buttons for formatting.</li>
           <li>Press <kbd>Cmd+S</kbd> to save your work.</li>
         </ol>
+      </div>
+
+      <div class="guide-section">
+        <h3>Web Series</h3>
+        <p>Scriptty supports multi-episode projects in a single <code>.screenplay</code> file. Every episode has its own screenplay content, metadata, story sections, and scene cards, but shares one series title, font, and input settings.</p>
+        <ol>
+          <li>Pick <strong>New Series</strong> on the Welcome screen (or press <kbd>Cmd+Shift+N</kbd>). Enter a series title — Scriptty creates Episode 1 for you.</li>
+          <li>Open the left panel (<kbd>Cmd+\</kbd>). Series projects show an <strong>Episodes</strong> list above the scene list. Click an episode to switch; use the <strong>+</strong> control to add more.</li>
+          <li>Use <strong>File &rarr; Metadata</strong> with an episode active to edit that episode's title and credits. The <strong>Episode Title</strong> field is the short label shown in the navigator and as the per-episode header in combined exports.</li>
+          <li>Switching episodes switches every view — screenplay editor, Story, Cards, and annotations all follow the active episode.</li>
+        </ol>
+        <p>In the Export modal, series projects show a <strong>Scope</strong> option: export the <em>Active episode</em> or the <em>Entire series</em>. Series exports start each episode on a new page with a centered <em>EPISODE N: Title</em> header and restart scene numbering from 1 per episode.</p>
       </div>
 
       <div class="guide-section">
@@ -674,7 +692,8 @@
         <table class="guide-table">
           <thead><tr><th>Shortcut</th><th>Action</th></tr></thead>
           <tbody>
-            <tr><td><kbd>Cmd+N</kbd></td><td>New document</td></tr>
+            <tr><td><kbd>Cmd+N</kbd></td><td>New film</td></tr>
+            <tr><td><kbd>Cmd+Shift+N</kbd></td><td>New series</td></tr>
             <tr><td><kbd>Cmd+O</kbd></td><td>Open document</td></tr>
             <tr><td><kbd>Cmd+S</kbd></td><td>Save</td></tr>
             <tr><td><kbd>Cmd+Shift+S</kbd></td><td>Save As</td></tr>

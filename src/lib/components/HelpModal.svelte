@@ -22,6 +22,7 @@
   // highlight (via IntersectionObserver below).
   const sections = [
     { id: 'getting-started', title: 'Getting Started' },
+    { id: 'series', title: 'Web Series' },
     { id: 'writing', title: 'Writing in the Editor' },
     { id: 'malayalam', title: 'Malayalam Input' },
     { id: 'autocomplete', title: 'Character Autocomplete' },
@@ -134,12 +135,25 @@
             <h3>Getting Started</h3>
             <p>Scriptty is an offline screenwriting app for Malayalam and English writers. Your work is saved locally as <code>.screenplay</code> files — no cloud, no account needed.</p>
             <ol>
-              <li>Click <strong>New</strong> in the title bar to create a blank screenplay.</li>
+              <li>On the Welcome screen, pick <strong>New Film</strong> for a single screenplay or <strong>New Series</strong> for a multi-episode project. You can also trigger these later with <kbd>Cmd+N</kbd> (film) and <kbd>Cmd+Shift+N</kbd> (series).</li>
               <li>Go to <strong>File → Metadata</strong> to set your title, writer, director, draft info, and title-page extras (tagline, registration number, footnote).</li>
               <li>Start writing — the editor begins in <em>Action</em> mode. Press <kbd>Tab</kbd> to switch to a Character name, then <kbd>Enter</kbd> to write Dialogue.</li>
               <li>Use <kbd>Cmd+B</kbd>, <kbd>Cmd+I</kbd>, <kbd>Cmd+U</kbd> or the <strong>B I U</strong> buttons in the toolbar for bold, italic, and underline formatting.</li>
               <li>Press <kbd>Cmd+S</kbd> to save your work.</li>
             </ol>
+          </section>
+
+          <section class="help-section" id="series">
+            <h3>Web Series</h3>
+            <p>Scriptty supports multi-episode projects in a single <code>.screenplay</code> file. Each episode has its own screenplay content, metadata, story sections, and scene cards — but shares one series title, font, and input settings.</p>
+            <ol>
+              <li>Pick <strong>New Series</strong> on the Welcome screen (or press <kbd>Cmd+Shift+N</kbd>). Enter a series title to get started — Scriptty creates Episode 1 for you.</li>
+              <li>Open the Scene Navigator (<kbd>Cmd+\</kbd>). Series projects show an <strong>Episodes</strong> list above the scenes. Click an episode to switch; use the <strong>+</strong> control to add new episodes.</li>
+              <li>Open <strong>File → Metadata</strong> while an episode is active to edit that episode's title, credits, and draft info. The <strong>Episode Title</strong> field is the short label shown in the navigator and on the per-episode header in combined exports.</li>
+              <li>Each episode has its own Story view, Scene Cards, and annotations — switching episodes switches every view in the app.</li>
+            </ol>
+            <p><strong>Exporting a series:</strong> in the Export modal, pick a scope — <strong>Active episode</strong> (just the one you're editing) or <strong>Entire series</strong>. Series exports start each episode on a new page with a centered <em>EPISODE N: Title</em> header, and restart scene numbering from 1 for each episode.</p>
+            <p class="hint">Renaming an episode: click the episode in the Scene Navigator to activate it, then edit <strong>Episode Title</strong> in the Metadata modal.</p>
           </section>
 
           <section class="help-section" id="writing">
@@ -225,6 +239,7 @@
             <h3>Scene Navigator</h3>
             <p>Press <kbd>Cmd+\</kbd> to toggle the left panel. It shows all your scene headings with auto-numbered labels.</p>
             <p>Click any scene to jump directly to it in the editor. Drag the six-dot handle that appears on hover to reorder scenes — the entire scene (heading + all content until the next scene) moves as a single block, undoable with <kbd>Cmd+Z</kbd>.</p>
+            <p><strong>In a series:</strong> the panel shows an <strong>Episodes</strong> list above the scenes. Click an episode to switch to it (this also switches Story view and Cards view). Use the <strong>+</strong> to add a new episode.</p>
           </section>
 
           <section class="help-section" id="story-view">
@@ -286,6 +301,7 @@
               <li><strong>Indian</strong> — two-column layout (dialogue left, translation right)</li>
             </ul>
             <p>Under <strong>Layout</strong>, you can enable <strong>Page break after each scene</strong> to start every scene on a new page.</p>
+            <p><strong>Series projects</strong> show a <strong>Scope</strong> option: export just the <em>Active episode</em> or the <em>Entire series</em>. A series export starts each episode on a new page with a centered <em>EPISODE N: Title</em> header and restarts scene numbering from 1 per episode.</p>
             <p>The selected Malayalam font (Noto Sans Malayalam or Manjari) is embedded in the PDF. Bold, italic, and underline formatting is preserved.</p>
             <p>You can also export as:</p>
             <ul>
@@ -323,7 +339,8 @@
                 <h4>File</h4>
                 <dl>
                   <dt><kbd>Cmd+K</kbd></dt><dd>Command palette (run any action)</dd>
-                  <dt><kbd>Cmd+N</kbd></dt><dd>New document</dd>
+                  <dt><kbd>Cmd+N</kbd></dt><dd>New film</dd>
+                  <dt><kbd>Cmd+Shift+N</kbd></dt><dd>New series</dd>
                   <dt><kbd>Cmd+O</kbd></dt><dd>Open document</dd>
                   <dt><kbd>Cmd+S</kbd></dt><dd>Save</dd>
                   <dt><kbd>Cmd+Shift+S</kbd></dt><dd>Save As</dd>

@@ -742,6 +742,7 @@ pub fn generate_title_page_markup(meta: &ScreenplayMeta, page_numbers: bool) -> 
 /// - All screenplay elements formatted in Hollywood single-column style
 ///
 /// The returned string is valid Typst source that can be compiled to PDF.
+#[allow(clippy::too_many_arguments)]
 pub fn generate_typst_markup(
     content: &Value,
     font_name: &str,
@@ -1180,6 +1181,7 @@ impl World for ScreenplayWorld {
 /// # Returns
 ///
 /// A complete Typst markup string ready for compilation to PDF.
+#[allow(clippy::too_many_arguments)]
 pub fn generate_indian_markup(
     content: &Value,
     font_name: &str,
@@ -1691,6 +1693,7 @@ pub fn generate_pdf(
 /// * `author` — Writer name(s)
 /// * `director` — Director name
 /// * `needs_pagebreak` — whether to emit a `#pagebreak()` before the section
+#[allow(clippy::too_many_arguments)]
 pub fn generate_prose_section_markup(section_name: &str, body: &str, font_name: &str, title: &str, author: &str, director: &str, needs_pagebreak: bool, page_numbers: bool) -> String {
     let escaped_section = escape_typst(section_name);
     let escaped_body = escape_typst(body);

@@ -98,6 +98,7 @@
     onpointerenter={handlePointerEnter}
     onpointerleave={handlePointerLeave}
     role="toolbar"
+    tabindex="-1"
     aria-label="Text formatting"
   >
     <button

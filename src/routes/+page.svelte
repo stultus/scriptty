@@ -37,7 +37,7 @@
   let findReplaceOpen = $state(false);
   let findReplaceMode = $state<'find' | 'replace'>('find');
   let showStatistics = $state(false);
-  let editorRef: { editCurrentSceneAnnotation: () => void } | undefined;
+  let editorRef = $state<{ editCurrentSceneAnnotation: () => void } | undefined>(undefined);
   let showMetadata = $state(false);
   let showAnnotations = $state(typeof localStorage !== 'undefined' ? localStorage.getItem('scriptty-annotations') !== 'false' : true);
   let showOutlinePeek = $state(typeof localStorage !== 'undefined' ? localStorage.getItem('scriptty-outline-peek') === 'true' : false);

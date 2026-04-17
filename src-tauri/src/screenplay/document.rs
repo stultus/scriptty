@@ -178,7 +178,7 @@ impl Default for ScreenplaySettings {
 /// Stored in the `"story"` key of a `.screenplay` file.
 /// These are plain text sections the writer uses to develop the story
 /// before and during scripting.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ScreenplayStory {
     /// One to three lines — the core premise / elevator pitch
     pub idea: String,
@@ -190,17 +190,6 @@ pub struct ScreenplayStory {
     /// Uses `default` so old files without this field still load.
     #[serde(default)]
     pub narrative: String,
-}
-
-impl Default for ScreenplayStory {
-    fn default() -> Self {
-        Self {
-            idea: String::new(),
-            synopsis: String::new(),
-            treatment: String::new(),
-            narrative: String::new(),
-        }
-    }
 }
 
 /// Per-scene breakdown card for shoot planning.
@@ -262,17 +251,12 @@ where
 /// Serialized as lowercase JSON strings — `"film"` or `"series"` — so the
 /// on-disk format reads naturally. Defaults to `Film` so every existing
 /// `.screenplay` file opens unchanged (issue: series support).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ProjectType {
+    #[default]
     Film,
     Series,
-}
-
-impl Default for ProjectType {
-    fn default() -> Self {
-        ProjectType::Film
-    }
 }
 
 /// One episode inside a Series project. Mirrors the film-level fields so

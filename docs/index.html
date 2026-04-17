@@ -216,6 +216,40 @@
       color: var(--text-muted);
     }
 
+    /* Platform-detected primary download + collapsible alternates */
+    .other-platforms-details {
+      margin-top: 18px;
+      margin-bottom: 12px;
+    }
+
+    .other-platforms-details summary {
+      cursor: pointer;
+      color: var(--text-secondary);
+      font-size: 14px;
+      list-style: none;
+      user-select: none;
+      display: inline-block;
+      transition: color 150ms;
+    }
+
+    .other-platforms-details summary::-webkit-details-marker { display: none; }
+    .other-platforms-details summary:hover { color: var(--text-hero); }
+
+    .other-platforms-details summary::after {
+      content: ' ▾';
+      font-size: 11px;
+      opacity: 0.7;
+      margin-left: 2px;
+    }
+
+    .other-platforms-details[open] summary {
+      margin-bottom: 14px;
+    }
+
+    .other-platforms-details[open] summary::after {
+      content: ' ▴';
+    }
+
     /* ── Features ── */
     .features {
       padding: 80px 0;
@@ -736,15 +770,54 @@
     linux: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>'
   };
 
+  // Best-effort guess at the user's platform so we can promote the matching
+  // build. Returns a key that matches downloads.json assets, or null if we
+  // can't confidently detect (in which case the page falls back to showing
+  // all platforms side by side).
+  async function detectPlatform() {
+    const uaData = navigator.userAgentData;
+    const ua = (navigator.userAgent || '').toLowerCase();
+    const platform = ((uaData && uaData.platform) || navigator.platform || '').toLowerCase();
+
+    const isMac = platform.includes('mac') || ua.includes('mac os') || ua.includes('macintosh');
+    const isWin = platform.includes('win') || ua.includes('windows');
+    const isLinux = platform.includes('linux') || ua.includes('linux');
+
+    // Don't try to detect on mobile — none of our builds are mobile-friendly.
+    if (/iphone|ipad|android/i.test(ua)) return null;
+
+    if (isMac) {
+      // Apple Silicon detection is only reliable via the High Entropy Client
+      // Hints API (Chromium). Safari does not expose userAgentData, so we
+      // fall back to assuming Apple Silicon — most Macs since late 2020 are ARM,
+      // and an Intel user seeing the wrong download can pick the Intel build
+      // from the "Other platforms" section.
+      let arch = 'arm';
+      if (uaData && typeof uaData.getHighEntropyValues === 'function') {
+        try {
+          const info = await uaData.getHighEntropyValues(['architecture']);
+          if (info && info.architecture) arch = info.architecture;
+        } catch (_) { /* ignore, use default */ }
+      }
+      return arch === 'x86' ? 'macos_intel' : 'macos_arm';
+    }
+    if (isWin) return 'windows';
+    // For Linux we default to AppImage since it works across distros; Debian
+    // users can pick the .deb from Other platforms.
+    if (isLinux) return 'linux_appimage';
+    return null;
+  }
+
   fetch('downloads.json')
     .then(r => r.json())
-    .then(data => {
+    .then(async data => {
       const container = document.getElementById('download-buttons');
       const versionLabel = document.getElementById('version-label');
       if (versionLabel) versionLabel.textContent = 'v' + data.version;
 
       const a = data.assets;
       const fallback = data.release_url;
+      const detected = await detectPlatform();
 
       function btn(url, icon, label, primary) {
         const href = url || fallback;
@@ -753,14 +826,36 @@
           '<span class="os-icon">' + icon + '</span>' + label + '</a>';
       }
 
-      let html = '<div class="download-group">';
-      html += btn(a.macos_arm, icons.apple, 'macOS (Apple Silicon)', true);
-      html += btn(a.macos_intel, icons.apple, 'macOS (Intel)', false);
-      html += '</div><div class="download-group">';
-      html += btn(a.windows, icons.windows, 'Windows', false);
-      html += btn(a.linux_deb, icons.linux, 'Linux (.deb)', false);
-      html += btn(a.linux_appimage, icons.linux, 'Linux (AppImage)', false);
-      html += '</div>';
+      const items = [
+        { key: 'macos_arm', icon: icons.apple, label: 'macOS (Apple Silicon)', primaryLabel: 'Download for macOS — Apple Silicon' },
+        { key: 'macos_intel', icon: icons.apple, label: 'macOS (Intel)', primaryLabel: 'Download for macOS — Intel' },
+        { key: 'windows', icon: icons.windows, label: 'Windows', primaryLabel: 'Download for Windows' },
+        { key: 'linux_deb', icon: icons.linux, label: 'Linux (.deb)', primaryLabel: 'Download for Linux — .deb' },
+        { key: 'linux_appimage', icon: icons.linux, label: 'Linux (AppImage)', primaryLabel: 'Download for Linux — AppImage' }
+      ];
+
+      let html = '';
+      if (detected && a[detected]) {
+        const primary = items.find(i => i.key === detected);
+        const others = items.filter(i => i.key !== detected);
+        html += '<div class="download-group">';
+        html += btn(a[primary.key], primary.icon, primary.primaryLabel, true);
+        html += '</div>';
+        html += '<details class="other-platforms-details"><summary>Other platforms</summary>';
+        html += '<div class="download-group">';
+        for (const o of others) html += btn(a[o.key], o.icon, o.label, false);
+        html += '</div></details>';
+      } else {
+        // No confident detection — show the original all-platforms layout.
+        html += '<div class="download-group">';
+        html += btn(a.macos_arm, icons.apple, 'macOS (Apple Silicon)', true);
+        html += btn(a.macos_intel, icons.apple, 'macOS (Intel)', false);
+        html += '</div><div class="download-group">';
+        html += btn(a.windows, icons.windows, 'Windows', false);
+        html += btn(a.linux_deb, icons.linux, 'Linux (.deb)', false);
+        html += btn(a.linux_appimage, icons.linux, 'Linux (AppImage)', false);
+        html += '</div>';
+      }
 
       container.innerHTML = html;
     })

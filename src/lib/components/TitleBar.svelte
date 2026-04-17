@@ -1,18 +1,17 @@
 <script lang="ts">
   import { documentStore } from '$lib/stores/documentStore.svelte';
-  import ExportModal from './ExportModal.svelte';
 
   let {
     onToggleSidebar,
     activeView = 'writing',
     onViewChange,
+    onShowExport,
   } = $props<{
     onToggleSidebar?: () => void;
     activeView?: 'writing' | 'cards' | 'story';
     onViewChange?: (view: 'writing' | 'cards' | 'story') => void;
+    onShowExport?: () => void;
   }>();
-
-  let showExport = $state(false);
 
   // Derived display title — shows document title, or filename, or "Untitled"
   let displayTitle = $derived.by(() => {
@@ -127,7 +126,7 @@
   </div>
 
   <div class="btn-group right">
-    <button class="btn-ghost" onclick={() => { showExport = true; }} title="Export document">Export</button>
+    <button class="btn-ghost" onclick={() => onShowExport?.()} title="Export document">Export</button>
     <button
       class="btn-primary"
       class:saved={recentlySaved && !documentStore.isDirty}
@@ -142,7 +141,6 @@
   </div>
 </div>
 
-<ExportModal bind:open={showExport} />
 
 <style>
   .title-bar {

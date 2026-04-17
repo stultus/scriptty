@@ -16,11 +16,15 @@
   import MetadataModal from '$lib/components/MetadataModal.svelte';
   import StatusBar from '$lib/components/StatusBar.svelte';
   import OutlinePeek from '$lib/components/OutlinePeek.svelte';
+  import CommandPalette, { type Command } from '$lib/components/CommandPalette.svelte';
+  import SettingsModal from '$lib/components/SettingsModal.svelte';
+  import ExportModal from '$lib/components/ExportModal.svelte';
   import UpdateToast from '$lib/components/UpdateToast.svelte';
   import { documentStore } from '$lib/stores/documentStore.svelte';
   import { editorStore } from '$lib/stores/editorStore.svelte';
   import { themeStore } from '$lib/stores/themeStore.svelte';
   import { updateStore } from '$lib/stores/updateStore.svelte';
+  import { InputModeManager } from '$lib/editor/input/InputModeManager';
   import { toggleMark } from 'prosemirror-commands';
   import { screenplaySchema } from '$lib/editor/schema';
 
@@ -35,6 +39,15 @@
   let showMetadata = $state(false);
   let showAnnotations = $state(typeof localStorage !== 'undefined' ? localStorage.getItem('scriptty-annotations') !== 'false' : true);
   let showOutlinePeek = $state(typeof localStorage !== 'undefined' ? localStorage.getItem('scriptty-outline-peek') !== 'false' : true);
+  let showSettings = $state(false);
+  let showExport = $state(false);
+  let showCommandPalette = $state(false);
+
+  const inputManager = InputModeManager.getInstance();
+  // Reactive mirror of isMalayalam so the command palette label stays in
+  // sync with ⌃Space toggles happening anywhere in the app.
+  let isMalayalam = $state(inputManager.isMalayalam);
+  $effect(() => inputManager.subscribe(() => { isMalayalam = inputManager.isMalayalam; }));
 
   // Word count for story view
   let storyWordCount = $derived(() => {
@@ -44,6 +57,88 @@
     if (!text) return 0;
     return text.split(/\s+/).length;
   });
+
+  async function openFileDialog() {
+    if (!(await documentStore.confirmIfDirty())) return;
+    const path = await open({
+      multiple: false,
+      filters: [{ name: 'Screenplay', extensions: ['screenplay'] }]
+    });
+    if (typeof path === 'string') {
+      await documentStore.openDocument(path);
+    }
+  }
+
+  function toggleOutlinePeek() {
+    showOutlinePeek = !showOutlinePeek;
+    localStorage.setItem('scriptty-outline-peek', String(showOutlinePeek));
+  }
+
+  function toggleAnnotations() {
+    if (activeView !== 'writing') return;
+    showAnnotations = !showAnnotations;
+    localStorage.setItem('scriptty-annotations', String(showAnnotations));
+  }
+
+  let commands = $derived<Command[]>([
+    // File
+    { id: 'file.new', group: 'File', label: 'New Screenplay', hint: '⌘N',
+      action: async () => { if (await documentStore.confirmIfDirty()) await documentStore.newDocument(); } },
+    { id: 'file.open', group: 'File', label: 'Open…', hint: '⌘O', action: openFileDialog },
+    { id: 'file.save', group: 'File', label: 'Save', hint: '⌘S', action: () => documentStore.saveWithDialog() },
+    { id: 'file.saveas', group: 'File', label: 'Save As…', hint: '⌘⇧S', action: () => documentStore.saveAsDialog() },
+    { id: 'file.export', group: 'File', label: 'Export…', keywords: 'pdf fountain plain text hollywood indian', action: () => { showExport = true; } },
+    { id: 'file.meta', group: 'File', label: 'Edit Metadata…', keywords: 'title author director contact draft', action: () => { showMetadata = true; } },
+
+    // View
+    { id: 'view.writing', group: 'View', label: 'Writing View', action: () => { activeView = 'writing'; } },
+    { id: 'view.cards', group: 'View', label: 'Scene Cards', hint: '⌘⇧K', action: () => { activeView = activeView === 'cards' ? 'writing' : 'cards'; } },
+    { id: 'view.story', group: 'View', label: 'Story Mode', hint: '⌘⇧L', action: () => { activeView = activeView === 'story' ? 'writing' : 'story'; } },
+    { id: 'view.sidebar', group: 'View', label: 'Toggle Scene Navigator', hint: '⌘\\', keywords: 'sidebar panel scenes',
+      action: () => { if (activeView === 'writing') panelOpen = !panelOpen; } },
+    { id: 'view.outline', group: 'View', label: 'Toggle Outline Peek', hint: '⌘⇧O', keywords: 'timeline strip',
+      action: toggleOutlinePeek },
+    { id: 'view.annotations', group: 'View', label: 'Toggle Scene Annotations', hint: '⌘⇧A', keywords: 'notes comments',
+      action: toggleAnnotations },
+
+    // Edit
+    { id: 'edit.find', group: 'Edit', label: 'Find…', hint: '⌘F',
+      action: () => { findReplaceOpen = true; findReplaceMode = 'find'; } },
+    { id: 'edit.replace', group: 'Edit', label: 'Find and Replace…', hint: '⌘⇧H',
+      action: () => { findReplaceOpen = true; findReplaceMode = 'replace'; } },
+    { id: 'edit.stats', group: 'Edit', label: 'Script Statistics', hint: '⌘⇧I', keywords: 'count pages scenes',
+      action: () => { showStatistics = true; } },
+    { id: 'edit.annotate', group: 'Edit', label: 'Annotate Current Scene', hint: '⌘⇧D',
+      action: () => {
+        if (activeView !== 'writing') return;
+        if (!showAnnotations) {
+          showAnnotations = true;
+          localStorage.setItem('scriptty-annotations', 'true');
+        }
+        editorRef?.editCurrentSceneAnnotation();
+      } },
+
+    // Settings
+    { id: 'settings.open', group: 'Settings', label: 'Settings…', keywords: 'language font scheme theme preferences', action: () => { showSettings = true; } },
+    { id: 'settings.theme', group: 'Settings', label: `Switch to ${themeStore.isDark ? 'Light' : 'Dark'} Mode`, keywords: 'appearance',
+      action: () => { themeStore.toggle(); } },
+    { id: 'settings.lang', group: 'Settings', label: `Switch to ${isMalayalam ? 'English' : 'Malayalam'} Input`, hint: '⌃Space', keywords: 'mal eng mode',
+      action: () => { inputManager.toggle(); } },
+
+    // Help
+    { id: 'help.guide', group: 'Help', label: 'How to Use Scriptty', keywords: 'help guide shortcuts',
+      action: () => { showHelp = true; } },
+    { id: 'help.about', group: 'Help', label: 'About Scriptty', action: () => { showAbout = true; } },
+    { id: 'help.updates', group: 'Help', label: 'Check for Updates…',
+      action: async () => {
+        const result = await updateStore.check();
+        if (result === 'current') {
+          await message("You're on the latest version of Scriptty.", { title: 'No updates available', kind: 'info' });
+        } else if (result === 'error') {
+          await message('Could not reach the update server. Check your internet connection and try again.', { title: 'Update check failed', kind: 'warning' });
+        }
+      } },
+  ]);
 
   // Module-level guard — prevents newDocument() from firing again on HMR re-mount
   let appInitialized = false;
@@ -99,6 +194,12 @@
     // as a fallback — if the native menu intercepts the key first, the keydown
     // event won't reach the webview, so no double-execution occurs.
     function handleGlobalKeydown(event: KeyboardEvent) {
+      // Cmd+K — Command palette (take precedence over all other shortcuts)
+      if ((event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        showCommandPalette = !showCommandPalette;
+        return;
+      }
       // Cmd+Shift+S — Save As (must be checked BEFORE Cmd+S since both have metaKey+s)
       if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 's') {
         event.preventDefault();
@@ -120,17 +221,7 @@
       // Guard against Shift so Cmd+Shift+O (outline toggle) doesn't fall through.
       if ((event.metaKey || event.ctrlKey) && !event.shiftKey && event.key === 'o') {
         event.preventDefault();
-        documentStore.confirmIfDirty().then((proceed) => {
-          if (!proceed) return;
-          open({
-            multiple: false,
-            filters: [{ name: 'Screenplay', extensions: ['screenplay'] }]
-          }).then((path) => {
-            if (typeof path === 'string') {
-              documentStore.openDocument(path);
-            }
-          });
-        });
+        openFileDialog();
       }
       // Cmd+Shift+L — Toggle Story Mode
       if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'l') {
@@ -348,6 +439,7 @@
     onToggleSidebar={() => { panelOpen = !panelOpen; }}
     {activeView}
     onViewChange={(v) => { activeView = v; }}
+    onShowExport={() => { showExport = true; }}
   />
   <div class="workspace">
     {#if activeView === 'cards'}
@@ -364,7 +456,7 @@
   {#if showOutlinePeek && activeView === 'writing'}
     <OutlinePeek />
   {/if}
-  <StatusBar bind:showAnnotations onShowHelp={() => { showHelp = true; }}>
+  <StatusBar onOpenPalette={() => { showCommandPalette = true; }}>
     {#snippet rightContent()}
       {#if activeView === 'writing'}
         <span class="status-info">{editorStore.currentElement}</span>
@@ -379,6 +471,9 @@
 <HelpModal bind:open={showHelp} onShowAbout={() => { showAbout = true; }} />
 <StatisticsModal bind:open={showStatistics} />
 <MetadataModal bind:open={showMetadata} />
+<SettingsModal bind:open={showSettings} bind:showAnnotations />
+<ExportModal bind:open={showExport} />
+<CommandPalette bind:open={showCommandPalette} {commands} />
 <UpdateToast />
 
 <style>
@@ -411,9 +506,9 @@
   }
 
   .status-info {
-    color: var(--text-muted);
+    color: var(--text-secondary);
     text-transform: uppercase;
-    font-size: 11px;
-    letter-spacing: 0.04em;
+    font-size: 12px;
+    letter-spacing: 0.03em;
   }
 </style>

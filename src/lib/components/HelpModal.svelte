@@ -181,7 +181,7 @@
             <ol>
               <li>Press <kbd>Ctrl+Space</kbd> to toggle between English and Malayalam.</li>
               <li>The status bar shows <strong>ENG</strong> or <strong class="accent">MAL</strong> to indicate the current mode.</li>
-              <li>When in Malayalam mode, choose your input scheme from Settings (gear icon):
+              <li>When in Malayalam mode, choose your input scheme from Settings (<kbd>⌘K</kbd> → Settings):
                 <ul>
                   <li><strong>Mozhi</strong> — type phonetically in English (e.g., "namaskkaaram" → നമസ്ക്കാരം)</li>
                   <li><strong>Inscript 2</strong> — standard Indian keyboard layout</li>
@@ -294,7 +294,7 @@
 
           <section class="help-section" id="fonts">
             <h3>Fonts</h3>
-            <p>English text in the editor uses <strong>Courier Prime</strong> — the Hollywood-standard screenplay face. Malayalam text renders in the font you pick under Settings (gear icon in the status bar):</p>
+            <p>English text in the editor uses <strong>Courier Prime</strong> — the Hollywood-standard screenplay face. Malayalam text renders in the font you pick under Settings (<kbd>⌘K</kbd> → Settings):</p>
             <ul>
               <li><strong>Noto</strong> — Noto Sans Malayalam (default, clean and modern)</li>
               <li><strong>Manjari</strong> — a lighter, more traditional feel</li>
@@ -320,6 +320,7 @@
               <div class="shortcut-group">
                 <h4>File</h4>
                 <dl>
+                  <dt><kbd>Cmd+K</kbd></dt><dd>Command palette (run any action)</dd>
                   <dt><kbd>Cmd+N</kbd></dt><dd>New document</dd>
                   <dt><kbd>Cmd+O</kbd></dt><dd>Open document</dd>
                   <dt><kbd>Cmd+S</kbd></dt><dd>Save</dd>
@@ -359,6 +360,7 @@
                   <dt><kbd>Cmd+\</kbd></dt><dd>Toggle left panel</dd>
                   <dt><kbd>Cmd+Shift+K</kbd></dt><dd>Scene Cards view</dd>
                   <dt><kbd>Cmd+Shift+L</kbd></dt><dd>Story view</dd>
+                  <dt><kbd>Cmd+Shift+O</kbd></dt><dd>Toggle outline peek strip</dd>
                   <dt><kbd>Cmd+Shift+A</kbd></dt><dd>Toggle annotations</dd>
                   <dt><kbd>Cmd+Shift+D</kbd></dt><dd>Edit current annotation</dd>
                   <dt><kbd>Cmd+Shift+I</kbd></dt><dd>Script statistics</dd>

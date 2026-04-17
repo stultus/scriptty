@@ -145,19 +145,27 @@
       class:active={activeView === 'writing'}
       onclick={() => onViewChange?.('writing')}
       title="Writing view"
-    >Writing</button>
+    >
+      <span class="tab-label">Writing</span>
+    </button>
     <button
       class="view-tab"
       class:active={activeView === 'cards'}
       onclick={() => onViewChange?.('cards')}
       title="Scene Cards (⌘⇧K)"
-    >Cards</button>
+    >
+      <span class="tab-label">Cards</span>
+      <kbd class="tab-hint">⌘⇧K</kbd>
+    </button>
     <button
       class="view-tab"
       class:active={activeView === 'story'}
       onclick={() => onViewChange?.('story')}
       title="Story view (⌘⇧L)"
-    >Story</button>
+    >
+      <span class="tab-label">Story</span>
+      <kbd class="tab-hint">⌘⇧L</kbd>
+    </button>
   </div>
 
   <div class="btn-group right">
@@ -273,6 +281,9 @@
   }
 
   .view-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     padding: 4px 12px;
     border-radius: 4px;
     border: none;
@@ -293,6 +304,22 @@
     background: var(--surface-elevated);
     color: var(--text-primary);
     box-shadow: 0 1px 2px var(--shadow-soft);
+  }
+
+  .tab-hint {
+    font-family: inherit;
+    font-size: 9.5px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+    opacity: 0;
+    transition: opacity 120ms ease;
+    padding: 0 2px;
+  }
+
+  .view-tab:hover .tab-hint,
+  .view-tab:focus-visible .tab-hint {
+    opacity: 0.85;
   }
 
   /* ─── Ghost button ─── */

@@ -826,9 +826,11 @@ pub fn generate_typst_markup(
                             } else {
                                 format!("({})", escaped)
                             };
-                            // Parenthetical: padded block, italic
+                            // Parenthetical: padded block, centered within the pad
+                            // so the text visually aligns under the character cue above
+                            // instead of sitting flush-left inside the pad.
                             block.push_str(&format!(
-                                "  #pad(left: 3.69cm, right: 3.5cm)[#emph[{}]]\n",
+                                "  #pad(left: 3.69cm, right: 3.5cm)[#align(center)[#emph[{}]]]\n",
                                 display
                             ));
                         }
@@ -893,9 +895,10 @@ pub fn generate_typst_markup(
                         } else {
                             format!("({})", escaped)
                         };
-                        // Parenthetical: Hollywood-spec padded block.
+                        // Parenthetical: Hollywood-spec padded block, centered
+                        // within the pad so it visually aligns under the character cue.
                         format!(
-                            "#pad(left: 3.69cm, right: 3.5cm)[#emph[{}]]\n",
+                            "#pad(left: 3.69cm, right: 3.5cm)[#align(center)[#emph[{}]]]\n",
                             display
                         )
                     }

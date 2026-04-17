@@ -698,7 +698,7 @@
             <tr><td><kbd>Shift+Enter</kbd></td><td>New Scene Heading</td></tr>
           </tbody>
         </table>
-        <p style="font-size: 13px; color: #9c9891; font-style: italic;">On Windows/Linux, replace Cmd with Ctrl.</p>
+        <p id="shortcut-platform-note" style="font-size: 13px; color: #9c9891; font-style: italic;">On Windows/Linux, replace Cmd with Ctrl.</p>
       </div>
 
     </div>
@@ -769,6 +769,26 @@
     windows: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 12V6.75l8-1.25V12H3zm0 .5h8v6.5l-8-1.25V12.5zM11.5 12V5.35l9.5-1.6V12H11.5zm0 .5H21v7.75l-9.5-1.6V12.5z"/></svg>',
     linux: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>'
   };
+
+  // On non-Mac visitors, rewrite every "Cmd" in the keyboard-shortcut guide
+  // to "Ctrl" so the documentation matches the key the reader will actually
+  // press. Runs synchronously once the DOM has parsed this script.
+  (function localizeShortcuts() {
+    const ua = (navigator.userAgent || '').toLowerCase();
+    const platform = (navigator.platform || '').toLowerCase();
+    const isMac = platform.includes('mac') || ua.includes('mac os') || ua.includes('macintosh');
+    if (isMac) return;
+    const guide = document.getElementById('guide');
+    if (!guide) return;
+    guide.querySelectorAll('kbd').forEach(el => {
+      if (el.textContent.indexOf('Cmd') !== -1) {
+        el.textContent = el.textContent.replace(/Cmd/g, 'Ctrl');
+      }
+    });
+    // The "On Windows/Linux, replace Cmd with Ctrl" footnote is now moot.
+    const note = document.getElementById('shortcut-platform-note');
+    if (note) note.remove();
+  })();
 
   // Best-effort guess at the user's platform so we can promote the matching
   // build. Returns a key that matches downloads.json assets, or null if we

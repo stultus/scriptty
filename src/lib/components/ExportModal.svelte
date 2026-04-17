@@ -16,6 +16,8 @@
   let includeSceneCards = $state(false);
   let format = $state<'hollywood' | 'indian'>('hollywood');
   let pageBreakAfterScene = $state(false);
+  // Page numbering is off by default — opt in per export.
+  let includePageNumbers = $state(false);
   // Seed from the document setting so "Show characters" in settings carries
   // over as the default export choice. User can still override per-export.
   let charactersBelowHeading = $state(
@@ -228,6 +230,7 @@
           format,
           page_break_after_scene: pageBreakAfterScene,
           characters_below_heading: charactersBelowHeading,
+          include_page_numbers: includePageNumbers,
           scene_cards_data: sceneCardsData,
         },
       });
@@ -317,9 +320,11 @@
             <span>Indian (two column)</span>
           </label>
         </div>
+      {/if}
 
-        <div class="section-label">Layout</div>
-        <div class="checkbox-group">
+      <div class="section-label">Layout</div>
+      <div class="checkbox-group">
+        {#if includeScreenplay}
           <label class="checkbox-row">
             <input type="checkbox" bind:checked={pageBreakAfterScene} />
             <span>Page break after each scene</span>
@@ -328,8 +333,12 @@
             <input type="checkbox" bind:checked={charactersBelowHeading} />
             <span>Characters list below scene heading</span>
           </label>
-        </div>
-      {/if}
+        {/if}
+        <label class="checkbox-row">
+          <input type="checkbox" bind:checked={includePageNumbers} />
+          <span>Page numbers</span>
+        </label>
+      </div>
 
       {#if errorMessage}
         <p class="error-message">{errorMessage}</p>

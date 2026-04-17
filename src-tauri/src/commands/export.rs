@@ -39,7 +39,7 @@ pub fn export_typst_markup(document: ScreenplayDocument) -> Result<String, Strin
     // We don't need to take ownership — we just need to read the JSON.
     // `&document.meta` passes a reference to the metadata so the markup generator
     // can include a title page if the screenplay has a title set.
-    Ok(pdf::generate_typst_markup(&document.content, font_name, &document.meta, false, document.settings.scene_number_start, false, &document.scene_cards))
+    Ok(pdf::generate_typst_markup(&document.content, font_name, &document.meta, false, document.settings.scene_number_start, false, &document.scene_cards, false))
 }
 
 /// Exports a screenplay document as PDF bytes.
@@ -176,6 +176,11 @@ pub struct ExportOptions {
     /// `#[serde(default)]` lets older frontends omit the field without breaking.
     #[serde(default)]
     pub characters_below_heading: bool,
+    /// Stamp page numbers in the top-right of every body page.
+    /// `#[serde(default)]` defaults this to `false` when older frontends omit it —
+    /// picking "off" by default so page numbers only appear when opted in.
+    #[serde(default)]
+    pub include_page_numbers: bool,
     /// Pre-computed scene cards data as JSON (auto-populated fields computed by frontend)
     pub scene_cards_data: serde_json::Value,
 }
@@ -242,9 +247,9 @@ pub fn export_combined_pdf(
         };
 
         markup = if options.format == "indian" {
-            pdf::generate_indian_markup(&document.content, font_name, &meta_for_export, options.page_break_after_scene, document.settings.scene_number_start, options.characters_below_heading, &document.scene_cards)
+            pdf::generate_indian_markup(&document.content, font_name, &meta_for_export, options.page_break_after_scene, document.settings.scene_number_start, options.characters_below_heading, &document.scene_cards, options.include_page_numbers)
         } else {
-            pdf::generate_typst_markup(&document.content, font_name, &meta_for_export, options.page_break_after_scene, document.settings.scene_number_start, options.characters_below_heading, &document.scene_cards)
+            pdf::generate_typst_markup(&document.content, font_name, &meta_for_export, options.page_break_after_scene, document.settings.scene_number_start, options.characters_below_heading, &document.scene_cards, options.include_page_numbers)
         };
         has_content = true;
     } else {
@@ -252,17 +257,22 @@ pub fn export_combined_pdf(
         // Use symmetric margins and comfortable prose settings as the base.
         // Individual sections (prose, scene cards) will override margins as needed
         // via their own `#set page(...)` calls.
+        let base_numbering = if options.include_page_numbers {
+            r#", numbering: "1.", number-align: right + top"#
+        } else {
+            ""
+        };
         markup.push_str(&format!(
-            r#"#set page(paper: "a4", margin: (top: 2.5cm, bottom: 2.5cm, left: 3cm, right: 3cm))
+            r#"#set page(paper: "a4", margin: (top: 2.5cm, bottom: 2.5cm, left: 3cm, right: 3cm){})
 #set text(font: "{}", size: 12pt)
 #set par(justify: true, leading: 0.8em)
 "#,
-            font_name
+            base_numbering, font_name
         ));
 
         // If title page is requested without screenplay, generate a standalone title page
         if options.include_title_page && !document.meta.title.is_empty() {
-            markup.push_str(&pdf::generate_title_page_markup(&document.meta));
+            markup.push_str(&pdf::generate_title_page_markup(&document.meta, options.include_page_numbers));
             has_content = true;
         }
     }
@@ -277,6 +287,7 @@ pub fn export_combined_pdf(
             &document.meta.author,
             &document.meta.director,
             has_content,
+            options.include_page_numbers,
         ));
         has_content = true;
     }
@@ -291,6 +302,7 @@ pub fn export_combined_pdf(
             &document.meta.author,
             &document.meta.director,
             has_content,
+            options.include_page_numbers,
         ));
         has_content = true;
     }
@@ -305,6 +317,7 @@ pub fn export_combined_pdf(
             &document.meta.author,
             &document.meta.director,
             has_content,
+            options.include_page_numbers,
         ));
         has_content = true;
     }
@@ -316,6 +329,7 @@ pub fn export_combined_pdf(
             font_name,
             &document.meta,
             has_content,
+            options.include_page_numbers,
         ));
     }
 

@@ -3,12 +3,10 @@
   import { openUrl } from '@tauri-apps/plugin-opener';
 
   async function getUpdate() {
-    const info = updateStore.available;
-    if (!info) return;
     try {
-      await openUrl(info.releaseUrl);
+      await openUrl('https://stultus.in/scriptty');
     } catch (err) {
-      console.error('Could not open release URL', err);
+      console.error('Could not open download page', err);
     }
     updateStore.dismiss();
   }
@@ -43,7 +41,7 @@
     position: fixed;
     bottom: 20px;
     right: 20px;
-    z-index: 2000;
+    z-index: 900;
     width: 320px;
     background: var(--surface-float);
     border: 1px solid var(--border-medium);

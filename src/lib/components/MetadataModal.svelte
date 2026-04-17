@@ -7,9 +7,12 @@
 
   // Local form state — initialized from document meta when modal opens
   let title = $state('');
+  let tagline = $state('');
   let author = $state('');
   let director = $state('');
   let contact = $state('');
+  let registrationNumber = $state('');
+  let footnote = $state('');
   let draftNumber = $state(1);
   let draftDate = $state('');
   let titleTouched = $state(false);
@@ -21,9 +24,12 @@
     if (open && documentStore.document) {
       const meta = documentStore.document.meta;
       title = meta.title || '';
+      tagline = meta.tagline || '';
       author = meta.author || '';
       director = meta.director || '';
       contact = meta.contact || '';
+      registrationNumber = meta.registration_number || '';
+      footnote = meta.footnote || '';
       draftNumber = meta.draft_number || 1;
       draftDate = meta.draft_date || '';
     }
@@ -34,9 +40,12 @@
     if (titleInvalid) return;
     if (documentStore.document) {
       documentStore.document.meta.title = title.trim();
+      documentStore.document.meta.tagline = tagline.trim();
       documentStore.document.meta.author = author;
       documentStore.document.meta.director = director;
       documentStore.document.meta.contact = contact;
+      documentStore.document.meta.registration_number = registrationNumber.trim();
+      documentStore.document.meta.footnote = footnote.trim();
       documentStore.document.meta.draft_number = draftNumber;
       documentStore.document.meta.draft_date = draftDate;
       documentStore.markDirty();
@@ -66,7 +75,7 @@
   <div class="modal-backdrop" onclick={handleBackdropClick} onkeydown={handleKeydown} role="dialog" aria-modal="true" tabindex="-1">
     <div class="modal-card" use:focusTrap>
       <div class="modal-header">
-        <h2>Screenplay Info</h2>
+        <h2>Metadata</h2>
         <button class="btn-close" onclick={handleCancel}>&times;</button>
       </div>
 
@@ -86,6 +95,11 @@
         {#if titleTouched && titleInvalid}
           <span class="error-text" role="alert">Title is required.</span>
         {/if}
+      </div>
+
+      <div class="form-group">
+        <label for="meta-tagline">Tagline</label>
+        <input id="meta-tagline" type="text" bind:value={tagline} placeholder="A one-line logline shown under the title" />
       </div>
 
       <div class="form-group">
@@ -112,6 +126,16 @@
           <label for="meta-date">Draft date</label>
           <input id="meta-date" type="date" bind:value={draftDate} />
         </div>
+      </div>
+
+      <div class="form-group">
+        <label for="meta-reg">Registration number</label>
+        <input id="meta-reg" type="text" bind:value={registrationNumber} placeholder="WGA / film-board registration" />
+      </div>
+
+      <div class="form-group">
+        <label for="meta-footnote">Footnote</label>
+        <textarea id="meta-footnote" rows="2" bind:value={footnote} placeholder="Confidentiality line, 'based on', or dedication shown at the bottom of the title page"></textarea>
       </div>
 
       <div class="modal-footer">

@@ -135,7 +135,7 @@
             <p>Scriptty is an offline screenwriting app for Malayalam and English writers. Your work is saved locally as <code>.screenplay</code> files — no cloud, no account needed.</p>
             <ol>
               <li>Click <strong>New</strong> in the title bar to create a blank screenplay.</li>
-              <li>Go to <strong>File → Document Properties</strong> to set your title, writer, director, and draft info.</li>
+              <li>Go to <strong>File → Metadata</strong> to set your title, writer, director, draft info, and title-page extras (tagline, registration number, footnote).</li>
               <li>Start writing — the editor begins in <em>Action</em> mode. Press <kbd>Tab</kbd> to switch to a Character name, then <kbd>Enter</kbd> to write Dialogue.</li>
               <li>Use <kbd>Cmd+B</kbd>, <kbd>Cmd+I</kbd>, <kbd>Cmd+U</kbd> or the <strong>B I U</strong> buttons in the toolbar for bold, italic, and underline formatting.</li>
               <li>Press <kbd>Cmd+S</kbd> to save your work.</li>

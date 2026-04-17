@@ -10,6 +10,13 @@ export interface ScreenplayMeta {
   title: string;
   author: string;
   director: string;
+  /** One-line tagline / logline rendered below the title on the title page. */
+  tagline: string;
+  /** Registration / copyright identifier shown alongside contact info. */
+  registration_number: string;
+  /** Short footnote printed at the bottom of the title page — typically
+   *  a confidentiality line, a "based on" credit, or a dedication. */
+  footnote: string;
   contact: string;
   draft_number: number;
   draft_date: string;

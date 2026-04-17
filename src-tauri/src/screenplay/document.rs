@@ -16,6 +16,19 @@ pub struct ScreenplayMeta {
     /// The director's name. Uses `default` so old files without this field still load.
     #[serde(default)]
     pub director: String,
+    /// A one-line tagline / logline rendered under the title on the title page.
+    /// Optional — empty string means "no tagline", and old `.screenplay` files
+    /// without this field load with it blank (issue #14).
+    #[serde(default)]
+    pub tagline: String,
+    /// Registration / copyright identifier (e.g. WGA or film-board registration)
+    /// shown on the title page alongside contact info. Optional.
+    #[serde(default)]
+    pub registration_number: String,
+    /// A short note printed at the bottom of the title page — typically a
+    /// confidentiality line, a "based on" credit, or a dedication. Optional.
+    #[serde(default)]
+    pub footnote: String,
     /// Contact information (email, phone, agent, etc.)
     pub contact: String,
     /// Draft revision number, starting at 1
@@ -37,6 +50,9 @@ impl Default for ScreenplayMeta {
             title: String::new(),
             author: String::new(),
             director: String::new(),
+            tagline: String::new(),
+            registration_number: String::new(),
+            footnote: String::new(),
             contact: String::new(),
             draft_number: 1,
             draft_date: String::new(),

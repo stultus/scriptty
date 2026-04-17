@@ -52,7 +52,7 @@ pub fn run() {
           &MenuItem::with_id(app, "save", "Save", true, Some("CmdOrCtrl+S"))?,
           &MenuItem::with_id(app, "save-as", "Save As...", true, Some("CmdOrCtrl+Shift+S"))?,
           &PredefinedMenuItem::separator(app)?,
-          &MenuItem::with_id(app, "edit-meta", "Document Properties...", true, None::<&str>)?,
+          &MenuItem::with_id(app, "edit-meta", "Metadata...", true, None::<&str>)?,
           &PredefinedMenuItem::separator(app)?,
           // Custom quit item instead of PredefinedMenuItem::quit so the frontend
           // can intercept it and prompt for unsaved changes before quitting.

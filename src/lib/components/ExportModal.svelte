@@ -2,10 +2,18 @@
   import { invoke } from '@tauri-apps/api/core';
   import { save } from '@tauri-apps/plugin-dialog';
   import { writeFile } from '@tauri-apps/plugin-fs';
-  import { documentStore } from '$lib/stores/documentStore.svelte';
+  import { documentStore, type ScreenplayDocument } from '$lib/stores/documentStore.svelte';
   import { focusTrap } from '$lib/actions/focusTrap';
 
-  let { open = $bindable(false) } = $props<{ open: boolean }>();
+  let {
+    open = $bindable(false),
+    onEditMetadata = () => {},
+  } = $props<{
+    open: boolean;
+    /** Opens the Metadata modal from the title-page section so writers can
+     *  tweak title / tagline / credits without leaving the export flow. */
+    onEditMetadata?: () => void;
+  }>();
 
   // Export options state
   let includeTitlePage = $state(true);
@@ -29,10 +37,35 @@
   let exportingPlaintext = $state(false);
   let errorMessage = $state('');
 
+  // Scene range — lets a writer export a slice of the script for an actor /
+  // technician (issue #17). Defaults to the full document; when enabled the
+  // writer picks two scene numbers and the backend only sees the slice.
+  let sceneRangeEnabled = $state(false);
+  let sceneRangeFrom = $state(1);
+  let sceneRangeTo = $state(1);
+
   // Derived: check if synopsis/treatment have content
   let hasSynopsis = $derived((documentStore.document?.story.synopsis ?? '').trim().length > 0);
   let hasTreatment = $derived((documentStore.document?.story.treatment ?? '').trim().length > 0);
   let hasNarrative = $derived((documentStore.document?.story.narrative ?? '').trim().length > 0);
+
+  // Count scene headings so the range inputs can clamp against the real
+  // document size rather than an arbitrary cap.
+  let sceneCount = $derived.by(() => {
+    const content = documentStore.document?.content as { content?: Array<{ type?: string }> } | undefined;
+    if (!content?.content) return 0;
+    return content.content.filter((n) => n.type === 'scene_heading').length;
+  });
+  let firstSceneNumber = $derived(documentStore.document?.settings.scene_number_start ?? 1);
+  let lastSceneNumber = $derived(firstSceneNumber + Math.max(0, sceneCount - 1));
+
+  // Keep the range bounded to what actually exists whenever the modal opens
+  // or the document changes — spares us from validating on every click.
+  $effect(() => {
+    if (!open) return;
+    sceneRangeFrom = firstSceneNumber;
+    sceneRangeTo = lastSceneNumber;
+  });
 
   // Any in-flight export locks dismissal so users don't click away thinking
   // the modal is stuck, and so we never leave a half-written file behind.
@@ -68,8 +101,7 @@
    * list so non-speaking characters the user added (background extras,
    * silent antagonists) still appear on the breakdown card.
    */
-  function buildSceneCardsData(): Array<Record<string, unknown>> {
-    const doc = documentStore.document;
+  function buildSceneCardsData(doc: ScreenplayDocument | null = documentStore.document): Array<Record<string, unknown>> {
     if (!doc || !doc.content) return [];
 
     const content = doc.content as {
@@ -151,6 +183,63 @@
     return cards;
   }
 
+  /**
+   * Return the document as the backend should see it for this export.
+   *
+   * When `sceneRangeEnabled` is off this is a straight passthrough. When on
+   * we slice the ProseMirror `content.content` down to the chosen scene
+   * range and override `scene_number_start` so the output is numbered from
+   * the user's "From" value instead of restarting at 1 — matches the "give
+   * the actor scenes 5–9 of our script" use case (issue #17).
+   */
+  function buildDocumentForExport(): ScreenplayDocument | null {
+    const base = documentStore.document;
+    if (!base) return null;
+    if (!sceneRangeEnabled) return base;
+
+    const content = base.content as {
+      type?: string;
+      content?: Array<{ type?: string }>;
+    };
+    if (!content?.content) return base;
+
+    const startNum = base.settings.scene_number_start ?? 1;
+    // Clamp into the real range so a stale state can't produce an empty slice.
+    const fromDisplay = Math.max(startNum, Math.min(lastSceneNumber, sceneRangeFrom));
+    const toDisplay = Math.max(fromDisplay, Math.min(lastSceneNumber, sceneRangeTo));
+    const fromIdx = fromDisplay - startNum; // 0-based doc scene index
+    const toIdx = toDisplay - startNum;
+
+    // Walk nodes, keeping only those belonging to scenes in [fromIdx, toIdx].
+    // Nodes before the first selected scene_heading are dropped (title-page
+    // etc. is rebuilt from meta separately).
+    let currentSceneIdx = -1;
+    const filtered: Array<{ type?: string }> = [];
+    for (const node of content.content) {
+      if (node.type === 'scene_heading') {
+        currentSceneIdx++;
+        if (currentSceneIdx > toIdx) break;
+      }
+      if (currentSceneIdx >= fromIdx && currentSceneIdx <= toIdx) {
+        filtered.push(node);
+      }
+    }
+
+    // Re-index scene_cards so they align with the sliced content. In the
+    // full document a card's scene_index is 0-based against the whole doc;
+    // after slicing, scene_index 0 should mean the first scene in the slice.
+    const rebasedCards = base.scene_cards
+      .filter((c) => c.scene_index >= fromIdx && c.scene_index <= toIdx)
+      .map((c) => ({ ...c, scene_index: c.scene_index - fromIdx }));
+
+    return {
+      ...base,
+      content: { ...content, content: filtered },
+      settings: { ...base.settings, scene_number_start: fromDisplay },
+      scene_cards: rebasedCards,
+    };
+  }
+
   /** Parse INT./EXT., location, and time from a scene heading */
   function parseSceneHeading(heading: string): { location: string; time: string } {
     // Typical format: "INT. COFFEE SHOP - MORNING"
@@ -162,16 +251,17 @@
   }
 
   async function handlePlaintextExport() {
-    if (!documentStore.document) return;
+    const doc = buildDocumentForExport();
+    if (!doc) return;
     exportingPlaintext = true;
     errorMessage = '';
 
     try {
       const plaintext = await invoke<string>('export_plaintext', {
-        document: documentStore.document,
+        document: doc,
       });
 
-      const title = documentStore.document.meta.title || 'screenplay';
+      const title = doc.meta.title || 'screenplay';
       const path = await save({
         defaultPath: `${title}.txt`,
         filters: [{ name: 'Plain Text', extensions: ['txt'] }],
@@ -194,16 +284,17 @@
   }
 
   async function handleFountainExport() {
-    if (!documentStore.document) return;
+    const doc = buildDocumentForExport();
+    if (!doc) return;
     exportingFountain = true;
     errorMessage = '';
 
     try {
       const fountainText = await invoke<string>('export_fountain', {
-        document: documentStore.document,
+        document: doc,
       });
 
-      const title = documentStore.document.meta.title || 'screenplay';
+      const title = doc.meta.title || 'screenplay';
       const path = await save({
         defaultPath: `${title}.fountain`,
         filters: [{ name: 'Fountain', extensions: ['fountain'] }],
@@ -227,15 +318,16 @@
   }
 
   async function handleExport() {
-    if (!documentStore.document) return;
+    const doc = buildDocumentForExport();
+    if (!doc) return;
     exporting = true;
     errorMessage = '';
 
     try {
-      const sceneCardsData = includeSceneCards ? buildSceneCardsData() : [];
+      const sceneCardsData = includeSceneCards ? buildSceneCardsData(doc) : [];
 
       const bytes = await invoke<number[]>('export_combined_pdf', {
-        document: documentStore.document,
+        document: doc,
         options: {
           include_title_page: includeTitlePage,
           include_synopsis: includeSynopsis,
@@ -284,7 +376,12 @@
         <button class="btn-close" onclick={() => { open = false; }} disabled={anyExporting}>&times;</button>
       </div>
 
-      <div class="section-label">What to include</div>
+      <div class="section-label">
+        <span>What to include</span>
+        <button type="button" class="inline-link" onclick={onEditMetadata} disabled={anyExporting}>
+          Edit metadata
+        </button>
+      </div>
       <div class="checkbox-group">
         <label class="checkbox-row">
           <input type="checkbox" bind:checked={includeTitlePage} />
@@ -354,6 +451,33 @@
           <input type="checkbox" bind:checked={includePageNumbers} />
           <span>Page numbers</span>
         </label>
+        {#if sceneCount > 0 && (includeScreenplay || includeSceneCards)}
+          <label class="checkbox-row">
+            <input type="checkbox" bind:checked={sceneRangeEnabled} />
+            <span>Only selected scenes</span>
+          </label>
+          {#if sceneRangeEnabled}
+            <div class="range-row">
+              <span class="range-label">Scenes</span>
+              <input
+                type="number"
+                min={firstSceneNumber}
+                max={lastSceneNumber}
+                bind:value={sceneRangeFrom}
+                aria-label="From scene number"
+              />
+              <span class="range-sep">to</span>
+              <input
+                type="number"
+                min={firstSceneNumber}
+                max={lastSceneNumber}
+                bind:value={sceneRangeTo}
+                aria-label="To scene number"
+              />
+              <span class="range-hint">(of {firstSceneNumber}–{lastSceneNumber})</span>
+            </div>
+          {/if}
+        {/if}
       </div>
 
       {#if errorMessage}
@@ -494,6 +618,34 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-bottom: 8px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .inline-link {
+    appearance: none;
+    background: transparent;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--accent);
+    cursor: pointer;
+  }
+
+  .inline-link:hover {
+    text-decoration: underline;
+  }
+
+  .inline-link:disabled {
+    color: var(--text-muted);
+    cursor: default;
+    text-decoration: none;
   }
 
   .checkbox-group,
@@ -525,6 +677,48 @@
   .checkbox-row input,
   .radio-row input {
     accent-color: var(--accent);
+  }
+
+  .range-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 22px;
+    padding: 2px 0 4px;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+  }
+
+  .range-label {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .range-row input[type="number"] {
+    width: 56px;
+    padding: 3px 6px;
+    font-size: 12.5px;
+    font-family: inherit;
+    color: var(--text-primary);
+    background: var(--surface-base);
+    border: 1px solid var(--border-medium);
+    border-radius: 4px;
+  }
+
+  .range-row input[type="number"]:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .range-sep {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .range-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-left: 2px;
   }
 
   .error-message {

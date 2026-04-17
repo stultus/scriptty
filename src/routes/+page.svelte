@@ -502,9 +502,11 @@
 <AboutModal bind:open={showAbout} />
 <HelpModal bind:open={showHelp} onShowAbout={() => { showAbout = true; }} />
 <StatisticsModal bind:open={showStatistics} />
-<MetadataModal bind:open={showMetadata} />
 <SettingsModal bind:open={showSettings} bind:showAnnotations />
-<ExportModal bind:open={showExport} />
+<ExportModal bind:open={showExport} onEditMetadata={() => { showMetadata = true; }} />
+<!-- MetadataModal renders last so it stacks above ExportModal when the
+     "Edit metadata" link inside the export flow opens it. -->
+<MetadataModal bind:open={showMetadata} />
 <CommandPalette bind:open={showCommandPalette} {commands} />
 <UpdateToast />
 

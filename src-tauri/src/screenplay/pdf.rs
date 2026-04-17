@@ -583,6 +583,16 @@ pub fn generate_title_page_markup(meta: &ScreenplayMeta, page_numbers: bool) -> 
         escape_typst(meta.title.trim())
     ));
 
+    // Tagline / logline — italic, muted, tight under the title. Optional; only
+    // emitted when the writer has filled it in (issue #14).
+    if !meta.tagline.trim().is_empty() {
+        page.push_str("    #v(0.5cm)\n");
+        page.push_str(&format!(
+            "    #text(size: 12pt, style: \"italic\", fill: luma(90))[{}]\n",
+            escape_typst(meta.tagline.trim())
+        ));
+    }
+
     // Generate credit lines from author and director fields.
     // Uses format_credit_lines() to handle "Written by", "Directed by",
     // or combined "Written and Directed by" when they're the same person.
@@ -610,12 +620,13 @@ pub fn generate_title_page_markup(meta: &ScreenplayMeta, page_numbers: bool) -> 
     page.push_str("  ]\n"); // close #align(center)
     page.push_str("  ]\n"); // close #block(breakable: false)
 
-    // --- Bottom-left section: contact info + draft line ---
-    // Only show if at least one of contact or draft info is present.
+    // --- Bottom-left section: contact info + draft line + registration ---
+    // Only show if at least one of contact / draft / registration is present.
     let has_contact = !meta.contact.trim().is_empty();
     let has_draft = meta.draft_number > 0 || !meta.draft_date.trim().is_empty();
+    let has_registration = !meta.registration_number.trim().is_empty();
 
-    if has_contact || has_draft {
+    if has_contact || has_draft || has_registration {
         page.push_str("  #align(left)[\n");
         // `#v(1fr)` pushes this content to the bottom of the page.
         // `1fr` is a Typst "fractional" unit — it expands to fill available space.
@@ -654,7 +665,30 @@ pub fn generate_title_page_markup(meta: &ScreenplayMeta, page_numbers: bool) -> 
             page.push_str(&format!("    #text(size: 10pt)[{}]\n", draft_line));
         }
 
+        // Registration / copyright number — subtle, mirrors the draft line
+        // style so it clearly belongs with the document identifiers rather
+        // than contact info (issue #14).
+        if has_registration {
+            page.push_str("    #v(0.3cm)\n");
+            page.push_str(&format!(
+                "    #text(size: 10pt, fill: luma(110))[Reg: {}]\n",
+                escape_typst(meta.registration_number.trim())
+            ));
+        }
+
         page.push_str("  ]\n"); // close #align(left)
+    }
+
+    // --- Footnote: centered, italic, at the very bottom of the page ---
+    // Typical use: confidentiality line, "based on" credit, dedication.
+    // Placed inside its own `#place(bottom + center)` so it sits against the
+    // page margin without disturbing the `#v(1fr)` that pins the contact
+    // block above it (issue #14).
+    if !meta.footnote.trim().is_empty() {
+        page.push_str(&format!(
+            "  #place(bottom + center, dy: -0.2cm)[\n    #text(size: 9pt, style: \"italic\", fill: luma(120))[{}]\n  ]\n",
+            escape_typst(meta.footnote.trim())
+        ));
     }
 
     // Restart page numbering for the screenplay body — the title page is

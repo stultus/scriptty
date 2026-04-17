@@ -138,6 +138,8 @@
   let sceneSlots = $state<SceneSlot[]>([]);
   let gutterTopPad = $state(0);
   let annotationRafId = 0;
+  let spacerRafId = 0;
+  let gutterResizeObserver: ResizeObserver | null = null;
 
   // Track which scenes have their annotation expanded. Collapsed slots limit
   // description/notes to ~2 visible lines; expanded shows the full text.
@@ -148,16 +150,23 @@
     if (next.has(sceneOrder)) next.delete(sceneOrder);
     else next.add(sceneOrder);
     expandedSlots = next;
-    // Let layout settle before recomputing spacer heights so the editor
-    // grows/shrinks to match the new annotation footprint.
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => measureAndApplySpacers());
-    });
+    // Svelte flushes the state change in the same microtask; a single RAF
+    // is enough to let layout settle before we measure.
+    scheduleSpacerRecalc();
   }
 
   function scheduleAnnotationUpdate() {
     cancelAnimationFrame(annotationRafId);
     annotationRafId = requestAnimationFrame(updateAnnotationPositions);
+  }
+
+  /** Debounced single-frame scheduler for spacer recomputation.
+   *  Called directly after any change that might grow/shrink a gutter slot
+   *  (toggle, textarea typing, ResizeObserver firing). Collapses bursts of
+   *  calls into one measurement pass. */
+  function scheduleSpacerRecalc() {
+    cancelAnimationFrame(spacerRafId);
+    spacerRafId = requestAnimationFrame(() => measureAndApplySpacers());
   }
 
   /** Get an element's vertical position relative to a container's content top.
@@ -200,8 +209,8 @@
     }
     sceneSlots = slots;
 
-    // Next frame: measure actual DOM heights and recompute spacers
-    requestAnimationFrame(() => measureAndApplySpacers());
+    // Slot data changed; re-measure next frame once the gutter re-renders.
+    scheduleSpacerRecalc();
   }
 
   /** Full spacer recompute: clear → measure base positions → measure
@@ -329,14 +338,10 @@
       });
     }
     documentStore.markDirty();
-    // Recalculate spacers since annotation height may have changed.
-    // Schedule both a full update AND a direct measurement pass.
-    // The measurement pass can run even if slot data hasn't changed
-    // (because the textarea grew from field-sizing:content).
-    cancelAnimationFrame(annotationRafId);
-    annotationRafId = requestAnimationFrame(() => {
-      measureAndApplySpacers();
-    });
+    // Textarea grows via field-sizing:content — ResizeObserver picks that up
+    // automatically via scheduleSpacerRecalc. This call is a belt-and-braces
+    // scheduler in case the observer hasn't fired yet for a fresh slot.
+    scheduleSpacerRecalc();
   }
 
   // Create initial document with one empty scene_heading
@@ -552,11 +557,21 @@
     // Recompute annotation positions on window resize
     window.addEventListener('resize', scheduleAnnotationUpdate);
 
+    // Watch the gutter for intrinsic size changes — e.g. field-sizing:content
+    // textareas growing as the user types. One observer, one debounced RAF.
+    if (gutterEl && typeof ResizeObserver !== 'undefined') {
+      gutterResizeObserver = new ResizeObserver(() => scheduleSpacerRecalc());
+      gutterResizeObserver.observe(gutterEl);
+    }
+
     return () => {
       editorStore.view = null;
       editorDom.removeEventListener('keydown', handleMalayalamKeydown, { capture: true });
       window.removeEventListener('resize', scheduleAnnotationUpdate);
       cancelAnimationFrame(annotationRafId);
+      cancelAnimationFrame(spacerRafId);
+      gutterResizeObserver?.disconnect();
+      gutterResizeObserver = null;
       view?.destroy();
     };
   });

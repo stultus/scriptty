@@ -155,7 +155,6 @@
       title="Scene Cards (⌘⇧K)"
     >
       <span class="tab-label">Cards</span>
-      <kbd class="tab-hint">⌘⇧K</kbd>
     </button>
     <button
       class="view-tab"
@@ -164,7 +163,6 @@
       title="Story view (⌘⇧L)"
     >
       <span class="tab-label">Story</span>
-      <kbd class="tab-hint">⌘⇧L</kbd>
     </button>
   </div>
 
@@ -304,22 +302,6 @@
     background: var(--surface-elevated);
     color: var(--text-primary);
     box-shadow: 0 1px 2px var(--shadow-soft);
-  }
-
-  .tab-hint {
-    font-family: inherit;
-    font-size: 9.5px;
-    font-weight: 500;
-    letter-spacing: 0.02em;
-    color: var(--text-muted);
-    opacity: 0;
-    transition: opacity 120ms ease;
-    padding: 0 2px;
-  }
-
-  .view-tab:hover .tab-hint,
-  .view-tab:focus-visible .tab-hint {
-    opacity: 0.85;
   }
 
   /* ─── Ghost button ─── */

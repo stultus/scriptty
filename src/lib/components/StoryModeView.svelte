@@ -113,7 +113,7 @@
 
 <div class="story-mode">
   <div class="story-editor">
-    <div class="page" style="--editor-font: '{fontFamily}'">
+    <div class="page" style="--editor-font-ml: '{fontFamily}'">
       <div class="tab-bar" role="tablist" aria-label="Story sections">
         {#each tabs as tab}
           <button
@@ -197,17 +197,21 @@
     padding-bottom: 0;
   }
 
+  /* Tab labels act as the title-page-like heading of Story view — Courier
+     Prime bold, wider tracking. Matches the display rhythm of scene headings
+     in the editor so both pages read as the same typographic system. */
   .tab {
     border: none;
     background: transparent;
     padding: 8px 14px;
     margin-bottom: -1px;
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: var(--editor-font-en), var(--ui-font);
+    /* Tabs are Latin-only labels, so no Malayalam fallback is required. */
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.1em;
     cursor: pointer;
     border-bottom: 2px solid transparent;
     transition: color 120ms ease, border-color 120ms ease;
@@ -233,6 +237,10 @@
 
   /* No field-sizing: the textarea occupies the fixed page body and scrolls
      its own content. All four tabs therefore render on an identical page. */
+  /* Body font — Courier Prime first for Latin, Malayalam font falls back
+     per-glyph so mixed-script prose still shapes correctly. Monospace
+     generic sits after the Malayalam font so it can't swallow Malayalam
+     glyphs via a system-monospace notdef. */
   .story-textarea {
     width: 100%;
     flex: 1;
@@ -242,7 +250,7 @@
     color: var(--text-on-page);
     background: transparent;
     border: none;
-    font-family: var(--editor-font), system-ui, -apple-system, sans-serif;
+    font-family: var(--editor-font-en), var(--editor-font-ml), ui-monospace, monospace;
     resize: none;
     box-sizing: border-box;
     padding: 0;

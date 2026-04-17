@@ -284,7 +284,7 @@
               <li><strong>Indian</strong> — two-column layout (dialogue left, translation right)</li>
             </ul>
             <p>Under <strong>Layout</strong>, you can enable <strong>Page break after each scene</strong> to start every scene on a new page.</p>
-            <p>The selected font (Noto Sans Malayalam or Manjari) is embedded in the PDF. Bold, italic, and underline formatting is preserved.</p>
+            <p>The selected Malayalam font (Noto Sans Malayalam or Manjari) is embedded in the PDF. Bold, italic, and underline formatting is preserved.</p>
             <p>You can also export as:</p>
             <ul>
               <li><strong>Fountain</strong> — plain-text screenwriting format, compatible with Highland, Fade In, and other tools</li>
@@ -294,12 +294,12 @@
 
           <section class="help-section" id="fonts">
             <h3>Fonts</h3>
-            <p>Open Settings (gear icon in the status bar) to switch between:</p>
+            <p>English text in the editor uses <strong>Courier Prime</strong> — the Hollywood-standard screenplay face. Malayalam text renders in the font you pick under Settings (gear icon in the status bar):</p>
             <ul>
               <li><strong>Noto</strong> — Noto Sans Malayalam (default, clean and modern)</li>
               <li><strong>Manjari</strong> — a lighter, more traditional feel</li>
             </ul>
-            <p>The font applies to both the editor and exported PDFs. Both fonts support Malayalam and English.</p>
+            <p>The Malayalam font you select is also embedded in exported PDFs.</p>
           </section>
 
           <section class="help-section" id="saving">

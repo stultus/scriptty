@@ -506,7 +506,7 @@
   }
 </script>
 
-<div class="scene-cards-view" style="--editor-font: '{fontFamily}'">
+<div class="scene-cards-view" style="--editor-font-ml: '{fontFamily}'">
   <div class="cards-grid" bind:this={gridEl}>
     {#each cards as card (card.key)}
       <div
@@ -705,10 +705,13 @@
     cursor: grabbing;
   }
 
+  /* Scene heading on a card — Courier Prime bold, tracking matches the
+     editor's scene-heading style so cards and pages read as the same system. */
   .card-heading {
-    font-family: var(--editor-font), system-ui, -apple-system, sans-serif;
+    font-family: var(--editor-font-en), var(--editor-font-ml), ui-monospace, monospace;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: 0.04em;
     color: var(--text-primary);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -757,7 +760,7 @@
   }
 
   .meta-item {
-    font-family: var(--editor-font), system-ui, -apple-system, sans-serif;
+    font-family: var(--editor-font-en), var(--editor-font-ml), ui-monospace, monospace;
     font-size: 11px;
     color: var(--text-secondary);
   }
@@ -808,7 +811,7 @@
     background: var(--surface-base);
     border: 1px solid var(--border-subtle);
     border-radius: 4px;
-    font-family: var(--editor-font), system-ui, -apple-system, sans-serif;
+    font-family: var(--editor-font-en), var(--editor-font-ml), var(--ui-font);
     resize: none;
     box-sizing: border-box;
     transition: border-color 120ms ease;
@@ -836,7 +839,7 @@
     background: var(--surface-base);
     border: 1px solid var(--border-subtle);
     border-radius: 4px;
-    font-family: var(--editor-font), system-ui, -apple-system, sans-serif;
+    font-family: var(--editor-font-en), var(--editor-font-ml), var(--ui-font);
     box-sizing: border-box;
     transition: border-color 120ms ease;
   }

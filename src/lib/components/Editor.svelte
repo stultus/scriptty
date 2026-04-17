@@ -408,6 +408,10 @@
     });
     view.updateState(newState);
     updateCurrentElement(newState);
+    // Fresh document → every annotation starts expanded. Dropping the set
+    // also prevents stale scene indices from the previous document from
+    // collapsing unrelated slots after an Open.
+    collapsedSlots = new Set();
     scheduleAnnotationUpdate();
   });
 
@@ -585,7 +589,7 @@
     <FindReplaceBar mode={findReplaceMode} onclose={() => { findReplaceOpen = false; }} />
   {/if}
   <div class="editor-scroll">
-    <div class="editor-with-annotations" style="--editor-font: '{fontFamily}'">
+    <div class="editor-with-annotations" style="--editor-font-ml: '{fontFamily}'">
       <div class="editor-container" bind:this={editorElement} style="--scene-counter-start: {(documentStore.document?.settings.scene_number_start ?? 1) - 1}"></div>
       {#if showAnnotations}
       <div class="annotations-gutter" style="padding-top: {gutterTopPad}px" bind:this={gutterEl}>
@@ -749,10 +753,10 @@
     border: none;
     background: transparent;
     color: var(--text-secondary);
-    /* Inherit the editor font so annotations render Malayalam text with
-       the same shaping as the page — otherwise the system font renders
-       Malayalam in an entirely different style from the screenplay. */
-    font-family: var(--editor-font), system-ui, -apple-system, sans-serif;
+    /* Use the editor stack so annotations read as extensions of the page,
+       not as chrome. Courier Prime for Latin, the document's selected
+       Malayalam font for Malayalam runs. */
+    font-family: var(--editor-font-en), var(--editor-font-ml), ui-monospace, monospace;
     font-size: 12px;
     line-height: 1.5;
     padding: 0;
@@ -776,13 +780,17 @@
   }
 
   /* ─── ProseMirror editor — the screenplay page ─── */
+  /* Courier Prime first for Latin, user-selected Malayalam font second.
+     Per-glyph fallback keeps mixed-script lines rendering cleanly. The
+     monospace generic sits AFTER the Malayalam font so it can't intercept
+     Malayalam glyphs via a system-monospace notdef. */
   .editor-container :global(.ProseMirror) {
     padding: 60px 72px 60vh 72px;
     box-sizing: border-box;
     /* Increased from 800px to 2000px to simulate infinite/continuous page rendering */
     min-height: 2000px;
     outline: none;
-    font-family: var(--editor-font), sans-serif;
+    font-family: var(--editor-font-en), var(--editor-font-ml), ui-monospace, monospace;
     font-size: 14px;
     line-height: 1.6;
     color: var(--text-on-page);
@@ -806,9 +814,12 @@
     padding: 4px 0;
   }
 
+  /* Scene heading: display weight, slight up-size and tracking so the eye
+     catches scene boundaries before parsing words (issue #70). */
   :global(.ProseMirror .scene-heading) {
-    font-weight: bold;
-    font-size: 16px;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.04em;
     margin-top: 2em;
     margin-bottom: 0.5em;
     color: var(--text-on-page);
@@ -878,12 +889,15 @@
     opacity: 0.85;
   }
 
+  /* Character name: already auto-uppercased by the plugin; tracking widens
+     the caps so the cue reads as a label not a word (issue #70). */
   :global(.ProseMirror .character) {
     margin-left: 200px;
     margin-top: 1em;
     margin-bottom: 0;
     color: var(--text-on-page);
-    font-weight: bold;
+    font-weight: 700;
+    letter-spacing: 0.08em;
   }
 
   :global(.ProseMirror .dialogue) {
@@ -895,6 +909,8 @@
     opacity: 0.85;
   }
 
+  /* Parenthetical: italic direction note, slightly smaller than body so it
+     reads as a whispered aside rather than a peer to dialogue (issue #70). */
   :global(.ProseMirror .parenthetical) {
     margin-left: 160px;
     margin-right: 160px;
@@ -903,6 +919,7 @@
     color: var(--text-on-page);
     opacity: 0.6;
     font-style: italic;
+    font-size: 0.92em;
   }
 
   :global(.ProseMirror .parenthetical::before) {
@@ -917,12 +934,14 @@
     display: none;
   }
 
+  /* Transition: right-aligned caps — the widest tracking in the hierarchy
+     so it reads as a boundary mark, not a body line (issue #70). */
   :global(.ProseMirror .transition) {
     text-align: right;
     margin-top: 1em;
     color: var(--accent-deep);
-    letter-spacing: 0.08em;
-    font-weight: 600;
+    letter-spacing: 0.1em;
+    font-weight: 700;
   }
 
 

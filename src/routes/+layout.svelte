@@ -19,7 +19,7 @@
     overflow: hidden;
     background: var(--surface-base);
     color: var(--text-primary);
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: var(--ui-font, system-ui, -apple-system, sans-serif);
   }
 
   /* Body-level theme transition — prevents flash on toggle */
@@ -152,6 +152,24 @@
     --label-font-weight: 700;
     --label-tracking: 0.06em;
     --label-color: var(--text-muted);
+
+    /* ─── Three font roles (issue #66) ───
+       --ui-font: chrome, menus, toolbars, buttons, dialogs
+       --editor-font-en: Latin script inside the editor page — Courier Prime,
+         the accepted typographic standard for screenplays
+       --editor-font-ml: Malayalam runs — Noto Sans Malayalam / Manjari,
+         set per-component to the user's selected font
+
+       Font stacks compose per-glyph in CSS: a mixed-script run like
+       "രമേഷ് Flat ലേക്ക്" renders Latin in Courier Prime and Malayalam
+       in the fallback family automatically, no splitting needed.
+
+       --editor-font-en holds a SINGLE family (no monospace fallback) so
+       that Malayalam glyphs fall through to --editor-font-ml; otherwise a
+       system monospace (which ships notdef/placeholder Malayalam glyphs
+       on some platforms) would intercept the fallback chain. */
+    --ui-font: system-ui, -apple-system, sans-serif;
+    --editor-font-en: 'Courier Prime';
   }
 
   /* ─── Disabled button baseline ───

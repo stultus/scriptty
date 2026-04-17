@@ -11,6 +11,36 @@ use crate::screenplay::plaintext;
 use crate::screenplay::pdf;
 use serde::Deserialize;
 
+/// The set of font slugs the app recognizes. Kept in sync with
+/// `src/lib/components/SettingsModal.svelte` — if a new bundled font is
+/// added here, add its slug here and its loader in `fonts::bundled_fonts()`.
+const KNOWN_FONT_SLUGS: &[(&str, &str)] = &[
+    ("noto-sans-malayalam", "Noto Sans Malayalam"),
+    ("manjari", "Manjari"),
+];
+
+/// The Typst family name used when a document carries an unknown font slug.
+/// Stays the default the rest of the app assumes.
+const FALLBACK_FONT_NAME: &str = "Noto Sans Malayalam";
+
+/// Map a font slug from `document.settings.font` to the Typst font family name.
+///
+/// Unknown slugs fall back to `FALLBACK_FONT_NAME` and log a warning to stderr
+/// so a misconfigured document still exports, but the divergence shows up in
+/// Tauri's log stream during development and in packaged crash logs.
+fn resolve_font_name(slug: &str) -> &'static str {
+    for (known_slug, family) in KNOWN_FONT_SLUGS {
+        if slug == *known_slug {
+            return family;
+        }
+    }
+    eprintln!(
+        "[scriptty] export: unknown font slug {:?}, falling back to {:?}",
+        slug, FALLBACK_FONT_NAME
+    );
+    FALLBACK_FONT_NAME
+}
+
 /// Generates Typst markup from a screenplay document.
 ///
 /// Returns the Typst markup string for debugging and preview purposes.
@@ -28,12 +58,9 @@ use serde::Deserialize;
 #[tauri::command]
 pub fn export_typst_markup(document: ScreenplayDocument) -> Result<String, String> {
     // Map the font setting slug to the human-readable font name that Typst expects.
-    // The document stores a slug like "manjari", but Typst needs the actual font
-    // family name like "Manjari" to match against the embedded font data.
-    let font_name = match document.settings.font.as_str() {
-        "manjari" => "Manjari",
-        _ => "Noto Sans Malayalam", // Default font if unrecognized
-    };
+    // `resolve_font_name` logs a warning if the slug isn't recognized and falls
+    // back to the default font, rather than silently using a wrong font.
+    let font_name = resolve_font_name(&document.settings.font);
 
     // `&document.content` passes a reference (borrow) to the content field.
     // We don't need to take ownership — we just need to read the JSON.
@@ -61,20 +88,10 @@ pub fn export_pdf(document: ScreenplayDocument) -> Result<Vec<u8>, String> {
     // `bundled_fonts()` returns a Vec<BundledFont> — all fonts compiled into the binary.
     let bundled = fonts::bundled_fonts();
 
-    // Determine which font to use based on the document's settings.
-    // We need both the Typst font name and the matching BundledFont struct.
-    let (font_name, font) = match document.settings.font.as_str() {
-        "manjari" => (
-            "Manjari",
-            // `iter().find()` searches through the vector for the first matching item.
-            // It returns `Option<&BundledFont>` — Some if found, None if not.
-            bundled.iter().find(|f| f.name == "Manjari"),
-        ),
-        _ => (
-            "Noto Sans Malayalam",
-            bundled.iter().find(|f| f.name == "Noto Sans Malayalam"),
-        ),
-    };
+    // Resolve the font slug once through the shared helper — unknown slugs
+    // log a warning and fall back, instead of silently using Noto Sans Malayalam.
+    let font_name = resolve_font_name(&document.settings.font);
+    let font = bundled.iter().find(|f| f.name == font_name);
 
     // `ok_or_else` converts an Option to a Result:
     // Some(value) → Ok(value), None → Err(the error string we provide).
@@ -116,21 +133,10 @@ pub fn export_pdf_indian(document: ScreenplayDocument) -> Result<Vec<u8>, String
     // `bundled_fonts()` returns all fonts compiled into the binary as a Vec<BundledFont>.
     let bundled = fonts::bundled_fonts();
 
-    // Determine which font to use based on the document's settings.
-    // This logic is the same as `export_pdf()` — map the slug to a font name
-    // and find the matching BundledFont struct.
-    let (font_name, font) = match document.settings.font.as_str() {
-        "manjari" => (
-            "Manjari",
-            // `iter().find()` searches the vector for the first item where the
-            // closure returns true. Returns `Option<&BundledFont>`.
-            bundled.iter().find(|f| f.name == "Manjari"),
-        ),
-        _ => (
-            "Noto Sans Malayalam",
-            bundled.iter().find(|f| f.name == "Noto Sans Malayalam"),
-        ),
-    };
+    // Resolve the slug via the shared helper — unknown slugs warn and fall back
+    // rather than silently mapping to the default.
+    let font_name = resolve_font_name(&document.settings.font);
+    let font = bundled.iter().find(|f| f.name == font_name);
 
     // `ok_or_else` converts Option to Result: Some(val) → Ok(val), None → Err(...).
     // The `?` operator propagates the error — if the font isn't found, the function
@@ -205,17 +211,9 @@ pub fn export_combined_pdf(
 ) -> Result<Vec<u8>, String> {
     let bundled = fonts::bundled_fonts();
 
-    // Resolve the font — same logic as the other export commands
-    let (font_name, font) = match document.settings.font.as_str() {
-        "manjari" => (
-            "Manjari",
-            bundled.iter().find(|f| f.name == "Manjari"),
-        ),
-        _ => (
-            "Noto Sans Malayalam",
-            bundled.iter().find(|f| f.name == "Noto Sans Malayalam"),
-        ),
-    };
+    // Resolve the font — shared helper logs on unknown slugs.
+    let font_name = resolve_font_name(&document.settings.font);
+    let font = bundled.iter().find(|f| f.name == font_name);
 
     let font = font.ok_or_else(|| "Selected font not found in bundled fonts".to_string())?;
     let font_data = pdf::FontData {

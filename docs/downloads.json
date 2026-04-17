@@ -1,11 +1,11 @@
 {
-  "version": "0.5.2",
-  "release_url": "https://github.com/stultus/scriptty/releases/tag/v0.5.2",
+  "version": "0.6.0",
+  "release_url": "https://github.com/stultus/scriptty/releases/tag/v0.6.0",
   "assets": {
-    "macos_arm": "https://github.com/stultus/scriptty/releases/download/v0.5.2/Scriptty_0.5.2_aarch64.dmg",
-    "macos_intel": "https://github.com/stultus/scriptty/releases/download/v0.5.2/Scriptty_0.5.2_x64.dmg",
-    "windows": "https://github.com/stultus/scriptty/releases/download/v0.5.2/Scriptty_0.5.2_x64-setup.exe",
-    "linux_deb": "https://github.com/stultus/scriptty/releases/download/v0.5.2/Scriptty_0.5.2_amd64.deb",
-    "linux_appimage": "https://github.com/stultus/scriptty/releases/download/v0.5.2/Scriptty_0.5.2_amd64.AppImage"
+    "macos_arm": "https://github.com/stultus/scriptty/releases/download/v0.6.0/Scriptty_0.6.0_aarch64.dmg",
+    "macos_intel": "https://github.com/stultus/scriptty/releases/download/v0.6.0/Scriptty_0.6.0_x64.dmg",
+    "windows": "https://github.com/stultus/scriptty/releases/download/v0.6.0/Scriptty_0.6.0_x64-setup.exe",
+    "linux_deb": "https://github.com/stultus/scriptty/releases/download/v0.6.0/Scriptty_0.6.0_amd64.deb",
+    "linux_appimage": "https://github.com/stultus/scriptty/releases/download/v0.6.0/Scriptty_0.6.0_amd64.AppImage"
   }
 }

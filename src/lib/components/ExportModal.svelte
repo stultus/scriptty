@@ -29,7 +29,7 @@
   // Seed from the document setting so "Show characters" in settings carries
   // over as the default export choice. User can still override per-export.
   let charactersBelowHeading = $state(
-    documentStore.document?.settings.show_characters_below_header ?? false
+    documentStore.activeSettings?.show_characters_below_header ?? false
   );
 
   let exporting = $state(false);
@@ -44,19 +44,26 @@
   let sceneRangeFrom = $state(1);
   let sceneRangeTo = $state(1);
 
+  // Export scope — only meaningful for series projects. "episode" exports the
+  // currently-active episode as a standalone film (default, matches the
+  // writer's most common need). "series" concatenates every episode into a
+  // single combined export.
+  let exportScope = $state<'episode' | 'series'>('episode');
+  let isSeriesProject = $derived(documentStore.isSeries);
+
   // Derived: check if synopsis/treatment have content
-  let hasSynopsis = $derived((documentStore.document?.story.synopsis ?? '').trim().length > 0);
-  let hasTreatment = $derived((documentStore.document?.story.treatment ?? '').trim().length > 0);
-  let hasNarrative = $derived((documentStore.document?.story.narrative ?? '').trim().length > 0);
+  let hasSynopsis = $derived((documentStore.activeStory?.synopsis ?? '').trim().length > 0);
+  let hasTreatment = $derived((documentStore.activeStory?.treatment ?? '').trim().length > 0);
+  let hasNarrative = $derived((documentStore.activeStory?.narrative ?? '').trim().length > 0);
 
   // Count scene headings so the range inputs can clamp against the real
   // document size rather than an arbitrary cap.
   let sceneCount = $derived.by(() => {
-    const content = documentStore.document?.content as { content?: Array<{ type?: string }> } | undefined;
+    const content = documentStore.activeContent as { content?: Array<{ type?: string }> } | null;
     if (!content?.content) return 0;
     return content.content.filter((n) => n.type === 'scene_heading').length;
   });
-  let firstSceneNumber = $derived(documentStore.document?.settings.scene_number_start ?? 1);
+  let firstSceneNumber = $derived(documentStore.activeSettings?.scene_number_start ?? 1);
   let lastSceneNumber = $derived(firstSceneNumber + Math.max(0, sceneCount - 1));
 
   // Keep the range bounded to what actually exists whenever the modal opens
@@ -101,7 +108,7 @@
    * list so non-speaking characters the user added (background extras,
    * silent antagonists) still appear on the breakdown card.
    */
-  function buildSceneCardsData(doc: ScreenplayDocument | null = documentStore.document): Array<Record<string, unknown>> {
+  function buildSceneCardsData(doc: ScreenplayDocument | null = documentStore.activeExportDocument): Array<Record<string, unknown>> {
     if (!doc || !doc.content) return [];
 
     const content = doc.content as {
@@ -192,10 +199,108 @@
    * the user's "From" value instead of restarting at 1 — matches the "give
    * the actor scenes 5–9 of our script" use case (issue #17).
    */
+  /** Build a film-shaped export document that concatenates every episode of
+   *  a series project. Scene cards are remapped so their `scene_index`
+   *  values align with the combined document's global scene ordering. The
+   *  series title becomes the export meta title; the first episode's
+   *  author / director / settings / story are inherited (writers typically
+   *  set these once at the top of the series). A synthetic `episode_boundary`
+   *  node is inserted before every episode after the first — the PDF pipeline
+   *  renders it as a hard page break + centred episode title and resets the
+   *  scene counter so each episode numbers from 1 again. */
+  function buildSeriesExportDocument(): ScreenplayDocument | null {
+    const doc = documentStore.document;
+    if (!doc || doc.type !== 'series' || !doc.series) return null;
+    const episodes = doc.series.episodes;
+    if (episodes.length === 0) return null;
+
+    type Block = { type?: string; content?: unknown[] };
+    const combinedBlocks: Block[] = [];
+    // Walk every episode's scene_cards, shifting each card's scene_index by
+    // the running count of scenes already emitted. The PDF side treats
+    // `scene_index` as a 0-based pointer into the flattened scene list, so
+    // this must align with the order blocks are pushed below.
+    const combinedSceneCards: Array<{
+      scene_index: number;
+      description: string;
+      shoot_notes: string;
+      extra_characters: string;
+    }> = [];
+    let sceneOffset = 0;
+
+    for (let i = 0; i < episodes.length; i++) {
+      const ep = episodes[i];
+      const epContent = ep.content as { content?: Block[] } | null;
+      const blocks: Block[] = Array.isArray(epContent?.content) ? (epContent!.content ?? []) : [];
+
+      // Remap the episode's scene_cards by adding the running offset.
+      for (const card of ep.scene_cards ?? []) {
+        combinedSceneCards.push({
+          ...card,
+          scene_index: card.scene_index + sceneOffset,
+        });
+      }
+
+      // Insert an `episode_boundary` marker before *every* episode. The PDF
+      // renderer uses a weak pagebreak so the first episode's title lands on
+      // the opening content page (no spurious blank leader), while later
+      // episodes get a real page break. The boundary also resets the
+      // scene-number counter so each episode numbers from 1.
+      //
+      // We use `ep.title` (the Episode's own short title like "തിരിച്ചുവരവ്")
+      // rather than `ep.meta.title` — the latter is often the composed
+      // "<Series> — Ep N: <Title>" used on per-episode title pages, and
+      // reusing it here would print the series name twice.
+      const epTitle = ep.title?.trim() ?? '';
+      const label = epTitle
+        ? `EPISODE ${ep.number}: ${epTitle}`
+        : `EPISODE ${ep.number}`;
+      combinedBlocks.push({
+        type: 'episode_boundary',
+        content: [{ type: 'text', text: label }],
+      });
+      combinedBlocks.push(...blocks);
+
+      // Advance the offset by however many scene_headings this episode had.
+      const sceneCountInEp = blocks.filter((b) => b.type === 'scene_heading').length;
+      sceneOffset += sceneCountInEp;
+    }
+
+    const firstEp = episodes[0];
+    const seriesTitle = doc.series.title || 'Untitled Series';
+
+    // Font is a series-wide choice — `document.settings.font` is where the
+    // Settings modal writes. We merge it over the first episode's settings
+    // so a combined export always uses the user-selected font rather than
+    // the episode's stale default.
+    const mergedSettings = {
+      ...firstEp.settings,
+      font: doc.settings.font || firstEp.settings.font,
+    };
+
+    return {
+      type: 'film',
+      series: null,
+      content: { type: 'doc', content: combinedBlocks },
+      meta: { ...firstEp.meta, title: seriesTitle },
+      settings: mergedSettings,
+      story: firstEp.story,
+      scene_cards: combinedSceneCards,
+    };
+  }
+
   function buildDocumentForExport(): ScreenplayDocument | null {
-    const base = documentStore.document;
+    // For a series in "series" scope, flatten every episode into one
+    // combined document. Otherwise start from the "active export document" —
+    // for a film this is the doc itself; for a series in "episode" scope
+    // it's a film-shaped wrapper around the active episode.
+    const base = isSeriesProject && exportScope === 'series'
+      ? buildSeriesExportDocument()
+      : documentStore.activeExportDocument;
     if (!base) return null;
-    if (!sceneRangeEnabled) return base;
+    // Scene-range slicing only applies in episode / film scope — it doesn't
+    // make sense to slice across an entire series export.
+    if (!sceneRangeEnabled || (isSeriesProject && exportScope === 'series')) return base;
 
     const content = base.content as {
       type?: string;
@@ -376,6 +481,20 @@
         <button class="btn-close" onclick={() => { open = false; }} disabled={anyExporting}>&times;</button>
       </div>
 
+      {#if isSeriesProject}
+        <div class="section-label">Scope</div>
+        <div class="radio-group">
+          <label class="radio-row">
+            <input type="radio" name="export-scope" value="episode" bind:group={exportScope} />
+            <span>Current episode only</span>
+          </label>
+          <label class="radio-row">
+            <input type="radio" name="export-scope" value="series" bind:group={exportScope} />
+            <span>Entire series (all episodes)</span>
+          </label>
+        </div>
+      {/if}
+
       <div class="section-label">
         <span>What to include</span>
         <button type="button" class="inline-link" onclick={onEditMetadata} disabled={anyExporting}>
@@ -451,7 +570,7 @@
           <input type="checkbox" bind:checked={includePageNumbers} />
           <span>Page numbers</span>
         </label>
-        {#if sceneCount > 0 && (includeScreenplay || includeSceneCards)}
+        {#if sceneCount > 0 && (includeScreenplay || includeSceneCards) && !(isSeriesProject && exportScope === 'series')}
           <label class="checkbox-row">
             <input type="checkbox" bind:checked={sceneRangeEnabled} />
             <span>Only selected scenes</span>

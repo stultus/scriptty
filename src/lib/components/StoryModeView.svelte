@@ -43,11 +43,12 @@
     }
   });
 
-  // Derived story data from document store
-  let idea = $derived(documentStore.document?.story.idea ?? '');
-  let synopsis = $derived(documentStore.document?.story.synopsis ?? '');
-  let treatment = $derived(documentStore.document?.story.treatment ?? '');
-  let narrative = $derived(documentStore.document?.story.narrative ?? '');
+  // Derived story data — reads from the active story (series → active episode,
+  // film → top-level) so Story Mode edits stay in sync with the editor.
+  let idea = $derived(documentStore.activeStory?.idea ?? '');
+  let synopsis = $derived(documentStore.activeStory?.synopsis ?? '');
+  let treatment = $derived(documentStore.activeStory?.treatment ?? '');
+  let narrative = $derived(documentStore.activeStory?.narrative ?? '');
 
   function fieldValue(field: StoryField): string {
     if (field === 'idea') return idea;
@@ -57,8 +58,9 @@
   }
 
   function updateField(field: StoryField, value: string) {
-    if (documentStore.document) {
-      documentStore.document.story[field] = value;
+    const s = documentStore.activeStory;
+    if (s) {
+      s[field] = value;
       documentStore.markDirty();
     }
   }

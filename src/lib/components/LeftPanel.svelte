@@ -1,5 +1,7 @@
 <script lang="ts">
   import SceneNavigator from './SceneNavigator.svelte';
+  import SeriesEpisodeList from './SeriesEpisodeList.svelte';
+  import { documentStore } from '$lib/stores/documentStore.svelte';
 
   let { isOpen }: { isOpen: boolean } = $props();
 
@@ -8,7 +10,11 @@
 
 <aside class="left-panel" class:open={isOpen} style:--panel-width="{panelWidth}px">
   <div class="panel-content">
-    <SceneNavigator />
+    {#if documentStore.isSeries}
+      <SeriesEpisodeList />
+    {:else}
+      <SceneNavigator />
+    {/if}
   </div>
 </aside>
 

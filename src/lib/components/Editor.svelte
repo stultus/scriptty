@@ -26,16 +26,60 @@
   // this guard the editor fails to mount and the whole file is unusable.
   function safeDocFromJSON(content: unknown): ProseMirrorNode {
     try {
-      const migrated = migrateParensInJSON(content);
+      const normalized = normalizeProseMirrorDoc(content);
+      const migrated = migrateParensInJSON(normalized);
       return ProseMirrorNode.fromJSON(screenplaySchema, migrated as Record<string, unknown>);
     } catch (err) {
-      console.error('[Editor] Failed to parse document content — falling back to empty doc', err);
+      console.error('[Editor] Failed to parse document content — falling back to empty doc');
+      console.error('[Editor] err:', err);
+      console.error('[Editor] raw content preview:', JSON.stringify(content).slice(0, 500));
       message(
         "This .screenplay file couldn't be parsed — it may be corrupted or from a newer version of Scriptty. The editor has started with a blank document so you can save under a new name without overwriting the original.",
         { title: 'Could not load document', kind: 'warning' }
       ).catch(() => {});
       return createInitialDoc();
     }
+  }
+
+  // Accept both the canonical ProseMirror shape ({type:'doc', content:[...]})
+  // and a flat authoring shape ({type, text}[]) that series files and
+  // hand-written .screenplay payloads may use. Converts flat nodes into
+  // proper ProseMirror paragraphs with inline text children so fromJSON
+  // doesn't reject them.
+  function normalizeProseMirrorDoc(content: unknown): unknown {
+    const emptyDoc = { type: 'doc', content: [] as unknown[] };
+    if (!content) return emptyDoc;
+
+    const wrapNode = (raw: unknown): unknown => {
+      if (!raw || typeof raw !== 'object') return null;
+      const node = raw as { type?: string; text?: unknown; content?: unknown };
+      if (typeof node.type !== 'string') return null;
+      // Already a valid block node with inline children — leave it alone.
+      if (Array.isArray(node.content)) return node;
+      // Flat shape: a block node storing its inline text as a plain string.
+      if (typeof node.text === 'string') {
+        const text = node.text;
+        const inline = text.length > 0 ? [{ type: 'text', text }] : [];
+        return { type: node.type, content: inline };
+      }
+      // Block node with no content field at all — treat as empty paragraph.
+      return { type: node.type, content: [] };
+    };
+
+    if (Array.isArray(content)) {
+      const children = content.map(wrapNode).filter((n): n is object => n !== null);
+      return { type: 'doc', content: children };
+    }
+
+    if (typeof content === 'object') {
+      const obj = content as { type?: string; content?: unknown };
+      if (obj.type === 'doc') return content;
+      // Single block node handed in without a doc wrapper.
+      const wrapped = wrapNode(content);
+      return { type: 'doc', content: wrapped ? [wrapped] : [] };
+    }
+
+    return emptyDoc;
   }
 
   // Walk ProseMirror JSON and make sure every parenthetical node contains
@@ -110,11 +154,11 @@
   // creates the reactive dependency; we also re-measure annotations since
   // the widget line changes the editor's vertical layout.
   $effect(() => {
-    const enabled = documentStore.document?.settings.show_characters_below_header ?? false;
+    const enabled = documentStore.activeSettings?.show_characters_below_header ?? false;
     // Build a { sceneIndex: string[] } map from scene_cards so the plugin can
     // merge user-supplied non-speaking characters with auto-detected speakers.
     const extras: Record<number, string[]> = {};
-    const cards = documentStore.document?.scene_cards ?? [];
+    const cards = documentStore.activeSceneCards;
     for (const card of cards) {
       const raw = (card.extra_characters ?? '').trim();
       if (raw.length === 0) continue;
@@ -262,12 +306,16 @@
     const editorHeight = editorElement.scrollHeight || editorElement.offsetHeight;
     gutterTopPad = positions[0];
 
-    // Build slots so the gutter renders annotation content
+    // Build slots so the gutter renders annotation content.
+    // Pull from `activeSceneCards`, not `doc.scene_cards` — for a series
+    // the top-level list is unused and the real cards live on the active
+    // episode, so reading directly off the doc drops every annotation.
+    const cards = documentStore.activeSceneCards;
     const slots: SceneSlot[] = [];
     for (let i = 0; i < headingEls.length; i++) {
       const nextTop = i + 1 < positions.length ? positions[i + 1] : editorHeight;
       const extent = nextTop - positions[i];
-      const card = doc.scene_cards.find(
+      const card = cards.find(
         (c: { scene_index: number }) => c.scene_index === i
       );
       slots.push({
@@ -372,7 +420,7 @@
     if (sceneOrder < 0) return;
 
     // Ensure a scene_card entry exists
-    const cards = documentStore.document.scene_cards;
+    const cards = documentStore.activeSceneCards;
     if (!cards.find((c: { scene_index: number }) => c.scene_index === sceneOrder)) {
       cards.push({ scene_index: sceneOrder, description: '', shoot_notes: '', extra_characters: '' });
     }
@@ -394,7 +442,7 @@
 
   function updateSceneCard(sceneOrder: number, field: 'description' | 'shoot_notes', value: string) {
     if (!documentStore.document) return;
-    const cards = documentStore.document.scene_cards;
+    const cards = documentStore.activeSceneCards;
     const existing = cards.find((c: { scene_index: number }) => c.scene_index === sceneOrder);
     if (existing) {
       if (field === 'description') existing.description = value;
@@ -494,8 +542,9 @@
     if (view) return;
 
     // Restore the document from the store if it exists (e.g. returning from Scene Cards).
-    // Fall back to a fresh empty doc for first launch.
-    const content = documentStore.document?.content;
+    // Fall back to a fresh empty doc for first launch. Uses activeContent so
+    // series projects restore the currently-selected episode's doc.
+    const content = documentStore.activeContent;
     const initialDoc = content ? safeDocFromJSON(content) : createInitialDoc();
 
     const state = EditorState.create({
@@ -673,7 +722,7 @@
   {/if}
   <div class="editor-scroll">
     <div class="editor-with-annotations" style="--editor-font-ml: '{fontFamily}'">
-      <div class="editor-container" bind:this={editorElement} style="--scene-counter-start: {(documentStore.document?.settings.scene_number_start ?? 1) - 1}"></div>
+      <div class="editor-container" bind:this={editorElement} style="--scene-counter-start: {(documentStore.activeSettings?.scene_number_start ?? 1) - 1}"></div>
       {#if showAnnotations}
       <div class="annotations-gutter" style="padding-top: {gutterTopPad}px" bind:this={gutterEl}>
         {#each sceneSlots as slot (slot.sceneOrder)}

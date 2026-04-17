@@ -158,11 +158,12 @@
             class="scene-start-input"
             type="number"
             min="1"
-            value={documentStore.document?.settings.scene_number_start ?? 1}
+            value={documentStore.activeSettings?.scene_number_start ?? 1}
             onchange={(e: Event) => {
               const val = parseInt((e.target as HTMLInputElement).value, 10);
-              if (documentStore.document && val >= 1) {
-                documentStore.document.settings.scene_number_start = val;
+              const s = documentStore.activeSettings;
+              if (s && val >= 1) {
+                s.scene_number_start = val;
                 documentStore.markDirty();
               }
             }}
@@ -177,12 +178,12 @@
           <button
             class="switch"
             role="switch"
-            aria-checked={documentStore.document?.settings.show_characters_below_header === true}
+            aria-checked={documentStore.activeSettings?.show_characters_below_header === true}
             aria-label="Show characters under scene heading"
             onclick={() => {
-              if (documentStore.document) {
-                documentStore.document.settings.show_characters_below_header =
-                  !documentStore.document.settings.show_characters_below_header;
+              const s = documentStore.activeSettings;
+              if (s) {
+                s.show_characters_below_header = !s.show_characters_below_header;
                 documentStore.markDirty();
               }
             }}

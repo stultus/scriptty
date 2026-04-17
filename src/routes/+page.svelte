@@ -20,6 +20,8 @@
   import SettingsModal from '$lib/components/SettingsModal.svelte';
   import ExportModal from '$lib/components/ExportModal.svelte';
   import UpdateToast from '$lib/components/UpdateToast.svelte';
+  import WelcomeScreen from '$lib/components/WelcomeScreen.svelte';
+  import SeriesTitleDialog from '$lib/components/SeriesTitleDialog.svelte';
   import { documentStore } from '$lib/stores/documentStore.svelte';
   import { editorStore } from '$lib/stores/editorStore.svelte';
   import { themeStore } from '$lib/stores/themeStore.svelte';
@@ -42,6 +44,32 @@
   let showSettings = $state(false);
   let showExport = $state(false);
   let showCommandPalette = $state(false);
+  let showSeriesDialog = $state(false);
+
+  // Remember recent files client-side — welcome screen pulls from this list.
+  function pushRecentFile(path: string) {
+    if (typeof localStorage === 'undefined' || !path) return;
+    try {
+      const name = (path.split('/').pop() ?? path.split('\\').pop() ?? path).replace(/\.screenplay$/, '');
+      const raw = localStorage.getItem('scriptty-recent-files');
+      const list = raw ? (JSON.parse(raw) as { path: string; name: string }[]) : [];
+      const filtered = Array.isArray(list) ? list.filter((p) => p && p.path !== path) : [];
+      filtered.unshift({ path, name });
+      localStorage.setItem('scriptty-recent-files', JSON.stringify(filtered.slice(0, 6)));
+    } catch {
+      // ignore localStorage quota / JSON errors
+    }
+  }
+
+  async function handleOpenFromWelcome() {
+    await openFileDialog();
+  }
+
+  async function handleCreateSeriesFromDialog(title: string) {
+    showSeriesDialog = false;
+    if (!(await documentStore.confirmIfDirty())) return;
+    await documentStore.newSeries(title);
+  }
 
   const inputManager = InputModeManager.getInstance();
   // Reactive mirror of isMalayalam and scheme so command palette labels
@@ -53,9 +81,37 @@
     inputScheme = inputManager.scheme;
   }));
 
+  // Whenever a file is opened or saved to a new path, record it in the recent
+  // list so the Welcome screen can surface it next launch.
+  $effect(() => {
+    const path = documentStore.currentPath;
+    if (path) pushRecentFile(path);
+  });
+
+  // Keep the OS window title in sync with the open document so the dock,
+  // taskbar, and Cmd+Tab preview all show something meaningful instead of
+  // the bundled app name.
+  $effect(() => {
+    const doc = documentStore.document;
+    if (!doc) {
+      getCurrentWindow().setTitle('Scriptty').catch(() => {});
+      return;
+    }
+    let title: string;
+    if (doc.type === 'series') {
+      const seriesTitle = doc.series?.title || 'Untitled Series';
+      const ep = documentStore.activeEpisode;
+      const epLabel = ep ? (ep.title.trim() ? `Ep ${ep.number} · ${ep.title}` : `Ep ${ep.number}`) : '';
+      title = epLabel ? `${seriesTitle} — ${epLabel}` : seriesTitle;
+    } else {
+      title = doc.meta.title || documentStore.displayTitle || 'Untitled';
+    }
+    getCurrentWindow().setTitle(`${title} — Scriptty`).catch(() => {});
+  });
+
   // Word count for story view
   let storyWordCount = $derived(() => {
-    const story = documentStore.document?.story;
+    const story = documentStore.activeStory;
     if (!story) return 0;
     const text = [story.idea, story.synopsis, story.treatment, story.narrative].join(' ').trim();
     if (!text) return 0;
@@ -70,6 +126,7 @@
     });
     if (typeof path === 'string') {
       await documentStore.openDocument(path);
+      if (documentStore.currentPath) pushRecentFile(documentStore.currentPath);
     }
   }
 
@@ -86,8 +143,10 @@
 
   let commands = $derived<Command[]>([
     // File
-    { id: 'file.new', group: 'File', label: 'New Screenplay', hint: '⌘N',
+    { id: 'file.new-film', group: 'File', label: 'New Film', hint: '⌘N',
       action: async () => { if (await documentStore.confirmIfDirty()) await documentStore.newDocument(); } },
+    { id: 'file.new-series', group: 'File', label: 'New Series…', hint: '⌘⇧N',
+      action: () => { showSeriesDialog = true; } },
     { id: 'file.open', group: 'File', label: 'Open…', hint: '⌘O', action: openFileDialog },
     { id: 'file.save', group: 'File', label: 'Save', hint: '⌘S', action: () => documentStore.saveWithDialog() },
     { id: 'file.saveas', group: 'File', label: 'Save As…', hint: '⌘⇧S', action: () => documentStore.saveAsDialog() },
@@ -191,9 +250,11 @@
         } catch {
           // Plugin may not be available in dev mode — ignore
         }
-        if (!openedFile && !documentStore.document) {
-          await documentStore.newDocument();
+        if (openedFile && documentStore.currentPath) {
+          pushRecentFile(documentStore.currentPath);
         }
+        // If nothing opened, fall through to the Welcome screen instead of
+        // auto-creating a new doc — the user picks Film / Series / Open there.
       }
     })();
 
@@ -310,9 +371,14 @@
     // Each custom menu item (New, Open, Save, Save As) emits an event
     // that we handle here to call the appropriate store method.
     (async () => {
-      unlistens.push(await listen('menu-new', async () => {
+      unlistens.push(await listen('menu-new-film', async () => {
         if (!(await documentStore.confirmIfDirty())) return;
         await documentStore.newDocument();
+      }));
+
+      unlistens.push(await listen('menu-new-series', async () => {
+        if (!(await documentStore.confirmIfDirty())) return;
+        showSeriesDialog = true;
       }));
 
       unlistens.push(await listen('menu-open', async () => {
@@ -323,6 +389,7 @@
         });
         if (typeof path === 'string') {
           await documentStore.openDocument(path);
+          if (documentStore.currentPath) pushRecentFile(documentStore.currentPath);
         }
       }));
 
@@ -462,6 +529,9 @@
   });
 </script>
 
+{#if !documentStore.document}
+  <WelcomeScreen onOpen={handleOpenFromWelcome} />
+{:else}
 <main>
   <TitleBar
     onToggleSidebar={() => { panelOpen = !panelOpen; }}
@@ -498,6 +568,7 @@
     {/snippet}
   </StatusBar>
 </main>
+{/if}
 
 <AboutModal bind:open={showAbout} />
 <HelpModal bind:open={showHelp} onShowAbout={() => { showAbout = true; }} />
@@ -509,6 +580,7 @@
 <MetadataModal bind:open={showMetadata} />
 <CommandPalette bind:open={showCommandPalette} {commands} />
 <UpdateToast />
+<SeriesTitleDialog bind:open={showSeriesDialog} onConfirm={handleCreateSeriesFromDialog} />
 
 <style>
   main {

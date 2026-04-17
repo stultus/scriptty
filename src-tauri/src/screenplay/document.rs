@@ -7,11 +7,17 @@ use serde::{Deserialize, Serialize};
 /// Metadata about the screenplay — title, author info, and draft tracking.
 ///
 /// Stored in the `"meta"` key of a `.screenplay` file.
+/// Every string field is `#[serde(default)]` so slim-format or
+/// hand-authored `.screenplay` files (including series episodes, which
+/// typically omit timestamps) load without a hard parse error. Missing
+/// fields become empty strings; the UI treats empty as "not set".
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScreenplayMeta {
     /// The title of the screenplay
+    #[serde(default)]
     pub title: String,
     /// The writer's name (or names — use "&" for writing teams, "and" for sequential writers)
+    #[serde(default)]
     pub author: String,
     /// The director's name. Uses `default` so old files without this field still load.
     #[serde(default)]
@@ -30,15 +36,29 @@ pub struct ScreenplayMeta {
     #[serde(default)]
     pub footnote: String,
     /// Contact information (email, phone, agent, etc.)
+    #[serde(default)]
     pub contact: String,
-    /// Draft revision number, starting at 1
+    /// Draft revision number. Defaults to 1 via `default_draft_number`
+    /// because bare `u32::default()` is 0, and a "Draft 0" label is
+    /// surprising on files that simply omit the field.
+    #[serde(default = "default_draft_number")]
     pub draft_number: u32,
     /// Human-readable date string for this draft (e.g. "2026-03-08")
+    #[serde(default)]
     pub draft_date: String,
     /// ISO timestamp of when the document was first created
+    #[serde(default)]
     pub created_at: String,
     /// ISO timestamp of the most recent save
+    #[serde(default)]
     pub updated_at: String,
+}
+
+/// Default draft number for `ScreenplayMeta::draft_number` when the field
+/// is absent from a `.screenplay` file. We want 1, not the `u32::default()`
+/// value of 0, so slim-format files render as "Draft 1".
+fn default_draft_number() -> u32 {
+    1
 }
 
 /// `impl Default` lets us create a ScreenplayMeta with sensible starting values
@@ -67,11 +87,16 @@ impl Default for ScreenplayMeta {
 /// Stored in the `"settings"` key of a `.screenplay` file.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScreenplaySettings {
-    /// Which bundled font to use (e.g. "noto-sans-malayalam" or "manjari")
+    /// Which bundled font to use (e.g. "noto-sans-malayalam" or "manjari").
+    /// `default` lets slim episode settings (which typically omit default_language)
+    /// and any future abbreviated format still load cleanly.
+    #[serde(default = "default_font")]
     pub font: String,
     /// Default writing language: "malayalam" or "english"
+    #[serde(default = "default_language")]
     pub default_language: String,
     /// Input scheme for Malayalam: "mozhi", "inscript1", or "inscript2"
+    #[serde(default = "default_input_scheme")]
     pub input_scheme: String,
     /// Starting scene number — useful when co-writing and this file covers
     /// a specific range of scenes (e.g. 34–44). Defaults to 1.
@@ -92,6 +117,24 @@ pub struct ScreenplaySettings {
 /// when the field is missing from an old .screenplay file.
 fn default_scene_number_start() -> u32 {
     1
+}
+
+/// Default font when `.screenplay` files omit `settings.font`. Matches
+/// `ScreenplaySettings::default()` so all load paths agree.
+fn default_font() -> String {
+    "manjari".to_string()
+}
+
+/// Default writing language when `.screenplay` files omit
+/// `settings.default_language`. Matches `ScreenplaySettings::default()`.
+fn default_language() -> String {
+    "malayalam".to_string()
+}
+
+/// Default input scheme when `.screenplay` files omit
+/// `settings.input_scheme`. Matches `ScreenplaySettings::default()`.
+fn default_input_scheme() -> String {
+    "mozhi".to_string()
 }
 
 /// Clamp `scene_number_start` to a sane range on deserialize.
@@ -242,7 +285,13 @@ pub struct Episode {
     pub title: String,
     #[serde(default = "default_content", deserialize_with = "deserialize_content")]
     pub content: serde_json::Value,
+    /// Each episode's meta mirrors the film-level meta. `#[serde(default)]`
+    /// so authors can write minimal episode blocks (just id/number/title/content)
+    /// and still get a valid deserialize.
+    #[serde(default)]
     pub meta: ScreenplayMeta,
+    /// Same rationale as `meta` — slim episodes can omit settings entirely.
+    #[serde(default)]
     pub settings: ScreenplaySettings,
     #[serde(default)]
     pub story: ScreenplayStory,
@@ -289,9 +338,17 @@ pub struct ScreenplayDocument {
     /// blank scene instead of an empty body (see issues #44/#45).
     #[serde(default = "default_content", deserialize_with = "deserialize_content")]
     pub content: serde_json::Value,
-    /// Screenplay metadata (title, author, draft info)
+    /// Screenplay metadata (title, author, draft info).
+    /// `#[serde(default)]` so series files — which carry real meta inside
+    /// each episode — can omit the top-level block entirely, and so any
+    /// future slim-format film exporter can write nothing here without
+    /// breaking the loader.
+    #[serde(default)]
     pub meta: ScreenplayMeta,
-    /// User-level settings (font, language, input scheme)
+    /// User-level settings (font, language, input scheme).
+    /// Same rationale as `meta` — `#[serde(default)]` lets series files drop
+    /// the top-level settings block (episodes carry their own).
+    #[serde(default)]
     pub settings: ScreenplaySettings,
     /// Story development sections (idea, synopsis, treatment).
     /// Uses `default` so old .screenplay files without this field still load.

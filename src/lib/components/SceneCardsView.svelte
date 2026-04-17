@@ -107,13 +107,14 @@
   /** Build scene cards from the ProseMirror content and stored scene_cards data */
   let cards = $derived.by((): SceneCardData[] => {
     const doc = documentStore.document;
-    if (!doc || !doc.content) return [];
+    if (!doc) return [];
+    const rawContent = documentStore.activeContent;
+    if (!rawContent) return [];
 
-    // Capture into a local const so the inner closure sees the non-null type —
-    // TypeScript doesn't carry narrowing of `doc` into `pushCurrentScene`.
-    const sceneCards = doc.scene_cards;
+    // Capture into a local const so the inner closure sees a stable value.
+    const sceneCards = documentStore.activeSceneCards;
 
-    const content = doc.content as {
+    const content = rawContent as {
       type?: string;
       content?: Array<{
         type?: string;
@@ -123,7 +124,7 @@
     if (!content.content) return [];
 
     const result: SceneCardData[] = [];
-    const startNum = doc.settings?.scene_number_start ?? 1;
+    const startNum = documentStore.activeSettings?.scene_number_start ?? 1;
     let sceneNumber = startNum - 1;
     let sceneOrder = -1; // 0-based scene index for scene_cards lookup
     let currentCharacters: string[] = [];
@@ -193,11 +194,11 @@
   /** Update the description for a scene card */
   function updateDescription(sceneIndex: number, value: string) {
     if (!documentStore.document) return;
-    const existing = documentStore.document.scene_cards.find((c) => c.scene_index === sceneIndex);
+    const existing = documentStore.activeSceneCards.find((c) => c.scene_index === sceneIndex);
     if (existing) {
       existing.description = value;
     } else {
-      documentStore.document.scene_cards.push({
+      documentStore.activeSceneCards.push({
         scene_index: sceneIndex,
         description: value,
         shoot_notes: '',
@@ -210,11 +211,11 @@
   /** Update the shoot notes for a scene card */
   function updateShootNotes(sceneIndex: number, value: string) {
     if (!documentStore.document) return;
-    const existing = documentStore.document.scene_cards.find((c) => c.scene_index === sceneIndex);
+    const existing = documentStore.activeSceneCards.find((c) => c.scene_index === sceneIndex);
     if (existing) {
       existing.shoot_notes = value;
     } else {
-      documentStore.document.scene_cards.push({
+      documentStore.activeSceneCards.push({
         scene_index: sceneIndex,
         description: '',
         shoot_notes: value,
@@ -227,11 +228,11 @@
   /** Update the non-speaking characters list for a scene card */
   function updateExtraCharacters(sceneIndex: number, value: string) {
     if (!documentStore.document) return;
-    const existing = documentStore.document.scene_cards.find((c) => c.scene_index === sceneIndex);
+    const existing = documentStore.activeSceneCards.find((c) => c.scene_index === sceneIndex);
     if (existing) {
       existing.extra_characters = value;
     } else {
-      documentStore.document.scene_cards.push({
+      documentStore.activeSceneCards.push({
         scene_index: sceneIndex,
         description: '',
         shoot_notes: '',
@@ -406,7 +407,7 @@
     // Remap scene_cards indices to follow the reordered scenes.
     // When a scene moves from fromIdx to toIdx, all indices in between shift.
     if (documentStore.document) {
-      for (const card of documentStore.document.scene_cards) {
+      for (const card of documentStore.activeSceneCards) {
         if (card.scene_index === fromIdx) {
           card.scene_index = toIdx;
         } else if (fromIdx < toIdx) {
@@ -496,9 +497,11 @@
 
     // Remap scene_cards indices: drop the deleted one, shift later ones up
     if (documentStore.document) {
-      documentStore.document.scene_cards = documentStore.document.scene_cards
-        .filter((c) => c.scene_index !== sceneOrder)
-        .map((c) => (c.scene_index > sceneOrder ? { ...c, scene_index: c.scene_index - 1 } : c));
+      documentStore.setActiveSceneCards(
+        documentStore.activeSceneCards
+          .filter((c) => c.scene_index !== sceneOrder)
+          .map((c) => (c.scene_index > sceneOrder ? { ...c, scene_index: c.scene_index - 1 } : c))
+      );
     }
 
     documentStore.setContent(view.state.doc.toJSON());

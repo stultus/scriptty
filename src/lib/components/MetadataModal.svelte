@@ -7,6 +7,7 @@
 
   // Local form state — initialized from document meta when modal opens
   let title = $state('');
+  let episodeTitle = $state('');
   let tagline = $state('');
   let author = $state('');
   let director = $state('');
@@ -18,12 +19,18 @@
   let titleTouched = $state(false);
 
   let titleInvalid = $derived(!title.trim());
+  let isSeries = $derived(documentStore.isSeries);
 
-  // When modal opens, populate form from current document meta
+  // When modal opens, populate form from the active meta (series → active
+  // episode, film → top-level). For series, also pull the episode's short
+  // title (`ep.title`) into a dedicated field so the writer can edit it
+  // here rather than only through the Scene Navigator rename affordance.
   $effect(() => {
-    if (open && documentStore.document) {
-      const meta = documentStore.document.meta;
+    if (open) {
+      const meta = documentStore.activeMeta;
+      if (!meta) return;
       title = meta.title || '';
+      episodeTitle = documentStore.activeEpisode?.title || '';
       tagline = meta.tagline || '';
       author = meta.author || '';
       director = meta.director || '';
@@ -38,16 +45,25 @@
   function handleSave() {
     titleTouched = true;
     if (titleInvalid) return;
-    if (documentStore.document) {
-      documentStore.document.meta.title = title.trim();
-      documentStore.document.meta.tagline = tagline.trim();
-      documentStore.document.meta.author = author;
-      documentStore.document.meta.director = director;
-      documentStore.document.meta.contact = contact;
-      documentStore.document.meta.registration_number = registrationNumber.trim();
-      documentStore.document.meta.footnote = footnote.trim();
-      documentStore.document.meta.draft_number = draftNumber;
-      documentStore.document.meta.draft_date = draftDate;
+    const meta = documentStore.activeMeta;
+    if (meta) {
+      meta.title = title.trim();
+      meta.tagline = tagline.trim();
+      meta.author = author;
+      meta.director = director;
+      meta.contact = contact;
+      meta.registration_number = registrationNumber.trim();
+      meta.footnote = footnote.trim();
+      meta.draft_number = draftNumber;
+      meta.draft_date = draftDate;
+      if (isSeries) {
+        // Write the short episode label back to `ep.title` — this is what
+        // Scene Navigator shows and what series PDF exports use as the
+        // per-episode heading, independent from `meta.title` (which drives
+        // the title page).
+        const ep = documentStore.activeEpisode;
+        if (ep) ep.title = episodeTitle.trim();
+      }
       documentStore.markDirty();
     }
     open = false;
@@ -79,6 +95,14 @@
         <button class="btn-close" onclick={handleCancel}>&times;</button>
       </div>
 
+      {#if documentStore.isSeries}
+        <div class="series-context">
+          <span class="series-context-label">Series</span>
+          <span class="series-context-value">{documentStore.document?.series?.title || 'Untitled Series'}</span>
+          <span class="series-context-ep">· Episode {documentStore.activeEpisode?.number ?? ''}</span>
+        </div>
+      {/if}
+
       <div class="form-group">
         <label for="meta-title">Title <span class="required">*</span></label>
         <input
@@ -86,7 +110,7 @@
           type="text"
           bind:value={title}
           onblur={() => (titleTouched = true)}
-          placeholder="e.g. The Great Screenplay"
+          placeholder={isSeries ? 'Used on this episode\u2019s title page' : 'e.g. The Great Screenplay'}
           required
           aria-required="true"
           aria-invalid={titleTouched && titleInvalid}
@@ -96,6 +120,18 @@
           <span class="error-text" role="alert">Title is required.</span>
         {/if}
       </div>
+
+      {#if isSeries}
+        <div class="form-group">
+          <label for="meta-episode-title">Episode Title</label>
+          <input
+            id="meta-episode-title"
+            type="text"
+            bind:value={episodeTitle}
+            placeholder="Short label shown in the Scene Navigator and combined export header"
+          />
+        </div>
+      {/if}
 
       <div class="form-group">
         <label for="meta-tagline">Tagline</label>
@@ -184,6 +220,36 @@
       opacity: 1;
       transform: scale(1);
     }
+  }
+
+  .series-context {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 8px 10px;
+    margin: -8px 0 16px;
+    background: var(--surface-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    font-size: 11.5px;
+    color: var(--text-secondary);
+  }
+
+  .series-context-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+  }
+
+  .series-context-value {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .series-context-ep {
+    color: var(--text-muted);
   }
 
   .modal-header {

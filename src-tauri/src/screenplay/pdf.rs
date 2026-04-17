@@ -61,7 +61,12 @@ enum ScreenplayGroup {
     /// Rendered inside `#block(breakable: false)[...]` to prevent orphaning.
     SceneBlock {
         heading_text: String,
+        /// Scene number to *display* (may reset to 1 at episode boundaries in series exports)
         scene_number: u32,
+        /// 0-based absolute scene index across the whole document — never resets.
+        /// Used for `scene_characters[idx]` lookup so per-episode counter resets
+        /// don't collide the mapping.
+        scene_index: usize,
         /// Typst inline markup of the first action (preserves bold formatting)
         first_action_typst: Option<String>,
     },
@@ -94,6 +99,11 @@ fn group_elements(elements: Vec<ScreenplayElement>, scene_number_start: u32) -> 
     // Start scene numbering from the configured offset minus 1, because
     // the counter is incremented before use (so first scene = scene_number_start).
     let mut scene_number: u32 = scene_number_start - 1;
+    // Absolute scene index in document order (0-based). Unlike `scene_number`
+    // this one never resets at episode boundaries — it's the stable key we use
+    // to look up per-scene data (characters list, etc.) from the flat
+    // `scene_characters` vector built in document order.
+    let mut scene_index: usize = 0;
 
     // `elements.len()` returns the number of items. We use `while i < len`
     // instead of `for` so we can increment `i` by more than 1 when consuming.
@@ -101,6 +111,8 @@ fn group_elements(elements: Vec<ScreenplayElement>, scene_number_start: u32) -> 
         match elements[i].element_type.as_str() {
             "scene_heading" => {
                 scene_number += 1;
+                let this_scene_index = scene_index;
+                scene_index += 1;
                 let heading_text = elements[i].text.clone();
 
                 // Peek at the next element — if it's an action, consume it
@@ -117,8 +129,21 @@ fn group_elements(elements: Vec<ScreenplayElement>, scene_number_start: u32) -> 
                 groups.push(ScreenplayGroup::SceneBlock {
                     heading_text,
                     scene_number,
+                    scene_index: this_scene_index,
                     first_action_typst,
                 });
+            }
+            "episode_boundary" => {
+                // Series exports inject this synthetic node between adjacent
+                // episodes. We render it as a Standalone (handled in the
+                // rendering match) and reset the displayed scene counter so
+                // the next episode starts fresh at `scene_number_start`.
+                scene_number = scene_number_start - 1;
+                groups.push(ScreenplayGroup::Standalone(ScreenplayElement {
+                    element_type: elements[i].element_type.clone(),
+                    text: elements[i].text.clone(),
+                    typst_inline: elements[i].typst_inline.clone(),
+                }));
             }
             "character" => {
                 let name = elements[i].text.clone();
@@ -791,6 +816,7 @@ pub fn generate_typst_markup(
             ScreenplayGroup::SceneBlock {
                 heading_text,
                 scene_number,
+                scene_index,
                 first_action_typst,
             } => {
                 let escaped_heading = escape_typst(heading_text);
@@ -808,13 +834,13 @@ pub fn generate_typst_markup(
                     escaped_heading.to_uppercase()
                 ));
                 // Emit the characters list directly under the heading (when enabled).
-                // `scene_number - scene_number_start` maps the 1-based scene number
-                // back to a 0-based index into `scene_characters`.
+                // Use the absolute `scene_index` (document order) so series
+                // exports that reset `scene_number` per episode still hit the
+                // correct entry in the flat `scene_characters` vector.
                 // Styling: small-caps-feel uppercase label + regular-weight names,
                 // matching the on-screen editor treatment for visual consistency.
                 if characters_below_heading {
-                    let idx = (*scene_number).saturating_sub(scene_number_start) as usize;
-                    if let Some(chars) = scene_characters.get(idx) {
+                    if let Some(chars) = scene_characters.get(*scene_index) {
                         if !chars.is_empty() {
                             block.push_str(&format!(
                                 "  #v(0.3em)\n  #text(size: 9pt, tracking: 0.12em, weight: \"bold\", fill: luma(40%))[CHARACTERS]#h(0.6em)#text(size: 10pt, fill: luma(30%))[{}]\n",
@@ -895,6 +921,18 @@ pub fn generate_typst_markup(
                         // Bold is not meaningful here since transitions are always uppercase styled
                         format!(
                             "#v(1em)\n#align(right)[{}]\n",
+                            escaped.to_uppercase()
+                        )
+                    }
+                    "episode_boundary" => {
+                        // Series export: weak pagebreak (no-op if already on a
+                        // fresh page, so the first episode's title doesn't
+                        // create a blank leader after the title page) + large
+                        // centred episode title. The counter reset happens in
+                        // `group_elements`, so the next scene_heading renders
+                        // with the fresh number.
+                        format!(
+                            "#pagebreak(weak: true)\n#v(4em)\n#align(center)[#text(weight: \"bold\", size: 16pt)[{}]]\n#v(2em)\n\n",
                             escaped.to_uppercase()
                         )
                     }
@@ -1206,6 +1244,10 @@ pub fn generate_indian_markup(
     // Track scene numbers for the heading labels.
     // Start from scene_number_start - 1 because the counter is incremented before use.
     let mut scene_number: u32 = scene_number_start - 1;
+    // Absolute scene index in document order — used for `scene_characters`
+    // lookup so per-episode resets of `scene_number` don't alias two different
+    // scenes onto the same index.
+    let mut abs_scene_idx: usize = 0;
 
     for (heading, body) in &scenes {
         // --- Scene heading rendering ---
@@ -1213,6 +1255,10 @@ pub fn generate_indian_markup(
         // the heading doesn't get orphaned at the bottom of a page.
         if let Some(heading_text) = heading {
             scene_number += 1;
+            // Capture and advance the absolute scene index so the lookup below
+            // uses the stable document-order index for this particular scene.
+            let this_scene_idx = abs_scene_idx;
+            abs_scene_idx += 1;
 
             // If page-break-after-scene is enabled, insert a page break before
             // every scene except the first one.
@@ -1233,9 +1279,8 @@ pub fn generate_indian_markup(
             // can reuse it. Empty string when the option is off or the scene
             // has no speaking characters — callers just concat it in.
             let characters_line = if characters_below_heading {
-                let idx = scene_number.saturating_sub(scene_number_start) as usize;
                 scene_characters
-                    .get(idx)
+                    .get(this_scene_idx)
                     .filter(|s| !s.is_empty())
                     .map(|s| format!(
                         "#text(size: 8pt, tracking: 0.12em, weight: \"bold\", fill: luma(40%))[CHARACTERS]#h(0.5em)#text(size: 9pt, fill: luma(30%))[{}]\n\n",
@@ -1446,6 +1491,28 @@ pub fn generate_indian_markup(
                         "#align(right)[{}]\n\n",
                         escaped.to_uppercase()
                     ));
+                }
+                "episode_boundary" => {
+                    // Series export boundary: flush any in-flight character
+                    // block, drop a page break, and stamp the episode title
+                    // centred at the top of the fresh page. Resetting
+                    // `scene_number` here means the next scene_heading renders
+                    // as the first scene of the new episode.
+                    if let Some(char_name) = pending_character.take() {
+                        let escaped_name = escape_typst(&char_name);
+                        char_block_rows.push(format!(
+                            "#grid(\n  columns: (50%, 50%),\n  column-gutter: 1em,\n  align(right)[#pad(right: 0.5em)[*{}*]],\n  [#pad(left: 0.5em)[]]\n)\n",
+                            escaped_name.to_uppercase()
+                        ));
+                    }
+                    flush_char_block!(markup, char_block_rows);
+
+                    let escaped = escape_typst(&element.text);
+                    markup.push_str(&format!(
+                        "#pagebreak(weak: true)\n#v(4em)\n#align(center)[#text(weight: \"bold\", size: 16pt)[{}]]\n#v(2em)\n\n",
+                        escaped.to_uppercase()
+                    ));
+                    scene_number = scene_number_start - 1;
                 }
                 _ => {
                     // Unknown element types are skipped silently.

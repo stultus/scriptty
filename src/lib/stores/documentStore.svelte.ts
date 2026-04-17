@@ -83,6 +83,44 @@ export interface ScreenplayDocument {
   scene_cards: SceneCard[];
 }
 
+/** Convert a ProseMirror-ish content payload into canonical
+ *  `{type:'doc', content:[...]}` shape. Accepts three inputs:
+ *    - an already-canonical doc (returned unchanged),
+ *    - a flat `[{type, text}, ...]` array (wrapped into a doc with each node's
+ *      text promoted to an inline `{type:'text', text}` child),
+ *    - a single block node (wrapped into a doc).
+ *
+ *  Mirrors the Editor's own `normalizeProseMirrorDoc` so readers in the store
+ *  layer (Scene Navigator, Scene Cards, PDF export) see the same shape the
+ *  Editor does — without pulling ProseMirror into the store module. */
+function normalizeContentPayload(content: unknown): unknown {
+  const emptyDoc = { type: 'doc', content: [] as unknown[] };
+  if (!content) return emptyDoc;
+  const wrapNode = (raw: unknown): unknown => {
+    if (!raw || typeof raw !== 'object') return null;
+    const node = raw as { type?: string; text?: unknown; content?: unknown };
+    if (typeof node.type !== 'string') return null;
+    if (Array.isArray(node.content)) return node;
+    if (typeof node.text === 'string') {
+      const text = node.text;
+      const inline = text.length > 0 ? [{ type: 'text', text }] : [];
+      return { type: node.type, content: inline };
+    }
+    return { type: node.type, content: [] };
+  };
+  if (Array.isArray(content)) {
+    const children = content.map(wrapNode).filter((n): n is object => n !== null);
+    return { type: 'doc', content: children };
+  }
+  if (typeof content === 'object') {
+    const obj = content as { type?: string; content?: unknown };
+    if (obj.type === 'doc') return content;
+    const wrapped = wrapNode(content);
+    return { type: 'doc', content: wrapped ? [wrapped] : [] };
+  }
+  return emptyDoc;
+}
+
 /** Reactive document store — tracks the open file, its path, and dirty state */
 class DocumentStore {
   document = $state<ScreenplayDocument | null>(null);
@@ -160,6 +198,18 @@ class DocumentStore {
     if (!this.document) return [];
     if (this.isSeries) return this.activeEpisode?.scene_cards ?? [];
     return this.document.scene_cards;
+  }
+
+  /** Replace the active scene_cards array. Needed by flows that rebuild the
+   *  list after a reorder/delete rather than mutating in place. */
+  setActiveSceneCards(cards: SceneCard[]): void {
+    if (!this.document) return;
+    if (this.isSeries) {
+      const ep = this.activeEpisode;
+      if (ep) ep.scene_cards = cards;
+    } else {
+      this.document.scene_cards = cards;
+    }
   }
 
   /** Switch which episode is active in the editor. Bumps `loadTrigger` so
@@ -338,6 +388,18 @@ class DocumentStore {
   async openDocument(path: string): Promise<void> {
     try {
       const doc = await invoke<ScreenplayDocument>('open_screenplay', { path });
+      // Normalize every content payload into canonical ProseMirror shape
+      // before anything else reads it. Slim-format files (series authored
+      // by hand, Fountain-like episode blocks) can store content as a flat
+      // [{type,text},...] array — the Editor's own normalizer handles it on
+      // load, but the Scene Navigator / Scene Cards read content straight
+      // from the store and would otherwise find no `content.content` to walk.
+      doc.content = normalizeContentPayload(doc.content);
+      if (doc.type === 'series' && doc.series) {
+        for (const ep of doc.series.episodes) {
+          ep.content = normalizeContentPayload(ep.content);
+        }
+      }
       this.document = doc;
       this.currentPath = path;
       this.isDirty = false;
@@ -389,12 +451,20 @@ class DocumentStore {
     return this.document?.settings.font ?? 'manjari';
   }
 
-  /** Update the font setting and mark the document as dirty */
+  /** Update the font setting and mark the document as dirty.
+   *  Font is a series-wide choice, so we mirror it into every episode's
+   *  settings alongside the top-level doc settings. Without the mirror,
+   *  series exports (which read the first episode's settings) would keep
+   *  rendering in the stale default font. */
   setFont(font: string): void {
-    if (this.document) {
-      this.document.settings.font = font;
-      this.isDirty = true;
+    if (!this.document) return;
+    this.document.settings.font = font;
+    if (this.document.type === 'series' && this.document.series) {
+      for (const ep of this.document.series.episodes) {
+        ep.settings.font = font;
+      }
     }
+    this.isDirty = true;
   }
 
   /** Mark the document as having unsaved changes */
@@ -450,6 +520,33 @@ class DocumentStore {
     if (!this.document) return '';
     if (this.isSeries) return this.document.series?.title ?? '';
     return this.document.meta.title ?? '';
+  }
+
+  /** A film-shaped view of the current working unit, suitable for passing to
+   *  the Rust export pipeline. For a film project this is the document
+   *  itself; for a series it's a shallow film-shaped wrapper around the
+   *  active episode, with the series title prefixed into the meta.title so
+   *  the title page shows both. Returns null if no document is open. */
+  get activeExportDocument(): ScreenplayDocument | null {
+    const doc = this.document;
+    if (!doc) return null;
+    if (!this.isSeries) return doc;
+    const ep = this.activeEpisode;
+    if (!ep) return doc;
+    const seriesTitle = doc.series?.title ?? '';
+    const epTitle = ep.title.trim();
+    const composedTitle = epTitle
+      ? (seriesTitle ? `${seriesTitle} — Ep ${ep.number}: ${epTitle}` : `Ep ${ep.number}: ${epTitle}`)
+      : (seriesTitle ? `${seriesTitle} — Ep ${ep.number}` : `Episode ${ep.number}`);
+    return {
+      type: 'film',
+      series: null,
+      content: ep.content,
+      meta: { ...ep.meta, title: ep.meta.title || composedTitle },
+      settings: ep.settings,
+      story: ep.story,
+      scene_cards: ep.scene_cards,
+    };
   }
 }
 

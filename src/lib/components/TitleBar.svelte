@@ -15,6 +15,11 @@
 
   // Derived display title — shows document title, or filename, or "Untitled"
   let displayTitle = $derived.by(() => {
+    // Series projects show the series title, not the per-episode title —
+    // the episode label renders separately below.
+    if (documentStore.isSeries) {
+      return documentStore.document?.series?.title || 'Untitled Series';
+    }
     const title = documentStore.document?.meta.title;
     if (title) return title;
     const path = documentStore.currentPath;
@@ -23,6 +28,15 @@
       return filename.replace(/\.screenplay$/, '');
     }
     return 'Untitled';
+  });
+
+  // Episode badge — only shown for series projects.
+  let episodeLabel = $derived.by(() => {
+    if (!documentStore.isSeries) return '';
+    const ep = documentStore.activeEpisode;
+    if (!ep) return '';
+    const name = ep.title.trim();
+    return name ? `Ep ${ep.number} · ${name}` : `Ep ${ep.number}`;
   });
 
   // Two-phase flag: `visible` drives CSS opacity so Svelte can transition
@@ -87,6 +101,9 @@
 
   <div class="title-zone">
     <span class="title">{displayTitle}</span>
+    {#if episodeLabel}
+      <span class="episode-label" title="Active episode">{episodeLabel}</span>
+    {/if}
     {#if documentStore.isDirty}
       <span class="dirty-dot" title="Unsaved changes"></span>
     {/if}
@@ -180,6 +197,21 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .episode-label {
+    display: inline-block;
+    padding: 1px 7px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    font-size: 10.5px;
+    color: var(--text-muted);
+    background: var(--surface-base);
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .dirty-dot {

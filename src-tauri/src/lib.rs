@@ -46,7 +46,8 @@ pub fn run() {
         &[
           // MenuItem::with_id creates a menu item with a custom ID we can match on later.
           // Args: app handle, id, display text, enabled, optional keyboard accelerator.
-          &MenuItem::with_id(app, "new", "New", true, Some("CmdOrCtrl+N"))?,
+          &MenuItem::with_id(app, "new-film", "New Film", true, Some("CmdOrCtrl+N"))?,
+          &MenuItem::with_id(app, "new-series", "New Series", true, Some("CmdOrCtrl+Shift+N"))?,
           &MenuItem::with_id(app, "open", "Open...", true, Some("CmdOrCtrl+O"))?,
           &PredefinedMenuItem::separator(app)?,
           &MenuItem::with_id(app, "save", "Save", true, Some("CmdOrCtrl+S"))?,
@@ -133,7 +134,8 @@ pub fn run() {
         // `let _ = ...` discards the Result — if emit fails, we silently ignore it
         // (there's no meaningful recovery for a failed emit).
         match event.id().as_ref() {
-          "new" => { let _ = app.emit("menu-new", ()); }
+          "new-film" => { let _ = app.emit("menu-new-film", ()); }
+          "new-series" => { let _ = app.emit("menu-new-series", ()); }
           "open" => { let _ = app.emit("menu-open", ()); }
           "save" => { let _ = app.emit("menu-save", ()); }
           "save-as" => { let _ = app.emit("menu-save-as", ()); }

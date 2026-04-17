@@ -51,15 +51,19 @@
   let listEl = $state<HTMLUListElement | null>(null);
 
   // Extract scene headings from the ProseMirror JSON document.
+  // Reads the *active* content — top-level for films, active episode for series —
+  // so this component works for both project shapes without branching.
   let scenes = $derived.by(() => {
     const doc = documentStore.document;
-    if (!doc || !doc.content) return [];
+    if (!doc) return [];
+    const rawContent = documentStore.activeContent;
+    if (!rawContent) return [];
 
-    const content = doc.content as { type?: string; content?: Array<{ type?: string; content?: Array<{ text?: string }> }> };
+    const content = rawContent as { type?: string; content?: Array<{ type?: string; content?: Array<{ text?: string }> }> };
     if (!content.content) return [];
 
     const entries: SceneEntry[] = [];
-    const startNum = doc.settings?.scene_number_start ?? 1;
+    const startNum = documentStore.activeSettings?.scene_number_start ?? 1;
     let sceneNumber = startNum - 1;
 
     // Accumulate body character count for the current scene so we can emit

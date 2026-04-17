@@ -570,6 +570,11 @@ pub fn generate_title_page_markup(meta: &ScreenplayMeta, page_numbers: bool) -> 
     }
 
     // --- Centered section: title + credit lines ---
+    // Wrap in `#block(breakable: false)` so a long title + many credit lines
+    // can never silently split across two pages. If the content truly
+    // overflows the title page, Typst will emit a warning — preferable to
+    // a halved title page that a writer might not notice.
+    page.push_str("  #block(breakable: false, width: 100%)[\n");
     page.push_str("  #align(center)[\n");
     page.push_str("    #v(8cm)\n");
     // Escape the title so any Typst special characters (like # or $) are rendered literally.
@@ -603,6 +608,7 @@ pub fn generate_title_page_markup(meta: &ScreenplayMeta, page_numbers: bool) -> 
     }
 
     page.push_str("  ]\n"); // close #align(center)
+    page.push_str("  ]\n"); // close #block(breakable: false)
 
     // --- Bottom-left section: contact info + draft line ---
     // Only show if at least one of contact or draft info is present.

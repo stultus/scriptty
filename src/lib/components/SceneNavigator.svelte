@@ -6,11 +6,43 @@
   import { screenplaySchema } from '$lib/editor/schema';
 
   // Scene heading extracted from ProseMirror JSON content
+  type SetLocation = 'INT' | 'EXT' | 'INT_EXT' | null;
+  type TimeOfDay = 'DAY' | 'NIGHT' | 'DAWN' | 'DUSK' | 'EVENING' | 'MORNING' | 'AFTERNOON' | 'CONTINUOUS' | 'LATER' | null;
   interface SceneEntry {
     number: number;
     text: string;
     // Index of this scene_heading in the top-level content array
     index: number;
+    setting: SetLocation;
+    time: TimeOfDay;
+    /** "0.8" — one decimal place, always 0.1 minimum */
+    pages: string;
+  }
+
+  /** Extract INT/EXT prefix from the heading text. */
+  function parseSetting(heading: string): SetLocation {
+    const h = heading.trim().toUpperCase();
+    if (/^INT\.?\/EXT\.?\b|^I\/E\b/.test(h)) return 'INT_EXT';
+    if (/^INT\.?\b/.test(h)) return 'INT';
+    if (/^EXT\.?\b/.test(h)) return 'EXT';
+    return null;
+  }
+
+  /** Extract time-of-day, if present, from the heading's trailing segment. */
+  function parseTime(heading: string): TimeOfDay {
+    // Take the last segment after the final dash-like separator.
+    const segments = heading.split(/\s[-–—]\s|\s-\s/);
+    const tail = segments[segments.length - 1]?.trim().toUpperCase() ?? '';
+    if (/\bNIGHT\b/.test(tail)) return 'NIGHT';
+    if (/\bDAWN\b/.test(tail)) return 'DAWN';
+    if (/\bDUSK\b/.test(tail)) return 'DUSK';
+    if (/\bEVENING\b/.test(tail)) return 'EVENING';
+    if (/\bMORNING\b/.test(tail)) return 'MORNING';
+    if (/\bAFTERNOON\b/.test(tail)) return 'AFTERNOON';
+    if (/\bCONTINUOUS\b/.test(tail)) return 'CONTINUOUS';
+    if (/\bLATER\b/.test(tail)) return 'LATER';
+    if (/\bDAY\b/.test(tail)) return 'DAY';
+    return null;
   }
 
   // Drag state — managed via mousedown/mousemove/mouseup on the drag handle
@@ -30,22 +62,43 @@
     const startNum = doc.settings?.scene_number_start ?? 1;
     let sceneNumber = startNum - 1;
 
+    // Accumulate body character count for the current scene so we can emit
+    // a page estimate at the same moment we emit the next scene's entry.
+    let currentEntry: SceneEntry | null = null;
+    let currentChars = 0;
+
+    const nodeText = (n: { content?: Array<{ text?: string }> }): string =>
+      (n.content ?? []).map((c) => c.text ?? '').join('');
+
+    const finalize = () => {
+      if (currentEntry) {
+        const pages = Math.max(0.1, currentChars / 3000);
+        currentEntry.pages = pages.toFixed(1);
+      }
+    };
+
     content.content.forEach((node, index) => {
       if (node.type === 'scene_heading') {
+        finalize();
         sceneNumber++;
-        let text = '';
-        if (node.content) {
-          text = node.content
-            .map((child) => child.text ?? '')
-            .join('');
-        }
-        entries.push({
+        const text = nodeText(node) || '(empty)';
+        currentEntry = {
           number: sceneNumber,
-          text: text || '(empty)',
+          text,
           index,
-        });
+          setting: parseSetting(text),
+          time: parseTime(text),
+          pages: '0.1',
+        };
+        entries.push(currentEntry);
+        // Include the heading text itself in the page count for the scene
+        // so a scene with only a heading still registers a non-trivial size.
+        currentChars = text.length;
+      } else if (currentEntry) {
+        currentChars += nodeText(node).length;
       }
     });
+    finalize();
 
     return entries;
   });
@@ -342,7 +395,66 @@
             onclick={() => scrollToScene(scene.index)}
           >
             <span class="scene-number">{scene.number}.</span>
+            {#if scene.setting === 'INT'}
+              <span class="signal signal-setting" title="Interior" aria-label="Interior">
+                <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M2 6 L7 2 L12 6 L12 12 L2 12 Z"/>
+                  <line x1="7" y1="8" x2="7" y2="12"/>
+                </svg>
+              </span>
+            {:else if scene.setting === 'EXT'}
+              <span class="signal signal-setting" title="Exterior" aria-label="Exterior">
+                <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="7" cy="6" r="2.2"/>
+                  <line x1="7" y1="1.5" x2="7" y2="3"/>
+                  <line x1="7" y1="9" x2="7" y2="10.5"/>
+                  <line x1="1.5" y1="6" x2="3" y2="6"/>
+                  <line x1="11" y1="6" x2="12.5" y2="6"/>
+                  <line x1="3.3" y1="2.3" x2="4.3" y2="3.3"/>
+                  <line x1="9.7" y1="8.7" x2="10.7" y2="9.7"/>
+                  <line x1="3.3" y1="9.7" x2="4.3" y2="8.7"/>
+                  <line x1="9.7" y1="3.3" x2="10.7" y2="2.3"/>
+                </svg>
+              </span>
+            {:else if scene.setting === 'INT_EXT'}
+              <span class="signal signal-setting" title="Interior / Exterior" aria-label="Interior and exterior">
+                <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M1.5 7 L5 4 L8.5 7 L8.5 12 L1.5 12 Z"/>
+                  <circle cx="11" cy="4" r="1.6"/>
+                </svg>
+              </span>
+            {/if}
+            {#if scene.time === 'NIGHT' || scene.time === 'DUSK' || scene.time === 'EVENING'}
+              <span class="signal signal-time" title={scene.time} aria-label={scene.time.toLowerCase()}>
+                <svg width="10" height="10" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
+                  <path d="M11.5 8.5 A5 5 0 1 1 5.5 2.5 A4 4 0 0 0 11.5 8.5 Z"/>
+                </svg>
+              </span>
+            {:else if scene.time === 'DAWN' || scene.time === 'MORNING'}
+              <span class="signal signal-time time-warm" title={scene.time} aria-label={scene.time.toLowerCase()}>
+                <svg width="10" height="10" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true">
+                  <circle cx="7" cy="9" r="2.4"/>
+                  <line x1="1" y1="12" x2="13" y2="12"/>
+                  <line x1="2.8" y1="6.5" x2="4" y2="7.5"/>
+                  <line x1="11.2" y1="6.5" x2="10" y2="7.5"/>
+                </svg>
+              </span>
+            {:else if scene.time === 'DAY' || scene.time === 'AFTERNOON'}
+              <span class="signal signal-time time-warm" title={scene.time} aria-label={scene.time.toLowerCase()}>
+                <svg width="10" height="10" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
+                  <circle cx="7" cy="7" r="3"/>
+                </svg>
+              </span>
+            {:else if scene.time === 'CONTINUOUS' || scene.time === 'LATER'}
+              <span class="signal signal-time" title={scene.time} aria-label={scene.time.toLowerCase()}>
+                <svg width="10" height="10" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="7" cy="7" r="5"/>
+                  <polyline points="7,4 7,7 9,8.5"/>
+                </svg>
+              </span>
+            {/if}
             <span class="scene-text">{scene.text.toUpperCase()}</span>
+            <span class="page-pill" title="~{scene.pages} pages">{scene.pages}p</span>
           </button>
         </li>
       {/each}
@@ -519,5 +631,53 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Setting/time signals — subtle glyphs that help a writer scan the
+     outline spatially. Muted at rest so they never out-shout the heading
+     text; strengthen slightly on hover together with the row. */
+  .signal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    color: var(--text-muted);
+    opacity: 0.65;
+    transition: opacity 120ms ease, color 120ms ease;
+  }
+
+  .scene-item:hover .signal {
+    opacity: 1;
+  }
+
+  .signal-time.time-warm {
+    color: var(--accent-warm);
+  }
+
+  /* Page pill — sits at the far right of the row, always visible so the
+     writer can see at a glance which scenes are heavy. Tabular nums keep
+     "0.8p" and "1.2p" vertically aligned across rows. */
+  .page-pill {
+    flex-shrink: 0;
+    margin-left: auto;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: var(--surface-base);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.4;
+    letter-spacing: 0.02em;
+  }
+
+  .scene-item:hover .page-pill {
+    background: var(--surface-float);
+    color: var(--text-secondary);
   }
 </style>

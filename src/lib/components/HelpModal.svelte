@@ -112,7 +112,7 @@
 
           <div class="toc-footer">
             <button class="about-link" onclick={handleAboutClick}>About Scriptty</button>
-            <span class="toc-footer-version">v0.5.2</span>
+            <span class="toc-footer-version">v0.6.0</span>
           </div>
         </nav>
 

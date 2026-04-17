@@ -1,9 +1,5 @@
 <script lang="ts">
   import { documentStore } from '$lib/stores/documentStore.svelte';
-  import { editorStore } from '$lib/stores/editorStore.svelte';
-  import { themeStore } from '$lib/stores/themeStore.svelte';
-  import { toggleMark } from 'prosemirror-commands';
-  import { screenplaySchema } from '$lib/editor/schema';
   import ExportModal from './ExportModal.svelte';
 
   let {
@@ -17,19 +13,6 @@
   }>();
 
   let showExport = $state(false);
-
-  // Track which marks are active at the current cursor position.
-  // Updated whenever the editor selection changes via editorStore.markState.
-  let isBoldActive = $derived(editorStore.markState.bold);
-  let isItalicActive = $derived(editorStore.markState.italic);
-  let isUnderlineActive = $derived(editorStore.markState.underline);
-
-  function applyMark(markName: 'bold' | 'italic' | 'underline') {
-    const view = editorStore.view;
-    if (!view) return;
-    toggleMark(screenplaySchema.marks[markName])(view.state, view.dispatch);
-    view.focus();
-  }
 
   // Derived display title — shows document title, or filename, or "Untitled"
   let displayTitle = $derived.by(() => {
@@ -101,29 +84,6 @@
     >
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
     </button>
-    {#if activeView === 'writing'}
-      <span class="separator"></span>
-      <div class="format-group">
-        <button
-          class="btn-format"
-          class:active={isBoldActive}
-          onclick={() => applyMark('bold')}
-          title="Bold (⌘B)"
-        ><span class="fmt-bold">B</span></button>
-        <button
-          class="btn-format"
-          class:active={isItalicActive}
-          onclick={() => applyMark('italic')}
-          title="Italic (⌘I)"
-        ><span class="fmt-italic">I</span></button>
-        <button
-          class="btn-format"
-          class:active={isUnderlineActive}
-          onclick={() => applyMark('underline')}
-          title="Underline (⌘U)"
-        ><span class="fmt-underline">U</span></button>
-      </div>
-    {/if}
   </div>
 
   <div class="title-zone">
@@ -189,8 +149,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 40px;
-    padding: 0 12px;
+    height: 32px;
+    padding: 0 10px;
     background: var(--surface-elevated);
     border-bottom: 1px solid var(--border-subtle);
     font-family: system-ui, -apple-system, sans-serif;
@@ -306,9 +266,9 @@
 
   /* ─── Ghost button ─── */
   .btn-ghost {
-    height: 28px;
+    height: 24px;
     padding: 0 10px;
-    border-radius: 6px;
+    border-radius: 5px;
     border: none;
     background: transparent;
     color: var(--text-secondary);
@@ -327,9 +287,9 @@
 
   /* ─── Primary button (Save) ─── */
   .btn-primary {
-    height: 28px;
+    height: 24px;
     padding: 0 12px;
-    border-radius: 6px;
+    border-radius: 5px;
     border: none;
     background: var(--accent);
     color: var(--text-on-accent);
@@ -344,9 +304,9 @@
 
   /* ─── Icon button (theme toggle) ─── */
   .btn-icon {
-    height: 28px;
-    padding: 0 8px;
-    border-radius: 6px;
+    height: 24px;
+    padding: 0 6px;
+    border-radius: 5px;
     border: none;
     background: transparent;
     color: var(--text-muted);
@@ -361,68 +321,4 @@
     color: var(--text-primary);
   }
 
-  /* ─── Separator between sidebar toggle and format buttons ─── */
-  .separator {
-    width: 1px;
-    height: 16px;
-    background: var(--border-subtle);
-    margin: 0 4px;
-  }
-
-  /* ─── Format button group (B, I, U) — tighter spacing ─── */
-  .format-group {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-  }
-
-  /* ─── Format buttons ─── */
-  .btn-format {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    border: none;
-    background: transparent;
-    color: var(--text-muted);
-    font-size: 13px;
-    font-family: system-ui, -apple-system, sans-serif;
-    cursor: pointer;
-    transition: background 120ms ease, color 120ms ease;
-  }
-
-  .btn-format:hover {
-    background: var(--surface-hover);
-    color: var(--text-primary);
-  }
-
-  .btn-format:active {
-    background: var(--surface-active);
-  }
-
-  .btn-format.active {
-    background: var(--accent-muted);
-    color: var(--accent);
-  }
-
-  .btn-format.active:hover {
-    background: var(--accent-muted);
-  }
-
-  /* Format label styling — using CSS instead of HTML tags to avoid
-     browser default style interference */
-  .fmt-bold {
-    font-weight: 700;
-  }
-
-  .fmt-italic {
-    font-style: italic;
-  }
-
-  .fmt-underline {
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
 </style>

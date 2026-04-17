@@ -13,6 +13,7 @@
   import { characterListPlugin, characterListKey } from '$lib/editor/characterList';
   import { findReplacePlugin } from '$lib/editor/findReplace';
   import FindReplaceBar from '$lib/components/FindReplaceBar.svelte';
+  import FormatBubble from '$lib/components/FormatBubble.svelte';
   import { InputModeManager } from '$lib/editor/input/InputModeManager';
   import { documentStore } from '$lib/stores/documentStore.svelte';
   import { editorStore } from '$lib/stores/editorStore.svelte';
@@ -634,6 +635,7 @@
     </div>
   </div>
 
+  <FormatBubble />
 </div>
 
 <style>

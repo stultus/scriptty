@@ -806,14 +806,28 @@
     margin-bottom: 0.5em;
     color: var(--text-on-page);
     counter-increment: scene-counter;
+    position: relative;
   }
 
+  /* Signature gutter scene number — floats into the left margin, italic
+     display style, right-aligned so two- and three-digit numbers sit on
+     the same rail. Sits inside the page's 72px left padding. */
   :global(.ProseMirror .scene-heading::before) {
-    content: counter(scene-counter) ". ";
+    content: counter(scene-counter);
+    position: absolute;
+    left: -56px;
+    width: 40px;
+    top: 0.1em;
+    text-align: right;
+    font-family: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 13px;
     color: var(--text-muted);
-    font-size: 16px;
-    font-weight: bold;
-    margin-right: 4px;
+    opacity: 0.75;
+    letter-spacing: 0.01em;
+    pointer-events: none;
+    user-select: none;
   }
 
   :global(.ProseMirror .scene-characters-line) {

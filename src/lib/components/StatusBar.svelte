@@ -1,5 +1,6 @@
 <script lang="ts">
   import { InputModeManager } from '$lib/editor/input/InputModeManager';
+  import { documentStore } from '$lib/stores/documentStore.svelte';
   import SettingsModal from './SettingsModal.svelte';
 
   let {
@@ -22,6 +23,41 @@
     return inputManager.subscribe(() => {
       isMalayalam = inputManager.isMalayalam;
     });
+  });
+
+  // A ticking clock that re-renders the "Saved N min ago" label. Using a
+  // reactive tick keeps the relative time honest without the label ever
+  // going stale while the app sits idle. 20s cadence is granular enough
+  // for minute-level copy and cheap enough to ignore.
+  let nowTick = $state(Date.now());
+  $effect(() => {
+    const id = setInterval(() => { nowTick = Date.now(); }, 20_000);
+    return () => clearInterval(id);
+  });
+
+  function formatRelative(from: number, now: number): string {
+    const diffMs = Math.max(0, now - from);
+    const sec = Math.floor(diffMs / 1000);
+    if (sec < 10) return 'Saved just now';
+    if (sec < 60) return `Saved ${sec}s ago`;
+    const min = Math.floor(sec / 60);
+    if (min < 60) return `Saved ${min} min ago`;
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return `Saved ${hr} hr ago`;
+    const day = Math.floor(hr / 24);
+    return `Saved ${day}d ago`;
+  }
+
+  let saveLabel = $derived.by(() => {
+    if (documentStore.isDirty) return 'Unsaved changes';
+    if (documentStore.lastSavedAt === null) return '';
+    return formatRelative(documentStore.lastSavedAt, nowTick);
+  });
+
+  let saveState = $derived.by<'dirty' | 'saved' | 'idle'>(() => {
+    if (documentStore.isDirty) return 'dirty';
+    if (documentStore.lastSavedAt !== null) return 'saved';
+    return 'idle';
   });
 </script>
 
@@ -50,6 +86,12 @@
     </span>
   </div>
   <div class="status-right">
+    {#if saveLabel}
+      <span class="status-save" data-state={saveState} title={saveState === 'dirty' ? 'You have unsaved changes — ⌘S to save' : 'Last successful save'}>
+        <span class="status-save-dot" aria-hidden="true"></span>
+        {saveLabel}
+      </span>
+    {/if}
     {#if rightContent}
       {@render rightContent()}
     {/if}
@@ -119,5 +161,38 @@
   .settings-btn:hover {
     color: var(--text-primary);
     background: var(--surface-hover);
+  }
+
+  .status-save {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    transition: color 160ms ease;
+  }
+
+  .status-save-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    transition: background 160ms ease, box-shadow 160ms ease;
+  }
+
+  .status-save[data-state='saved'] {
+    color: var(--text-secondary);
+  }
+  .status-save[data-state='saved'] .status-save-dot {
+    background: var(--success);
+  }
+
+  .status-save[data-state='dirty'] {
+    color: var(--accent-warm);
+  }
+  .status-save[data-state='dirty'] .status-save-dot {
+    background: var(--accent-warm);
+    box-shadow: 0 0 0 3px var(--accent-warm-muted);
   }
 </style>

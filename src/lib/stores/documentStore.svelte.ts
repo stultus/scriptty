@@ -55,6 +55,11 @@ class DocumentStore {
   currentPath = $state<string | null>(null);
   isDirty = $state(false);
 
+  /** Timestamp (ms since epoch) of the last successful save. Null until the
+   *  document has been saved at least once this session. Consumed by the
+   *  status bar to render "Saved 2 min ago" relative time. */
+  lastSavedAt = $state<number | null>(null);
+
   /** Incremented only on newDocument() and openDocument() — signals the editor
    *  to reload its ProseMirror state. Not incremented by setContent(). */
   loadTrigger = $state(0);
@@ -71,6 +76,7 @@ class DocumentStore {
       this.document = doc;
       this.currentPath = null;
       this.isDirty = false;
+      this.lastSavedAt = null;
       this.loadedContent = doc.content;
       this.loadTrigger++;
     } catch (error) {
@@ -87,6 +93,7 @@ class DocumentStore {
       await invoke('save_screenplay', { path: savePath, document: this.document });
       this.currentPath = savePath;
       this.isDirty = false;
+      this.lastSavedAt = Date.now();
 
       // If no explicit title set, derive it from the filename
       if (!this.document.meta.title) {
@@ -105,6 +112,7 @@ class DocumentStore {
       this.document = doc;
       this.currentPath = path;
       this.isDirty = false;
+      this.lastSavedAt = null;
       this.loadedContent = doc.content;
       this.loadTrigger++;
     } catch (error) {

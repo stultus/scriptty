@@ -168,6 +168,7 @@
             <kbd>Shift+Tab</kbd> converts the current element back to Action (or Scene Heading if already Action, Dialogue if in Parenthetical).</p>
 
             <p><strong>Jump to element type:</strong> <kbd>Cmd+1</kbd> Scene Heading · <kbd>Cmd+2</kbd> Action · <kbd>Cmd+3</kbd> Character · <kbd>Cmd+4</kbd> Dialogue. Converts the current block in place.</p>
+            <p class="hint">On Linux, if your desktop already uses <kbd>Ctrl+1..4</kbd> for workspace switching, the same actions are also bound to <kbd>Ctrl+Alt+1..4</kbd>.</p>
 
             <p><strong>Dialogue loop:</strong> Character → Dialogue → Character flows continuously. Press <kbd>Enter</kbd> on an empty Character to break out to Action. Press <kbd>Enter</kbd> on an empty Dialogue to return to the Character above.</p>
             <p><strong>Paragraph splitting:</strong> Press <kbd>Enter</kbd> in the middle of an Action element to split it into two paragraphs.</p>

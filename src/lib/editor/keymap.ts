@@ -5,7 +5,8 @@
 //   Shift+Enter   → create new scene_heading below (universal "new scene" shortcut)
 //   Tab           → cycle element type: action→character, dialogue→parenthetical, parenthetical→character, character→action
 //   Shift+Tab     → revert to action (from character/dialogue), or action→scene_heading at cursor pos 0
-//   Mod+1..4      → convert current block to scene_heading / action / character / dialogue
+//   Mod+1..4       → convert current block to scene_heading / action / character / dialogue
+//   Mod+Alt+1..4   → same, alternative chord for Linux DEs where Super/Ctrl+1..4 is reserved
 //   Shift+Mod+T   → convert current element to transition
 //   Mod+Z         → undo
 //   Shift+Mod+Z   → redo
@@ -294,10 +295,17 @@ export const screenplayKeymap = keymap({
 	'Shift-Tab': handleShiftTab,
 	Backspace: handleBackspace,
 	'Shift-Mod-t': handleModT,
+	// Mod+1..4 on macOS, Mod+Alt+1..4 as a cross-platform alternative —
+	// many Linux DEs (GNOME, KDE) reserve Super/Ctrl+1..4 for workspace
+	// switching and swallow the chord before ProseMirror sees it.
 	'Mod-1': convertCurrentBlockTo('scene_heading'),
 	'Mod-2': convertCurrentBlockTo('action'),
 	'Mod-3': convertCurrentBlockTo('character'),
 	'Mod-4': convertCurrentBlockTo('dialogue'),
+	'Mod-Alt-1': convertCurrentBlockTo('scene_heading'),
+	'Mod-Alt-2': convertCurrentBlockTo('action'),
+	'Mod-Alt-3': convertCurrentBlockTo('character'),
+	'Mod-Alt-4': convertCurrentBlockTo('dialogue'),
 	'Mod-z': undo,
 	'Shift-Mod-z': redo,
 	'Mod-b': toggleMark(screenplaySchema.marks.bold),

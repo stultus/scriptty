@@ -17,6 +17,25 @@
   import { InputModeManager } from '$lib/editor/input/InputModeManager';
   import { documentStore } from '$lib/stores/documentStore.svelte';
   import { editorStore } from '$lib/stores/editorStore.svelte';
+  import { message } from '@tauri-apps/plugin-dialog';
+
+  // Parse a stored ProseMirror JSON payload back into a document node,
+  // or fall back to a fresh empty doc if the payload is corrupted. A
+  // hand-edited .screenplay, a partial-write from a crash, or a schema
+  // change in a future version could all make fromJSON throw; without
+  // this guard the editor fails to mount and the whole file is unusable.
+  function safeDocFromJSON(content: unknown): ProseMirrorNode {
+    try {
+      return ProseMirrorNode.fromJSON(screenplaySchema, content as Record<string, unknown>);
+    } catch (err) {
+      console.error('[Editor] Failed to parse document content — falling back to empty doc', err);
+      message(
+        "This .screenplay file couldn't be parsed — it may be corrupted or from a newer version of Scriptty. The editor has started with a blank document so you can save under a new name without overwriting the original.",
+        { title: 'Could not load document', kind: 'warning' }
+      ).catch(() => {});
+      return createInitialDoc();
+    }
+  }
 
   let {
     findReplaceOpen = $bindable(false),
@@ -406,14 +425,7 @@
 
     if (!view) return;
 
-    let newDoc;
-    if (content !== null) {
-      // Parse the stored ProseMirror JSON back into a document node
-      newDoc = ProseMirrorNode.fromJSON(screenplaySchema, content as Record<string, unknown>);
-    } else {
-      // New or empty document — start with a fresh scene_heading
-      newDoc = createInitialDoc();
-    }
+    const newDoc = content !== null ? safeDocFromJSON(content) : createInitialDoc();
 
     const newState = EditorState.create({
       doc: newDoc,
@@ -436,9 +448,7 @@
     // Restore the document from the store if it exists (e.g. returning from Scene Cards).
     // Fall back to a fresh empty doc for first launch.
     const content = documentStore.document?.content;
-    const initialDoc = content
-      ? ProseMirrorNode.fromJSON(screenplaySchema, content as Record<string, unknown>)
-      : createInitialDoc();
+    const initialDoc = content ? safeDocFromJSON(content) : createInitialDoc();
 
     const state = EditorState.create({
       doc: initialDoc,

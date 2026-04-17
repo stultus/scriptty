@@ -60,7 +60,10 @@ pub struct ScreenplaySettings {
     /// Starting scene number — useful when co-writing and this file covers
     /// a specific range of scenes (e.g. 34–44). Defaults to 1.
     /// Uses `default` so old .screenplay files without this field still load.
-    #[serde(default = "default_scene_number_start")]
+    /// A custom `deserialize_with` clamps the stored value to 1..=9999 so a
+    /// hand-edited 0, negative cast, or absurdly large value can't make the
+    /// PDF pipeline's `saturating_sub` silently drop scene character lists.
+    #[serde(default = "default_scene_number_start", deserialize_with = "deserialize_scene_number_start")]
     pub scene_number_start: u32,
     /// When true, the editor shows an auto-generated "characters: …" line
     /// below each scene heading listing every character who speaks in that
@@ -73,6 +76,25 @@ pub struct ScreenplaySettings {
 /// when the field is missing from an old .screenplay file.
 fn default_scene_number_start() -> u32 {
     1
+}
+
+/// Clamp `scene_number_start` to a sane range on deserialize.
+///
+/// The upper bound (9999) is well above anything a real screenplay needs and
+/// keeps downstream index math comfortably below `u32::MAX`. The lower bound
+/// (1) guarantees the scene counter never pre-decrements into overflow via
+/// the `scene_number_start - 1` expression used in the PDF pipeline.
+/// `deserialize_with` is serde's hook for running custom logic in the middle
+/// of field-level deserialize; we accept the raw `u32`, then clamp.
+fn deserialize_scene_number_start<'de, D>(deserializer: D) -> Result<u32, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    // Accept the raw value first, then clamp. If the JSON holds a negative
+    // or a number larger than u32 can represent, serde itself errors out —
+    // that's fine; the outer load path falls back to defaults on parse error.
+    let raw = u32::deserialize(deserializer)?;
+    Ok(raw.clamp(1, 9999))
 }
 
 impl Default for ScreenplaySettings {

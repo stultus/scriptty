@@ -12,6 +12,9 @@
   let contact = $state('');
   let draftNumber = $state(1);
   let draftDate = $state('');
+  let titleTouched = $state(false);
+
+  let titleInvalid = $derived(!title.trim());
 
   // When modal opens, populate form from current document meta
   $effect(() => {
@@ -27,8 +30,10 @@
   });
 
   function handleSave() {
+    titleTouched = true;
+    if (titleInvalid) return;
     if (documentStore.document) {
-      documentStore.document.meta.title = title;
+      documentStore.document.meta.title = title.trim();
       documentStore.document.meta.author = author;
       documentStore.document.meta.director = director;
       documentStore.document.meta.contact = contact;
@@ -66,8 +71,21 @@
       </div>
 
       <div class="form-group">
-        <label for="meta-title">Title</label>
-        <input id="meta-title" type="text" bind:value={title} placeholder="Untitled Screenplay" />
+        <label for="meta-title">Title <span class="required">*</span></label>
+        <input
+          id="meta-title"
+          type="text"
+          bind:value={title}
+          onblur={() => (titleTouched = true)}
+          placeholder="e.g. The Great Screenplay"
+          required
+          aria-required="true"
+          aria-invalid={titleTouched && titleInvalid}
+          class:invalid={titleTouched && titleInvalid}
+        />
+        {#if titleTouched && titleInvalid}
+          <span class="error-text" role="alert">Title is required.</span>
+        {/if}
       </div>
 
       <div class="form-group">
@@ -98,7 +116,13 @@
 
       <div class="modal-footer">
         <button class="btn-ghost" onclick={handleCancel}>Cancel</button>
-        <button class="btn-primary" onclick={handleSave}>Save</button>
+        <button
+          class="btn-primary"
+          onclick={handleSave}
+          disabled={titleInvalid}
+          aria-disabled={titleInvalid}
+          title={titleInvalid ? 'Title is required' : 'Save'}
+        >Save</button>
       </div>
     </div>
   </div>
@@ -203,6 +227,22 @@
   .form-group textarea:focus {
     outline: none;
     border-color: var(--accent);
+  }
+
+  .form-group input.invalid {
+    border-color: var(--error);
+  }
+
+  .form-group .required {
+    color: var(--error);
+    margin-left: 2px;
+  }
+
+  .form-group .error-text {
+    display: block;
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--error);
   }
 
   .form-group textarea {

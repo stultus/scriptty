@@ -486,7 +486,7 @@
 
   .switch[aria-checked="true"] .switch-thumb {
     transform: translateX(16px);
-    background: #fff;
+    background: var(--text-on-accent);
   }
 
   .switch:focus-visible {

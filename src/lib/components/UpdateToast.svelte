@@ -124,7 +124,7 @@
 
   .update-actions .primary {
     background: var(--accent);
-    color: #ffffff;
+    color: var(--text-on-accent);
   }
 
   .update-actions .primary:hover {

@@ -470,7 +470,7 @@
 
   .empty-cta:hover {
     background: var(--accent);
-    color: #fff;
+    color: var(--text-on-accent);
   }
 
   .scene-list {

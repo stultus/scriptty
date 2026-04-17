@@ -382,7 +382,7 @@
     border-radius: 6px;
     border: none;
     background: var(--accent);
-    color: #fff;
+    color: var(--text-on-accent);
     font-size: 12px;
     font-family: system-ui, -apple-system, sans-serif;
     cursor: pointer;

@@ -406,7 +406,7 @@
   }
 
   .tiny-btn.danger:hover:not(:disabled) {
-    color: #c44;
+    color: var(--error);
   }
 
   .tiny-btn:disabled {

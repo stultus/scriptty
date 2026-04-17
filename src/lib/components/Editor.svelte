@@ -26,7 +26,8 @@
   // this guard the editor fails to mount and the whole file is unusable.
   function safeDocFromJSON(content: unknown): ProseMirrorNode {
     try {
-      return ProseMirrorNode.fromJSON(screenplaySchema, content as Record<string, unknown>);
+      const migrated = migrateParensInJSON(content);
+      return ProseMirrorNode.fromJSON(screenplaySchema, migrated as Record<string, unknown>);
     } catch (err) {
       console.error('[Editor] Failed to parse document content — falling back to empty doc', err);
       message(
@@ -35,6 +36,53 @@
       ).catch(() => {});
       return createInitialDoc();
     }
+  }
+
+  // Walk ProseMirror JSON and make sure every parenthetical node contains
+  // its own parens as real text content. Earlier versions rendered them via
+  // CSS pseudo-elements, so legacy files stored text like "whispering"
+  // instead of "(whispering)" — which broke Find, copy-paste, and screen
+  // readers (issue #59). This is a pure JSON rewrite: no schema change,
+  // returns a new tree, never mutates the input.
+  function migrateParensInJSON(content: unknown): unknown {
+    if (!content || typeof content !== 'object') return content;
+    const node = content as { type?: string; content?: unknown[]; [k: string]: unknown };
+
+    if (node.type === 'parenthetical') {
+      const inline = Array.isArray(node.content) ? (node.content as Array<{ type?: string; text?: string }>) : [];
+      // Flatten text to test for existing parens; marks on inline children
+      // are preserved below by only editing the first/last text nodes.
+      const flat = inline.map((c) => c.text ?? '').join('');
+      const trimmed = flat.trim();
+      if (trimmed.length === 0) {
+        // Empty parens render as "()" — matches what the old CSS showed and
+        // keeps the node self-describing.
+        return { ...node, content: [{ type: 'text', text: '()' }] };
+      }
+      if (!trimmed.startsWith('(') || !trimmed.endsWith(')')) {
+        const firstText = inline.findIndex((c) => c.type === 'text' && (c.text ?? '').length > 0);
+        const lastText = (() => {
+          for (let i = inline.length - 1; i >= 0; i--) {
+            if (inline[i].type === 'text' && (inline[i].text ?? '').length > 0) return i;
+          }
+          return -1;
+        })();
+        const next = inline.map((c, i) => {
+          if (i !== firstText && i !== lastText) return c;
+          let text = c.text ?? '';
+          if (i === firstText && !text.trimStart().startsWith('(')) text = '(' + text;
+          if (i === lastText && !text.trimEnd().endsWith(')')) text = text + ')';
+          return { ...c, text };
+        });
+        return { ...node, content: next };
+      }
+    }
+
+    if (Array.isArray(node.content)) {
+      const next = node.content.map((child) => migrateParensInJSON(child));
+      return { ...node, content: next };
+    }
+    return node;
   }
 
   let {
@@ -956,14 +1004,6 @@
     opacity: 0.6;
     font-style: italic;
     font-size: 0.92em;
-  }
-
-  :global(.ProseMirror .parenthetical::before) {
-    content: "(";
-  }
-
-  :global(.ProseMirror .parenthetical::after) {
-    content: ")";
   }
 
   :global(.ProseMirror .parenthetical br.ProseMirror-trailingBreak) {

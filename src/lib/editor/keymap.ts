@@ -12,8 +12,9 @@
 //   Shift+Mod+Z   → redo
 
 import { keymap } from 'prosemirror-keymap';
-import { type Command, TextSelection, type EditorState } from 'prosemirror-state';
-import type { NodeType } from 'prosemirror-model';
+import { type Command, TextSelection, type EditorState, type Transaction } from 'prosemirror-state';
+import type { NodeType, Node as ProseNode } from 'prosemirror-model';
+import { Fragment } from 'prosemirror-model';
 import { undo, redo } from 'prosemirror-history';
 import { toggleMark } from 'prosemirror-commands';
 import { screenplaySchema } from './schema';
@@ -134,6 +135,112 @@ const handleEnter: Command = (state, dispatch) => {
 };
 
 /**
+ * Replace the inline content of the block at `blockPos` with `newContent`,
+ * preserving the node's type and attrs. Returns the updated transaction.
+ * Used when switching into or out of a parenthetical so the parens live in
+ * the actual content rather than in CSS (issue #59).
+ */
+function replaceBlockContent(tr: Transaction, blockPos: number, block: ProseNode, newContent: Fragment): Transaction {
+	const from = blockPos + 1;
+	const to = blockPos + 1 + block.content.size;
+	return tr.replaceWith(from, to, newContent);
+}
+
+/**
+ * Wrap a block's inline content in `(` and `)` if they aren't already there.
+ * Keeps existing marks by only editing the first and last text leaves.
+ * Caller is responsible for placing the selection afterward.
+ */
+function wrapInParens(tr: Transaction, blockPos: number, block: ProseNode): Transaction {
+	const schema = block.type.schema;
+	const text = block.textContent;
+
+	if (text.length === 0) {
+		// Seed an empty parenthetical as "()" so the node renders correctly
+		// without relying on CSS pseudo-elements.
+		return replaceBlockContent(tr, blockPos, block, Fragment.from(schema.text('()')));
+	}
+
+	const startsOk = text.trimStart().startsWith('(');
+	const endsOk = text.trimEnd().endsWith(')');
+	if (startsOk && endsOk) return tr;
+
+	// Collect inline children and patch only the first/last text leaves so
+	// marks (bold/italic/underline) on the middle text survive the wrap.
+	const children: ProseNode[] = [];
+	block.content.forEach((n) => children.push(n));
+
+	let firstIdx = -1;
+	let lastIdx = -1;
+	for (let i = 0; i < children.length; i++) {
+		if (children[i].isText && (children[i].text ?? '').length > 0) {
+			if (firstIdx === -1) firstIdx = i;
+			lastIdx = i;
+		}
+	}
+
+	const patched = children.map((child, i) => {
+		if (!child.isText) return child;
+		let t = child.text ?? '';
+		if (i === firstIdx && !startsOk) t = '(' + t;
+		if (i === lastIdx && !endsOk) t = t + ')';
+		return t === child.text ? child : schema.text(t, child.marks);
+	});
+
+	return replaceBlockContent(tr, blockPos, block, Fragment.fromArray(patched));
+}
+
+/**
+ * Strip a single leading `(` and trailing `)` from a block's content, if
+ * present. Used when converting away from a parenthetical so the parens
+ * don't leak into dialogue/character/action text.
+ */
+function stripParens(tr: Transaction, blockPos: number, block: ProseNode): Transaction {
+	const schema = block.type.schema;
+	const text = block.textContent;
+	if (!text.trimStart().startsWith('(') && !text.trimEnd().endsWith(')')) return tr;
+
+	const children: ProseNode[] = [];
+	block.content.forEach((n) => children.push(n));
+
+	let firstIdx = -1;
+	let lastIdx = -1;
+	for (let i = 0; i < children.length; i++) {
+		if (children[i].isText && (children[i].text ?? '').length > 0) {
+			if (firstIdx === -1) firstIdx = i;
+			lastIdx = i;
+		}
+	}
+
+	const patched: ProseNode[] = [];
+	for (let i = 0; i < children.length; i++) {
+		const child = children[i];
+		if (!child.isText) {
+			patched.push(child);
+			continue;
+		}
+		let t = child.text ?? '';
+		if (i === firstIdx) {
+			const ltrim = t.trimStart();
+			if (ltrim.startsWith('(')) {
+				const lead = t.slice(0, t.length - ltrim.length);
+				t = lead + ltrim.slice(1);
+			}
+		}
+		if (i === lastIdx) {
+			const rtrim = t.trimEnd();
+			if (rtrim.endsWith(')')) {
+				const tail = t.slice(rtrim.length);
+				t = rtrim.slice(0, -1) + tail;
+			}
+		}
+		if (t.length > 0) patched.push(schema.text(t, child.marks));
+	}
+
+	return replaceBlockContent(tr, blockPos, block, Fragment.fromArray(patched));
+}
+
+/**
  * Tab key handler: changes the current node's type in-place (no new node created).
  */
 const handleTab: Command = (state, dispatch) => {
@@ -159,7 +266,29 @@ const handleTab: Command = (state, dispatch) => {
 		// $from.before() is the position of the current block node in the document.
 		// setNodeMarkup changes the node's type without altering its content.
 		const pos = $from.before();
-		const tr = state.tr.setNodeMarkup(pos, targetType);
+		let tr = state.tr.setNodeMarkup(pos, targetType);
+
+		// Parenthetical parens live in the content, not in CSS (issue #59).
+		if (typeName === 'dialogue' && targetType === screenplaySchema.nodes.parenthetical) {
+			const block = tr.doc.nodeAt(pos);
+			if (block) {
+				const wasEmpty = block.content.size === 0;
+				tr = wrapInParens(tr, pos, block);
+				// After wrapping, place the cursor in a helpful spot: between the
+				// parens when the node was empty, just inside the `)` otherwise.
+				const patched = tr.doc.nodeAt(pos);
+				if (patched) {
+					const target = wasEmpty
+						? pos + 2 // just after `(` in `()`
+						: pos + 1 + patched.content.size - 1; // just before `)`
+					tr = tr.setSelection(TextSelection.create(tr.doc, target));
+				}
+			}
+		} else if (typeName === 'parenthetical') {
+			const block = tr.doc.nodeAt(pos);
+			if (block) tr = stripParens(tr, pos, block);
+		}
+
 		tr.scrollIntoView();
 		dispatch(tr);
 	}
@@ -208,7 +337,11 @@ const handleShiftTab: Command = (state, dispatch) => {
 		if (dispatch) {
 			const $from = state.selection.$from;
 			const pos = $from.before();
-			const tr = state.tr.setNodeMarkup(pos, screenplaySchema.nodes.dialogue);
+			let tr = state.tr.setNodeMarkup(pos, screenplaySchema.nodes.dialogue);
+			// Parens live in the content for parentheticals; strip them when
+			// leaving so dialogue doesn't inherit the visual wrappers.
+			const block = tr.doc.nodeAt(pos);
+			if (block) tr = stripParens(tr, pos, block);
 			tr.scrollIntoView();
 			dispatch(tr);
 		}
@@ -277,10 +410,17 @@ function convertCurrentBlockTo(typeName: keyof typeof screenplaySchema.nodes): C
 		const target = screenplaySchema.nodes[typeName];
 		if (!target) return false;
 		// Skip the work (but still consume the keystroke) when already that type
-		if (currentNodeTypeName(state) === typeName) return true;
+		const currentTypeName = currentNodeTypeName(state);
+		if (currentTypeName === typeName) return true;
 		if (dispatch) {
 			const pos = state.selection.$from.before();
-			const tr = state.tr.setNodeMarkup(pos, target);
+			let tr = state.tr.setNodeMarkup(pos, target);
+			// Leaving a parenthetical via a direct shortcut should strip the
+			// stored parens so they don't leak into the new element's text.
+			if (currentTypeName === 'parenthetical' && typeName !== 'parenthetical') {
+				const block = tr.doc.nodeAt(pos);
+				if (block) tr = stripParens(tr, pos, block);
+			}
 			tr.scrollIntoView();
 			dispatch(tr);
 		}

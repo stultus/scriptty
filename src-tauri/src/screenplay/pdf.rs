@@ -735,7 +735,7 @@ pub fn generate_typst_markup(
 
 #set page(paper: "a4", margin: (top: 2.5cm, bottom: 2.5cm, left: 3.81cm, right: 2.5cm){})
 #set text(font: "{}", size: 12pt, lang: "ml", hyphenate: true)
-#set par(leading: 0.85em, spacing: 1.2em, first-line-indent: 0pt, justify: false, linebreaks: "optimized")
+#set par(leading: 0.8em, spacing: 1.2em, first-line-indent: 0pt, justify: false, linebreaks: "optimized")
 
 "#,
         numbering_opts, font_name
@@ -1134,7 +1134,7 @@ pub fn generate_indian_markup(
 
 #set page(paper: "a4", margin: (top: 2cm, bottom: 2cm, left: 2cm, right: 2cm){})
 #set text(font: "{}", size: 11pt, lang: "ml", hyphenate: true)
-#set par(leading: 0.6em, justify: false, linebreaks: "optimized")
+#set par(leading: 0.8em, justify: false, linebreaks: "optimized")
 
 "#,
         numbering_opts, font_name

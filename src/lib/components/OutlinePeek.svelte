@@ -86,7 +86,7 @@
     <span class="position" aria-live="polite">
       {#if currentIndex >= 0}
         Scene <strong>{scenes[currentIndex]?.number ?? currentIndex + 1}</strong>
-        of {scenes.length}
+        of {scenes[scenes.length - 1].number}
       {:else}
         {scenes.length} scene{scenes.length === 1 ? '' : 's'}
       {/if}

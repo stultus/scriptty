@@ -896,8 +896,9 @@
   :global(.ProseMirror .transition) {
     text-align: right;
     margin-top: 1em;
-    color: var(--text-on-page);
-    opacity: 0.7;
+    color: var(--accent-deep);
+    letter-spacing: 0.08em;
+    font-weight: 600;
   }
 
 

@@ -55,6 +55,17 @@
     --accent-hover: #35b5a2;
     --accent-muted: rgba(45, 155, 138, 0.15);
 
+    /* Warm companion — amber, evokes Kerala lamp-light. Used for
+       badges, save-success, subtle highlights. Same hue family as
+       --dirty, so dirty indicator stays coherent. */
+    --accent-warm: #e8a04a;
+    --accent-warm-muted: rgba(232, 160, 74, 0.15);
+
+    /* Deep companion — oxblood / kumkumam. Used for transitions,
+       destructive confirms, and emphatic moments. */
+    --accent-deep: #9b3a3a;
+    --accent-deep-muted: rgba(155, 58, 58, 0.15);
+
     /* State colors */
     --dirty: #e8a04a;
     --error: #c0574a;
@@ -100,6 +111,12 @@
     --accent: #1e8070;
     --accent-hover: #237a6a;
     --accent-muted: rgba(30, 128, 112, 0.1);
+
+    --accent-warm: #b76d0f;
+    --accent-warm-muted: rgba(183, 109, 15, 0.12);
+
+    --accent-deep: #7a2b2b;
+    --accent-deep-muted: rgba(122, 43, 43, 0.12);
 
     --dirty: #b76d0f;
     --error: #a83c30;

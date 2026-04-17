@@ -231,7 +231,7 @@
     align-items: center;
     gap: 4px;
     font-size: 11px;
-    color: var(--accent);
+    color: var(--accent-warm);
     letter-spacing: 0.02em;
     opacity: 0;
     transform: translateY(-2px);
@@ -245,7 +245,7 @@
   }
 
   .status-tick {
-    color: var(--accent);
+    color: var(--accent-warm);
     flex-shrink: 0;
   }
 

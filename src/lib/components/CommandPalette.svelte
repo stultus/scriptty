@@ -29,6 +29,13 @@
   let inputEl: HTMLInputElement | undefined = $state();
   let listEl: HTMLDivElement | undefined = $state();
 
+  // Track the last mouse position so we can distinguish real cursor motion
+  // from pseudo-hover events that fire when the list scrolls under a
+  // stationary cursor. Without this, pressing ArrowDown would scroll the
+  // list, trigger mouseenter on whichever row slid under the cursor, and
+  // snap the selection back — fighting the keyboard.
+  let lastPointer = { x: -1, y: -1 };
+
   let filtered = $derived.by(() => {
     const q = query.trim().toLowerCase();
     if (!q) return commands;
@@ -155,7 +162,11 @@
               class:selected={idx === selectedIdx}
               data-idx={idx}
               onclick={() => run(cmd)}
-              onmouseenter={() => { selectedIdx = idx; }}
+              onmousemove={(e) => {
+                if (e.clientX === lastPointer.x && e.clientY === lastPointer.y) return;
+                lastPointer = { x: e.clientX, y: e.clientY };
+                selectedIdx = idx;
+              }}
               role="option"
               aria-selected={idx === selectedIdx}
             >

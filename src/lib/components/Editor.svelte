@@ -458,6 +458,18 @@
       // Store the view in editorStore so other components can access it
       // (we set editorStore.view right after the constructor returns — see below)
       state,
+      // Turn off every native text-input assist macOS / webkit layers on top
+      // of a contenteditable. Spellcheck, autocorrect, smart quotes, and the
+      // text-replacement popup all intercept the writer's keystrokes and
+      // collide with Malayalam input — we own the editing surface fully,
+      // so none of these are useful and the popups are a visible distraction.
+      attributes: {
+        spellcheck: 'false',
+        autocorrect: 'off',
+        autocapitalize: 'off',
+        autocomplete: 'off',
+        translate: 'no',
+      },
       dispatchTransaction(tr) {
         if (!view) return;
         const newState = view.state.apply(tr);

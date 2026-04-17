@@ -21,25 +21,28 @@
   let titleInvalid = $derived(!title.trim());
   let isSeries = $derived(documentStore.isSeries);
 
-  // When modal opens, populate form from the active meta (series → active
-  // episode, film → top-level). For series, also pull the episode's short
-  // title (`ep.title`) into a dedicated field so the writer can edit it
-  // here rather than only through the Scene Navigator rename affordance.
+  // Populate the form from the active meta (series → active episode,
+  // film → top-level) on open, and re-populate if the writer switches
+  // episodes while the modal is still open — reading activeEpisode?.id
+  // inside the effect makes it a dependency so Svelte reruns the block
+  // on episode change, not just on the open → true transition.
   $effect(() => {
-    if (open) {
-      const meta = documentStore.activeMeta;
-      if (!meta) return;
-      title = meta.title || '';
-      episodeTitle = documentStore.activeEpisode?.title || '';
-      tagline = meta.tagline || '';
-      author = meta.author || '';
-      director = meta.director || '';
-      contact = meta.contact || '';
-      registrationNumber = meta.registration_number || '';
-      footnote = meta.footnote || '';
-      draftNumber = meta.draft_number || 1;
-      draftDate = meta.draft_date || '';
-    }
+    if (!open) return;
+    const activeEpId = documentStore.activeEpisode?.id;
+    void activeEpId; // explicit dependency on the active episode
+    const meta = documentStore.activeMeta;
+    if (!meta) return;
+    title = meta.title || '';
+    episodeTitle = documentStore.activeEpisode?.title || '';
+    tagline = meta.tagline || '';
+    author = meta.author || '';
+    director = meta.director || '';
+    contact = meta.contact || '';
+    registrationNumber = meta.registration_number || '';
+    footnote = meta.footnote || '';
+    draftNumber = meta.draft_number || 1;
+    draftDate = meta.draft_date || '';
+    titleTouched = false;
   });
 
   function handleSave() {

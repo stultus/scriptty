@@ -482,6 +482,11 @@
       </div>
 
       {#if isSeriesProject}
+        <div class="series-context">
+          <span class="series-context-label">Series</span>
+          <span class="series-context-value">{documentStore.document?.series?.title || 'Untitled Series'}</span>
+          <span class="series-context-ep">· Episode {documentStore.activeEpisode?.number ?? ''}{documentStore.activeEpisode?.title ? ` — ${documentStore.activeEpisode.title}` : ''}</span>
+        </div>
         <div class="section-label">Scope</div>
         <div class="radio-group">
           <label class="radio-row">
@@ -708,6 +713,39 @@
     font-size: 15px;
     color: var(--text-primary);
     font-weight: 600;
+  }
+
+  /* Mirror MetadataModal's series-context chip so writers always see which
+     episode the export scope refers to when editing a series project. */
+  .series-context {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 8px 10px;
+    margin: -8px 0 16px;
+    background: var(--surface-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+  }
+
+  .series-context-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+  }
+
+  .series-context-value {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .series-context-ep {
+    color: var(--text-muted);
   }
 
   .btn-close {

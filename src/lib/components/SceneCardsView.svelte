@@ -730,17 +730,19 @@
     border-radius: 4px;
     cursor: pointer;
     flex-shrink: 0;
-    opacity: 0;
+    opacity: 0.4;
     transition: background 120ms ease, color 120ms ease, opacity 120ms ease;
   }
 
-  .card:hover .card-delete {
+  .card:hover .card-delete,
+  .card-delete:focus-visible {
     opacity: 1;
   }
 
   .card-delete:hover {
     background: var(--accent-muted);
     color: var(--accent);
+    opacity: 1;
   }
 
   .card-delete:focus-visible {

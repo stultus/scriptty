@@ -112,6 +112,7 @@ pub fn run() {
         &[
           &MenuItem::with_id(app, "about", "About Scriptty", true, None::<&str>)?,
           &MenuItem::with_id(app, "help-guide", "How to Use Scriptty", true, None::<&str>)?,
+          &MenuItem::with_id(app, "check-updates", "Check for Updates…", true, None::<&str>)?,
           &PredefinedMenuItem::separator(app)?,
           &MenuItem::with_id(app, "report-issue", "Report an Issue", true, None::<&str>)?,
           &MenuItem::with_id(app, "view-github", "View on GitHub", true, None::<&str>)?,
@@ -137,6 +138,7 @@ pub fn run() {
           "save-as" => { let _ = app.emit("menu-save-as", ()); }
           "about" => { let _ = app.emit("menu-about", ()); }
           "help-guide" => { let _ = app.emit("menu-help-guide", ()); }
+          "check-updates" => { let _ = app.emit("menu-check-updates", ()); }
           "statistics" => { let _ = app.emit("menu-statistics", ()); }
           "scene-cards" => { let _ = app.emit("menu-scene-cards", ()); }
           "story-mode" => { let _ = app.emit("menu-story-mode", ()); }

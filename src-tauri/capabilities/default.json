@@ -15,7 +15,10 @@
     "dialog:allow-confirm",
     "fs:allow-write-file",
     "fs:allow-write-text-file",
-    "opener:allow-open-url",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [{ "url": "https://*" }, { "url": "http://*" }]
+    },
     "deep-link:default"
   ]
 }

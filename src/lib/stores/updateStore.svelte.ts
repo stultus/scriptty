@@ -7,39 +7,30 @@ interface UpdateInfo {
 }
 
 const DOWNLOADS_URL = 'https://stultus.in/scriptty/downloads.json';
-const DISMISSED_KEY = 'scriptty-update-dismissed-version';
 
 class UpdateStore {
 	available = $state<UpdateInfo | null>(null);
 
-	async check(): Promise<void> {
+	async check(): Promise<'update' | 'current' | 'error'> {
 		try {
 			const currentVersion = await getVersion();
 			const res = await fetch(DOWNLOADS_URL, { cache: 'no-store' });
-			if (!res.ok) return;
+			if (!res.ok) return 'error';
 			const data = (await res.json()) as { version?: string; release_url?: string };
-			if (!data.version || !data.release_url) return;
-			if (compareVersions(data.version, currentVersion) <= 0) return;
-			if (
-				typeof localStorage !== 'undefined' &&
-				localStorage.getItem(DISMISSED_KEY) === data.version
-			) {
-				return;
-			}
+			if (!data.version || !data.release_url) return 'error';
+			if (compareVersions(data.version, currentVersion) <= 0) return 'current';
 			this.available = {
 				currentVersion,
 				latestVersion: data.version,
 				releaseUrl: data.release_url
 			};
+			return 'update';
 		} catch {
-			// Offline or fetch blocked — stay silent so the app remains fully usable.
+			return 'error';
 		}
 	}
 
 	dismiss(): void {
-		if (this.available && typeof localStorage !== 'undefined') {
-			localStorage.setItem(DISMISSED_KEY, this.available.latestVersion);
-		}
 		this.available = null;
 	}
 }

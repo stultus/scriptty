@@ -3,7 +3,7 @@
   import { invoke } from '@tauri-apps/api/core';
   import { listen } from '@tauri-apps/api/event';
   import { getCurrentWindow } from '@tauri-apps/api/window';
-  import { open } from '@tauri-apps/plugin-dialog';
+  import { open, message } from '@tauri-apps/plugin-dialog';
   import { getCurrent as getDeepLinkUrls, onOpenUrl } from '@tauri-apps/plugin-deep-link';
   import Editor from '$lib/components/Editor.svelte';
   import TitleBar from '$lib/components/TitleBar.svelte';
@@ -223,6 +223,21 @@
 
       unlistens.push(await listen('menu-help-guide', () => {
         showHelp = true;
+      }));
+
+      unlistens.push(await listen('menu-check-updates', async () => {
+        const result = await updateStore.check();
+        if (result === 'current') {
+          await message("You're on the latest version of Scriptty.", {
+            title: 'No updates available',
+            kind: 'info'
+          });
+        } else if (result === 'error') {
+          await message('Could not reach the update server. Check your internet connection and try again.', {
+            title: 'Update check failed',
+            kind: 'warning'
+          });
+        }
       }));
 
       unlistens.push(await listen('menu-statistics', () => {

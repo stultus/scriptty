@@ -30,10 +30,24 @@ export class InputModeManager {
   /** The Mozhi transliteration engine instance — stateful, tracks recent output */
   private mozhiEngine: MozhiEngine;
 
+  // Subscribers notified whenever isMalayalam or scheme changes. Lets the
+  // StatusBar (and anything else showing mode) stay in sync without polling.
+  private listeners: Set<() => void> = new Set();
+
   // "private constructor" prevents anyone from calling `new InputModeManager()` directly.
   // They must use getInstance() instead, ensuring only one instance ever exists.
   private constructor() {
     this.mozhiEngine = new MozhiEngine();
+  }
+
+  /** Register a change listener. Returns a function that removes it. */
+  subscribe(fn: () => void): () => void {
+    this.listeners.add(fn);
+    return () => this.listeners.delete(fn);
+  }
+
+  private notify(): void {
+    for (const fn of this.listeners) fn();
   }
 
   /** Get the singleton instance */
@@ -49,6 +63,7 @@ export class InputModeManager {
     this.isMalayalam = !this.isMalayalam;
     // Reset Mozhi buffer when toggling modes — the context is no longer valid
     this.mozhiEngine.reset();
+    this.notify();
     return this.isMalayalam;
   }
 
@@ -57,6 +72,7 @@ export class InputModeManager {
     this.scheme = scheme;
     // Reset Mozhi buffer when switching schemes
     this.mozhiEngine.reset();
+    this.notify();
   }
 
   /**

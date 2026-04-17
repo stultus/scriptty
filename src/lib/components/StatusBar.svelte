@@ -16,13 +16,12 @@
   let isMalayalam = $state(inputManager.isMalayalam);
   let showSettings = $state(false);
 
-  // Poll the input manager state so the indicator stays in sync
-  // when toggled via Ctrl+Space from any view.
+  // Subscribe to input manager changes so the indicator stays in sync
+  // when toggled via Ctrl+Space from any view. No polling.
   $effect(() => {
-    const interval = setInterval(() => {
+    return inputManager.subscribe(() => {
       isMalayalam = inputManager.isMalayalam;
-    }, 200);
-    return () => clearInterval(interval);
+    });
   });
 </script>
 

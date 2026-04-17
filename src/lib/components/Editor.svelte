@@ -779,7 +779,10 @@
     font-size: 14px;
     line-height: 1.6;
     color: var(--text-on-page);
-    background: var(--page-bg);
+    background-color: var(--page-bg);
+    background-image: var(--page-grain);
+    background-repeat: repeat;
+    background-size: 240px 240px;
     border-radius: 2px;
     box-shadow:
       inset 0 1px 0 var(--page-edge-highlight),

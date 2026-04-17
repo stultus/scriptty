@@ -172,7 +172,10 @@
   .page {
     width: 100%;
     max-width: 680px;
-    background: var(--page-bg);
+    background-color: var(--page-bg);
+    background-image: var(--page-grain);
+    background-repeat: repeat;
+    background-size: 240px 240px;
     border-radius: 2px;
     box-shadow:
       inset 0 1px 0 var(--page-edge-highlight),

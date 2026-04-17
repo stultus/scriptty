@@ -42,6 +42,10 @@
     --page-shadow: rgba(0, 0, 0, 0.5);
     --page-shadow-close: rgba(0, 0, 0, 0.22);
     --page-edge-highlight: rgba(255, 255, 255, 0.04);
+    /* Subtle paper grain — SVG fractal noise inlined as a data URL.
+       Very low opacity so it reads as texture not pattern. Dark mode
+       keeps it quiet to avoid muddying the cream page under app chrome. */
+    --page-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.035 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
 
     /* Text — off-white hierarchy */
     --text-primary: #e8e6e1;
@@ -101,6 +105,9 @@
     --page-shadow: rgba(0, 0, 0, 0.18);
     --page-shadow-close: rgba(0, 0, 0, 0.08);
     --page-edge-highlight: rgba(255, 255, 255, 0.9);
+    /* Light mode gets a slightly warmer grain so the white page
+       reads as stock paper rather than screen. */
+    --page-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.08  0 0 0 0 0.06  0 0 0 0 0.03  0 0 0 0.045 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
 
     --text-primary: #1a1916;
     --text-secondary: #4a4740;

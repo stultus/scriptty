@@ -128,15 +128,19 @@
   }
 
   .btn-close {
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border: none;
+    border-radius: 6px;
     background: transparent;
     color: var(--text-muted);
-    font-size: 20px;
+    font-size: 18px;
     line-height: 1;
     cursor: pointer;
-    border-radius: 4px;
+    transition: background 120ms ease, color 120ms ease;
   }
 
   .btn-close:hover {

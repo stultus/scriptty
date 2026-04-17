@@ -15,6 +15,7 @@
   import StatisticsModal from '$lib/components/StatisticsModal.svelte';
   import MetadataModal from '$lib/components/MetadataModal.svelte';
   import StatusBar from '$lib/components/StatusBar.svelte';
+  import OutlinePeek from '$lib/components/OutlinePeek.svelte';
   import UpdateToast from '$lib/components/UpdateToast.svelte';
   import { documentStore } from '$lib/stores/documentStore.svelte';
   import { editorStore } from '$lib/stores/editorStore.svelte';
@@ -33,6 +34,7 @@
   let editorRef: { editCurrentSceneAnnotation: () => void } | undefined;
   let showMetadata = $state(false);
   let showAnnotations = $state(typeof localStorage !== 'undefined' ? localStorage.getItem('scriptty-annotations') !== 'false' : true);
+  let showOutlinePeek = $state(typeof localStorage !== 'undefined' ? localStorage.getItem('scriptty-outline-peek') !== 'false' : true);
 
   // Word count for story view
   let storyWordCount = $derived(() => {
@@ -115,7 +117,8 @@
         documentStore.saveWithDialog();
       }
       // Cmd+O (Mac) / Ctrl+O (Windows/Linux)
-      if ((event.metaKey || event.ctrlKey) && event.key === 'o') {
+      // Guard against Shift so Cmd+Shift+O (outline toggle) doesn't fall through.
+      if ((event.metaKey || event.ctrlKey) && !event.shiftKey && event.key === 'o') {
         event.preventDefault();
         documentStore.confirmIfDirty().then((proceed) => {
           if (!proceed) return;
@@ -169,6 +172,13 @@
           showAnnotations = !showAnnotations;
           localStorage.setItem('scriptty-annotations', String(showAnnotations));
         }
+        return;
+      }
+      // Cmd+Shift+O — Toggle outline peek strip
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'o') {
+        event.preventDefault();
+        showOutlinePeek = !showOutlinePeek;
+        localStorage.setItem('scriptty-outline-peek', String(showOutlinePeek));
         return;
       }
       // Cmd+Shift+D — Add/edit annotation for current scene
@@ -351,6 +361,9 @@
       <Editor bind:findReplaceOpen bind:findReplaceMode {showAnnotations} isActive={activeView === 'writing'} bind:this={editorRef} />
     </div>
   </div>
+  {#if showOutlinePeek && activeView === 'writing'}
+    <OutlinePeek />
+  {/if}
   <StatusBar bind:showAnnotations onShowHelp={() => { showHelp = true; }}>
     {#snippet rightContent()}
       {#if activeView === 'writing'}

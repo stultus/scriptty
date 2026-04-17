@@ -379,6 +379,19 @@
       underline: marks.some(m => m.type === screenplaySchema.marks.underline),
     };
 
+    // Track which scene the cursor sits in. We walk the top-level children
+    // and count scene_heading nodes until we reach or pass the cursor.
+    // Cheap: doc.forEach is just the top-level children, not the full tree.
+    const cursorPos = state.selection.from;
+    let sceneIdx = -1;
+    let count = -1;
+    state.doc.forEach((node, offset) => {
+      if (node.type.name === 'scene_heading') count++;
+      // `offset` is the position just before this node — if the cursor is
+      // at or past this point, the cursor belongs to this scene.
+      if (offset <= cursorPos) sceneIdx = count;
+    });
+    editorStore.currentSceneIndex = sceneIdx;
   }
 
   // Watch for New/Open events only — loadTrigger is incremented exclusively by

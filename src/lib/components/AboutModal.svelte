@@ -64,8 +64,9 @@
 
       <div class="credits-section">
         <h3 class="credits-heading">Inputs &amp; Feedback</h3>
-        <p class="credits-name">Abraham Joseph (Abrooz)</p>
+        <p class="credits-name">Abraham Joseph</p>
         <p class="credits-name">Aashiq Abu (Filmmaker)</p>
+        <p class="credits-name">Sijith Vijayakumar</p>
       </div>
 
       <hr class="divider" />

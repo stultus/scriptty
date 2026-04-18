@@ -40,6 +40,16 @@ export interface ScreenplayStory {
 }
 
 export interface SceneCard {
+  /** 0-based pointer into the flat ordered list of scene_heading nodes in
+   *  `content` — `scene_index: 0` is the first scene in document order.
+   *
+   *  Not a stable ID: reordering or deleting scenes rewrites every card's
+   *  `scene_index` to stay aligned (see SceneCardsView drag/delete).
+   *
+   *  Series: `buildSeriesExportDocument` flattens episode cards into a
+   *  single list by offsetting each episode's `scene_index` by the number
+   *  of scene_headings in earlier episodes, so the backend always sees a
+   *  flat index against the whole exported document. */
   scene_index: number;
   description: string;
   shoot_notes: string;

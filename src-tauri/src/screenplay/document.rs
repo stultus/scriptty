@@ -199,7 +199,19 @@ pub struct ScreenplayStory {
 /// from the screenplay content — only manually-written fields are stored.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SceneCard {
-    /// Matches scene position in the script (0-based index)
+    /// 0-based pointer into the **flat** ordered list of `scene_heading`
+    /// nodes in the screenplay content — `scene_index: 0` is the first
+    /// scene in document order, `scene_index: 1` is the second, etc.
+    ///
+    /// Not a stable ID: when scenes are reordered or deleted, every card's
+    /// `scene_index` is rewritten to stay aligned with the new document
+    /// order (see `SceneCardsView.svelte` drag/delete handlers).
+    ///
+    /// Series invariant: when a series is exported, each episode's cards
+    /// are offset into a single flattened scene list by the frontend
+    /// (`buildSeriesExportDocument` in `ExportModal.svelte`) — by the time
+    /// Rust sees the document, `scene_index` is already flat across all
+    /// episodes. The PDF generator in `pdf.rs` relies on that flattening.
     pub scene_index: usize,
     /// Short scene description written by the writer (2–4 lines)
     pub description: String,

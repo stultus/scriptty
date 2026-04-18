@@ -11,8 +11,11 @@ use crate::screenplay::document::{ProjectType, ScreenplayDocument};
 ///
 /// `#[tauri::command]` marks this function as callable from the frontend via `invoke()`.
 #[tauri::command]
-pub fn new_screenplay() -> Result<ScreenplayDocument, String> {
-    Ok(ScreenplayDocument {
+pub fn new_screenplay() -> ScreenplayDocument {
+    // Infallible: all fields are constructed from defaults or literals, so
+    // there's nothing that can fail. Dropping the `Result` wrapper lets the
+    // frontend call this without a meaningless try/catch.
+    ScreenplayDocument {
         project_type: ProjectType::Film,
         series: None,
         content: serde_json::json!({
@@ -25,7 +28,7 @@ pub fn new_screenplay() -> Result<ScreenplayDocument, String> {
         settings: Default::default(),
         story: Default::default(),      // Empty story sections
         scene_cards: Vec::new(),        // No scene cards initially
-    })
+    }
 }
 
 /// Saves a screenplay document to disk as a JSON file.

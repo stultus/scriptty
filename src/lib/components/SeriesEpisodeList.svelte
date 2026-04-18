@@ -1,6 +1,8 @@
 <script lang="ts">
   import { documentStore } from '$lib/stores/documentStore.svelte';
   import SceneNavigator from './SceneNavigator.svelte';
+  import { slide } from 'svelte/transition';
+  import { cubicOut } from 'svelte/easing';
 
   let expanded = $state<Record<string, boolean>>({});
   let editingIndex = $state<number>(-1);
@@ -200,7 +202,10 @@
         </div>
 
         {#if isOpen && isActive}
-          <div class="episode-scenes">
+          <div
+            class="episode-scenes"
+            transition:slide={{ duration: 180, easing: cubicOut }}
+          >
             <SceneNavigator />
           </div>
         {/if}

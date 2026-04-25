@@ -55,6 +55,10 @@
   $effect(() => {
     if (!open) return;
     view = initialView();
+    // Seed focused day for keyboard navigation — start at the current
+    // value if set, otherwise today. The post-render focus effect picks
+    // up from here.
+    focusedDate = parseISO(value) ?? new Date();
     if (triggerEl) {
       const r = triggerEl.getBoundingClientRect();
       const spaceBelow = window.innerHeight - r.bottom;
@@ -149,16 +153,130 @@
     pick(new Date());
   }
 
+  // ─── Keyboard navigation (#138) ───────────────────────────────────
+  // Roving tabindex over the grid: only the cell matching `focusedDate`
+  // gets `tabindex=0`, the rest are `-1`. Arrow keys move focus a day
+  // (Left/Right) or a week (Up/Down). Page Up/Down jumps a month;
+  // Shift+Page Up/Down jumps a year. Enter/Space picks the focused
+  // date, 'T' jumps focus to today.
+  let focusedDate = $state<Date | null>(null);
+
+  function shiftFocusBy(deltaDays: number) {
+    const base = focusedDate ?? new Date();
+    const next = new Date(base);
+    next.setDate(next.getDate() + deltaDays);
+    focusedDate = next;
+  }
+
+  function shiftFocusMonth(deltaMonths: number) {
+    const base = focusedDate ?? new Date();
+    const next = new Date(base);
+    next.setMonth(next.getMonth() + deltaMonths);
+    focusedDate = next;
+  }
+
+  function shiftFocusYear(deltaYears: number) {
+    const base = focusedDate ?? new Date();
+    const next = new Date(base);
+    next.setFullYear(next.getFullYear() + deltaYears);
+    focusedDate = next;
+  }
+
+  function handleGridKey(event: KeyboardEvent) {
+    switch (event.key) {
+      case 'ArrowLeft':
+        event.preventDefault();
+        shiftFocusBy(-1);
+        break;
+      case 'ArrowRight':
+        event.preventDefault();
+        shiftFocusBy(1);
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        shiftFocusBy(-7);
+        break;
+      case 'ArrowDown':
+        event.preventDefault();
+        shiftFocusBy(7);
+        break;
+      case 'PageUp':
+        event.preventDefault();
+        if (event.shiftKey) shiftFocusYear(-1);
+        else shiftFocusMonth(-1);
+        break;
+      case 'PageDown':
+        event.preventDefault();
+        if (event.shiftKey) shiftFocusYear(1);
+        else shiftFocusMonth(1);
+        break;
+      case 'Home':
+        // Jump to first day of the current week (Sunday).
+        event.preventDefault();
+        if (focusedDate) shiftFocusBy(-focusedDate.getDay());
+        break;
+      case 'End':
+        // Jump to last day of the current week (Saturday).
+        event.preventDefault();
+        if (focusedDate) shiftFocusBy(6 - focusedDate.getDay());
+        break;
+      case 'Enter':
+      case ' ':
+        event.preventDefault();
+        if (focusedDate) pick(focusedDate);
+        break;
+      case 't':
+      case 'T':
+        event.preventDefault();
+        focusedDate = new Date();
+        break;
+    }
+  }
+
+  // When focusedDate moves outside the visible month, scroll the
+  // calendar to follow. Skipped during the open-effect's seed because
+  // view is being set there directly.
+  $effect(() => {
+    if (!focusedDate) return;
+    if (
+      focusedDate.getFullYear() !== view.year ||
+      focusedDate.getMonth() !== view.month
+    ) {
+      view = { year: focusedDate.getFullYear(), month: focusedDate.getMonth() };
+    }
+  });
+
+  // After the grid renders, move DOM focus to the cell matching
+  // focusedDate — but ONLY when the active element is the trigger / body
+  // (popover just opened) or already inside the grid (keyboard nav).
+  // Chevron / Today / Clear clicks shouldn't steal focus from those
+  // buttons. data-iso lookup avoids a per-cell ref. rAF defers to after
+  // paint so the grid has mounted on first open.
+  $effect(() => {
+    if (!open || !focusedDate || !popoverEl) return;
+    const iso = toISO(focusedDate);
+    requestAnimationFrame(() => {
+      const cell = popoverEl?.querySelector<HTMLButtonElement>(
+        `.dp-cell[data-iso="${iso}"]`,
+      );
+      if (!cell) return;
+      const active = document.activeElement;
+      const grid = popoverEl?.querySelector('.dp-grid');
+      const insideGrid = !!(active && grid?.contains(active));
+      const isOnEntry = active === triggerEl || active === document.body || active === null;
+      if (insideGrid || isOnEntry) cell.focus();
+    });
+  });
+
+  // Chevron handlers — couple to focusedDate so the keyboard-focusable
+  // cell stays in the visible month after a mouse click. The focus
+  // effect's gating keeps DOM focus on the chevron button itself.
   function prevMonth() {
-    const m = view.month - 1;
-    if (m < 0) view = { year: view.year - 1, month: 11 };
-    else view = { ...view, month: m };
+    shiftFocusMonth(-1);
   }
 
   function nextMonth() {
-    const m = view.month + 1;
-    if (m > 11) view = { year: view.year + 1, month: 0 };
-    else view = { ...view, month: m };
+    shiftFocusMonth(1);
   }
 
   function handleTriggerKey(event: KeyboardEvent) {
@@ -288,16 +406,21 @@
         {/each}
       </div>
 
-      <div class="dp-grid" role="grid">
+      <div class="dp-grid" role="grid" tabindex="-1" onkeydown={handleGridKey}>
         {#each grid as cell}
           {@const isToday = isSameDay(cell.date, today)}
           {@const isSelected = valueDate ? isSameDay(cell.date, valueDate) : false}
+          {@const isFocused = focusedDate ? isSameDay(cell.date, focusedDate) : false}
           <button
             type="button"
             class="dp-cell"
             class:out-of-month={!cell.inMonth}
             class:today={isToday}
             class:selected={isSelected}
+            role="gridcell"
+            tabindex={isFocused ? 0 : -1}
+            data-iso={toISO(cell.date)}
+            aria-selected={isSelected}
             onclick={() => pick(cell.date)}
             aria-label={cell.date.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           >
@@ -497,6 +620,14 @@
   .dp-cell:hover {
     background: var(--surface-hover);
     color: var(--text-primary);
+  }
+
+  /* Keyboard-focused cell — visible ring that wins over .today's
+     box-shadow so the writer always sees where focus lands. */
+  .dp-cell:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--accent);
+    z-index: 1;
   }
 
   .dp-cell.out-of-month {

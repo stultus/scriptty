@@ -128,12 +128,18 @@
 
 <div class="title-bar">
   <div class="btn-group left">
-    <!-- App wordmark — "Scriptty" set in bold tracked-caps Courier
-         to match the screenplay-cover wordmark used everywhere else
-         (welcome screen, about modal, PDF cover). The Malayalam ഋ
-         glyph that lived here previously was a one-off mark that
-         didn't speak the same vocabulary as the rest of the app. -->
-    <span class="app-wordmark" aria-hidden="true" title="Scriptty">Scriptty</span>
+    <!-- App wordmark — colophon-style mark + mixed-case Courier
+         "Scriptty" + hairline rule. Reads as a refined publisher's
+         imprint rather than UI chrome: the small filled square is
+         the press mark, the wordmark is the imprint, the hairline
+         rule is the gutter to the rest of the toolbar. Matches the
+         editorial vocabulary used by the welcome / about / PDF
+         covers but tightens the typography for the smaller surface. -->
+    <span class="wordmark" aria-hidden="true" title="Scriptty">
+      <span class="wordmark-mark"></span>
+      <span class="wordmark-text">Scriptty</span>
+    </span>
+    <span class="wordmark-rule" aria-hidden="true"></span>
     <button
       class="btn-icon"
       onclick={onToggleSidebar}
@@ -145,7 +151,19 @@
   </div>
 
   <div class="title-zone">
+    <!-- Refined title card — small flanking middle-dot ornaments
+         frame the title like a printed running header in a book.
+         The marks fade in symmetrically on the title so the centred
+         display reads as a typographic composition, not bare text.
+         Hidden when there's no project yet (Untitled state) so the
+         empty bar doesn't look decorated for nothing. -->
+    {#if documentStore.document}
+      <span class="title-ornament left" aria-hidden="true">·</span>
+    {/if}
     <span class="title">{displayTitle}</span>
+    {#if documentStore.document && !(documentStore.isSeries && documentStore.activeEpisode)}
+      <span class="title-ornament right" aria-hidden="true">·</span>
+    {/if}
     {#if documentStore.isSeries && documentStore.activeEpisode}
       <button
         class="episode-label"
@@ -303,24 +321,55 @@
     flex-shrink: 0;
   }
 
-  /* App wordmark — "Scriptty" in bold tracked-caps Courier matches
-     the screenplay-cover wordmark used by the welcome surface,
-     about modal, and printed cover. The Courier face ties the
-     title-bar identity to the rest of the editorial vocabulary. */
-  .app-wordmark {
+  /* App wordmark — colophon idiom: small accent press-mark, the
+     mixed-case Courier wordmark, and a hairline gutter rule. Mixed
+     case (not all-caps) gives the typewriter face room to breathe
+     and feels more imprint-of-a-press than enterprise-software. */
+  .wordmark {
     display: inline-flex;
     align-items: center;
-    height: 22px;
-    margin: 0 4px 0 2px;
-    padding: 0 4px;
-    color: var(--accent);
+    gap: 7px;
+    height: 26px;
+    margin: 0 0 0 2px;
+    padding: 0 8px 0 4px;
+    line-height: 1;
+    user-select: none;
+    -webkit-app-region: drag;
+  }
+
+  /* Press mark — tiny filled square in accent. Sized at 5px so it
+     reads as a typographic ornament, not a UI element. */
+  .wordmark-mark {
+    width: 5px;
+    height: 5px;
+    background: var(--accent);
+    flex-shrink: 0;
+    /* very subtle rotation so the square reads as a print-ornament
+       diamond rather than a generic dot. */
+    transform: rotate(45deg);
+  }
+
+  .wordmark-text {
     font-family: var(--editor-font-en), ui-monospace, monospace;
     font-size: 12px;
     font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    line-height: 1;
-    user-select: none;
+    letter-spacing: 0.06em;
+    color: var(--text-primary);
+    /* Tiny micro-shift on the cap S so the wordmark feels deliberately
+       set rather than typed. font-feature-settings 'ss01' would be
+       ideal but Courier Prime doesn't ship stylistic sets — the
+       letter-spacing alone does most of the work. */
+  }
+
+  /* Hairline gutter rule — separates the colophon from the icon
+     group like a typographer's rule between sections. 14px tall
+     to feel like a measured cap-height divider, not a UI border. */
+  .wordmark-rule {
+    width: 1px;
+    height: 14px;
+    background: var(--border-medium);
+    margin: 0 4px 0 2px;
+    flex-shrink: 0;
     -webkit-app-region: drag;
   }
 
@@ -345,17 +394,38 @@
   /* Title set in Courier Prime so it reads as printed-on-paper rather
      than generic UI text — picks up Scriptty's typographic identity
      (#170). Mixed-script titles fall through to Manjari/Noto for
-     non-Latin glyphs via the editor-font-ml chain. */
+     non-Latin glyphs via the editor-font-ml chain. Slightly looser
+     tracking + small caps tracking widget on the flanking ornaments
+     gives this a "running header in a typeset book" feel rather
+     than a generic OS title. */
   .title {
     color: var(--text-primary);
     font-family: var(--editor-font-en), 'Manjari', 'Noto Sans Malayalam', ui-monospace, monospace;
-    font-size: 12.5px;
+    font-size: 13px;
     font-weight: 700;
-    letter-spacing: 0.01em;
+    letter-spacing: 0.02em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
+  /* Title ornaments — small middle-dot characters flanking the
+     title like the section dingbats in a printed book. Muted so
+     they read as composition, not punctuation. The .left dot sits
+     a bit further from the title than the .right one to optically
+     compensate for the dot's leftward weight. */
+  .title-ornament {
+    color: var(--text-muted);
+    font-family: var(--editor-font-en), ui-monospace, monospace;
+    font-size: 14px;
+    line-height: 1;
+    opacity: 0.55;
+    flex-shrink: 0;
+    transform: translateY(-1px);
+    user-select: none;
+  }
+  .title-ornament.left  { margin-right: -2px; }
+  .title-ornament.right { margin-left:  -2px; }
 
   /* Episode badge button — clickable popover trigger (#173). */
   .episode-label {

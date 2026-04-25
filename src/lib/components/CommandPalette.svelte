@@ -36,12 +36,19 @@
   // snap the selection back — fighting the keyboard.
   let lastPointer = { x: -1, y: -1 };
 
+  // Normalize once and let downstream derives short-circuit when the
+  // normalized form is unchanged. Svelte 5's $derived dedupes when the
+  // returned value is === to the previous, so trailing whitespace or a
+  // case-only change in `query` no longer triggers a rebuild of
+  // `filtered` or `grouped` (#105).
+  let normalizedQuery = $derived(query.trim().toLowerCase());
+
   let filtered = $derived.by(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return commands;
+    if (!normalizedQuery) return commands;
+    const terms = normalizedQuery.split(/\s+/);
     return commands.filter((c) => {
       const hay = `${c.label} ${c.group} ${c.keywords ?? ''}`.toLowerCase();
-      return q.split(/\s+/).every((term) => hay.includes(term));
+      return terms.every((term) => hay.includes(term));
     });
   });
 
@@ -49,7 +56,7 @@
   // tidy sections — but only when there's no active filter (a filtered
   // list is small and the grouping just adds visual noise).
   let grouped = $derived.by<Array<{ group: string; items: Command[] }>>(() => {
-    if (query.trim()) return [{ group: '', items: filtered }];
+    if (normalizedQuery) return [{ group: '', items: filtered }];
     const out: Array<{ group: string; items: Command[] }> = [];
     for (const cmd of filtered) {
       const last = out[out.length - 1];

@@ -636,52 +636,71 @@
 </script>
 
 <div class="scene-cards-view" style="--editor-font-ml: '{fontFamily}'">
-  {#if documentStore.isSeries && cardLevel === 'episodes'}
-    <!-- Episode level: top toolbar shows the series title + episode count.
-         No "Group by location" here — that toggle is scene-scoped. -->
-    <div class="cards-toolbar">
-      <div class="toolbar-crumb">
-        <span class="toolbar-eyebrow">Series</span>
-        <span class="toolbar-title">{documentStore.document?.series?.title || 'Untitled Series'}</span>
-      </div>
-      <div class="toolbar-spacer"></div>
-      <span class="toolbar-count">
-        {(documentStore.document?.series?.episodes?.length ?? 0)}
-        {(documentStore.document?.series?.episodes?.length ?? 0) === 1 ? 'episode' : 'episodes'}
+  <!-- Hero header — makes the current level (Episodes vs Scenes)
+       impossible to miss (#150). The big title states what level you're
+       at; the subtitle gives context (series name or episode title).
+       For series projects, a segmented Episodes/Scenes toggle on the
+       right makes the two-level structure visible regardless of which
+       level you're currently viewing. -->
+  <header class="cards-hero">
+    <div class="hero-text">
+      {#if documentStore.isSeries && cardLevel === 'episodes'}
+        <h1 class="hero-level">Episodes</h1>
+        <p class="hero-subtitle">
+          {documentStore.document?.series?.title || 'Untitled Series'}
+        </p>
+      {:else if documentStore.isSeries && cardLevel === 'scenes'}
+        <h1 class="hero-level">Scenes</h1>
+        <p class="hero-subtitle">
+          <span class="hero-ep-badge">{String(documentStore.activeEpisode?.number ?? 1).padStart(2, '0')}</span>
+          {documentStore.activeEpisode?.title?.trim() || 'Untitled episode'}
+        </p>
+      {:else}
+        <h1 class="hero-level">Scenes</h1>
+        <p class="hero-subtitle">{documentStore.activeMeta?.title?.trim() || 'Untitled screenplay'}</p>
+      {/if}
+    </div>
+
+    <div class="hero-actions">
+      {#if documentStore.isSeries}
+        <!-- Segmented Episodes/Scenes toggle — the level switcher. Click
+             "Scenes" while at the Episode level drills into the active
+             episode (or the last-viewed episode if available). Click
+             "Episodes" while drilled in returns to the episode level.
+             Always visible for series projects so the writer knows two
+             levels exist even before they've drilled in. -->
+        <div class="level-segmented" role="group" aria-label="Card view level">
+          <button
+            type="button"
+            class="level-seg"
+            class:active={cardLevel === 'episodes'}
+            onclick={backToEpisodes}
+          >Episodes</button>
+          <button
+            type="button"
+            class="level-seg"
+            class:active={cardLevel === 'scenes'}
+            onclick={() => openEpisode(documentStore.activeEpisodeIndex)}
+          >Scenes</button>
+        </div>
+      {/if}
+
+      <span class="hero-count">
+        {#if documentStore.isSeries && cardLevel === 'episodes'}
+          {(documentStore.document?.series?.episodes?.length ?? 0)} {(documentStore.document?.series?.episodes?.length ?? 0) === 1 ? 'episode' : 'episodes'}
+        {:else}
+          {cards.length} {cards.length === 1 ? 'scene' : 'scenes'}
+        {/if}
       </span>
+
+      {#if cardLevel === 'scenes'}
+        <label class="toolbar-toggle" title="Cluster cards by their Location group, then by Shoot date">
+          <input type="checkbox" bind:checked={groupByLocation} />
+          <span>Group by location</span>
+        </label>
+      {/if}
     </div>
-  {:else if documentStore.isSeries && cardLevel === 'scenes'}
-    <!-- Drilled-in: breadcrumb back to episodes + the active episode title. -->
-    <div class="cards-toolbar with-breadcrumb">
-      <button class="crumb-back" type="button" onclick={backToEpisodes} title="Back to episodes">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M15 18 L9 12 L15 6"/>
-        </svg>
-        <span>Episodes</span>
-      </button>
-      <span class="crumb-sep" aria-hidden="true">/</span>
-      <div class="toolbar-crumb">
-        <span class="toolbar-eyebrow">Episode {documentStore.activeEpisode?.number ?? ''}</span>
-        <span class="toolbar-title">{documentStore.activeEpisode?.title?.trim() || 'Untitled'}</span>
-      </div>
-      <div class="toolbar-spacer"></div>
-      <span class="toolbar-count">{cards.length} {cards.length === 1 ? 'scene' : 'scenes'}</span>
-      <label class="toolbar-toggle" title="Cluster cards by their Location group, then by Shoot date">
-        <input type="checkbox" bind:checked={groupByLocation} />
-        <span>Group by location</span>
-      </label>
-    </div>
-  {:else}
-    <!-- Film project — no series, no breadcrumb, original toolbar shape. -->
-    <div class="cards-toolbar">
-      <span class="toolbar-count">{cards.length} {cards.length === 1 ? 'scene' : 'scenes'}</span>
-      <div class="toolbar-spacer"></div>
-      <label class="toolbar-toggle" title="Cluster cards by their Location group, then by Shoot date">
-        <input type="checkbox" bind:checked={groupByLocation} />
-        <span>Group by location</span>
-      </label>
-    </div>
-  {/if}
+  </header>
 
   {#if documentStore.isSeries && cardLevel === 'episodes'}
     <!-- Episode-level grid (#134). The inner component handles its own
@@ -857,9 +876,119 @@
     padding: 24px;
   }
 
-  /* Toolbar above the grid — scene count on the left, "Group by location"
-     toggle on the right (#124). Sticky-ish lightweight strip rather than
-     a full sub-bar; the page already has its own status bar. */
+  /* ─── Hero header (#150) ───
+     The big "EPISODES" or "SCENES" title makes the current view level
+     impossible to miss. Subtitle gives context (series name or active
+     episode). The right-side cluster carries the level switcher,
+     count, and per-level toggles. */
+  .cards-hero {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 22px;
+    padding: 6px 4px 14px;
+    border-bottom: 1px solid var(--border-subtle);
+    font-family: var(--ui-font);
+  }
+
+  .hero-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .hero-level {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1.1;
+  }
+
+  .hero-subtitle {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 60vw;
+  }
+
+  /* Episode badge inside the subtitle — same chip pattern as everywhere
+     else (#145, #161). Compact since it sits next to the title. */
+  .hero-ep-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: 4px;
+    background: var(--accent-muted);
+    color: var(--accent);
+    font-family: var(--editor-font-en), var(--ui-font);
+    font-size: 10px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+  }
+
+  .hero-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+  }
+
+  /* Segmented Episodes/Scenes toggle — series-only, always visible so
+     the writer knows two levels exist (#150). */
+  .level-segmented {
+    display: inline-flex;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: 7px;
+    padding: 2px;
+  }
+
+  .level-seg {
+    background: transparent;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 5px;
+    color: var(--text-muted);
+    font-family: var(--ui-font);
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--motion-fast, 100ms) ease,
+                color var(--motion-fast, 100ms) ease;
+  }
+
+  .level-seg:hover { color: var(--text-secondary); }
+
+  .level-seg.active {
+    background: var(--surface-float);
+    color: var(--accent);
+    box-shadow: 0 1px 2px var(--shadow-soft);
+  }
+
+  .hero-count {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
+
+  /* Legacy toolbar — still used by the Episode-cards pane wrapper.
+     Cards-hero replaces it everywhere else. */
   .cards-toolbar {
     display: flex;
     align-items: center;

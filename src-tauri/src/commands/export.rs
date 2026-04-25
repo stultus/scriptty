@@ -343,9 +343,7 @@ pub fn export_combined_pdf(
             "Synopsis",
             &document.story.synopsis,
             font_name,
-            &document.meta.title,
-            &document.meta.author,
-            &document.meta.director,
+            &document.meta,
             has_content,
             options.include_page_numbers,
         ));
@@ -358,9 +356,7 @@ pub fn export_combined_pdf(
             "Treatment",
             &document.story.treatment,
             font_name,
-            &document.meta.title,
-            &document.meta.author,
-            &document.meta.director,
+            &document.meta,
             has_content,
             options.include_page_numbers,
         ));
@@ -373,9 +369,7 @@ pub fn export_combined_pdf(
             "Narrative",
             &document.story.narrative,
             font_name,
-            &document.meta.title,
-            &document.meta.author,
-            &document.meta.director,
+            &document.meta,
             has_content,
             options.include_page_numbers,
         ));

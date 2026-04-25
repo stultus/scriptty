@@ -948,7 +948,7 @@ pub fn generate_typst_markup(
                 //   left-to-right wrap. The 9cm width matches the
                 //   classic Hollywood dialogue measure (~3.5").
                 let mut block = format!(
-                    "#block(breakable: false, width: 100%)[\n  #v(1.2em)\n  #align(center)[#text(weight: \"bold\")[{}]]\n  #v(0.2em)\n",
+                    "#block(breakable: false, sticky: true, width: 100%)[\n  #v(1.2em)\n  #align(center)[#text(weight: \"bold\")[{}]]\n  #v(0.2em)\n",
                     escaped_name.to_uppercase()
                 );
                 for line in lines {
@@ -1781,10 +1781,13 @@ pub fn generate_pdf(
 /// * `director` — Director name
 /// * `needs_pagebreak` — whether to emit a `#pagebreak()` before the section
 #[allow(clippy::too_many_arguments)]
-pub fn generate_prose_section_markup(section_name: &str, body: &str, font_name: &str, title: &str, author: &str, director: &str, needs_pagebreak: bool, page_numbers: bool) -> String {
+pub fn generate_prose_section_markup(section_name: &str, body: &str, font_name: &str, meta: &ScreenplayMeta, needs_pagebreak: bool, page_numbers: bool) -> String {
     let escaped_section = escape_typst(section_name);
     let escaped_body = escape_typst(body);
-    let escaped_title = escape_typst(title);
+    let escaped_title = escape_typst(&meta.title);
+    let author = meta.author.as_str();
+    let director = meta.director.as_str();
+    let title = meta.title.as_str();
 
     let mut markup = String::new();
 
@@ -1827,54 +1830,61 @@ pub fn generate_prose_section_markup(section_name: &str, body: &str, font_name: 
         numbering_opts, font_name
     ));
 
-    // Section masthead — mirrors the in-app StoryMode header so the
-    // printed prose page and the editing surface share the same
-    // vocabulary (#176). Layout:
+    // Section masthead — section name is the small eyebrow (with
+    // flanking hairlines), the FILM TITLE is the dominant bold
+    // element. Reads as: "this is the synopsis of [project name]" —
+    // the project identity carries the page, the section is
+    // contextual marginalia.
     //
-    //   — THE STORY —          <- tracked-caps eyebrow w/ flanking rules
-    //   NARRATIVE              <- big tracked Courier section name
-    //                          <- asterism divider when credits follow
-    //   Maram Natta Manushyan  <- project title in italic subtitle
-    //   WRITTEN BY             <- small-caps tracked credit label
-    //   Hrishikesh B.          <- credit name, larger
-    markup.push_str(
+    //   ─ SYNOPSIS ─              <- small eyebrow w/ flanking rules
+    //   Maram Natta Manushyan     <- BIG bold project title
+    //   2026-03-14                <- italic muted date
+    //                             <- asterism divider
+    //   WRITTEN BY                <- credit label
+    //   Hrishikesh Bhaskaran      <- credit name
+    markup.push_str(&format!(
         r#"#block(width: 100%)[
   #align(center)[
     #v(2cm)
     #box(width: 22mm, baseline: -3pt)[#line(length: 100%, stroke: 0.5pt + luma(150))]
     #h(0.8em)
-    #text(size: 9pt, weight: "bold", tracking: 0.22em, fill: luma(120))[THE STORY]
+    #text(size: 9pt, weight: "bold", tracking: 0.22em, fill: luma(120))[{}]
     #h(0.8em)
     #box(width: 22mm, baseline: -3pt)[#line(length: 100%, stroke: 0.5pt + luma(150))]
-  ]
-]
-"#,
-    );
-
-    // Section name as the dominant title — Courier Prime, tracked,
-    // matches the StoryMode in-app title typography (.story-title).
-    markup.push_str(&format!(
-        r#"#block(width: 100%)[
-  #align(center)[
-    #v(0.6cm)
-    #text(font: "Courier Prime", size: 30pt, weight: "bold", tracking: 0.06em)[{}]
   ]
 ]
 "#,
         escaped_section.to_uppercase()
     ));
 
-    // Project title as italic subtitle beneath the section name.
+    // Project title — the script's actual name, large + bold so it
+    // dominates the cover. NOT uppercased (Malayalam has no case;
+    // and the title already encodes its own intended casing).
     if !title.is_empty() {
         markup.push_str(&format!(
             r#"#block(width: 100%)[
   #align(center)[
-    #v(0.45cm)
-    #text(size: 13pt, style: "italic", fill: luma(90))[{}]
+    #v(0.6cm)
+    #text(size: 28pt, weight: "bold", tracking: 0.02em)[{}]
   ]
 ]
 "#,
             escaped_title
+        ));
+    }
+
+    // Date line — printed only when the writer has filled in a
+    // draft date. Just the date, no "Draft N" label.
+    if !meta.draft_date.trim().is_empty() {
+        markup.push_str(&format!(
+            r#"#block(width: 100%)[
+  #align(center)[
+    #v(0.4cm)
+    #text(size: 10pt, style: "italic", fill: luma(120))[{}]
+  ]
+]
+"#,
+            escape_typst(meta.draft_date.trim())
         ));
     }
 
@@ -1980,26 +1990,18 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
         numbering_opts, font_name
     ));
 
-    // Section masthead — mirrors StoryMode's "THE STORY · NARRATIVE"
-    // pattern: tracked-caps eyebrow with flanking rules names the
-    // surface, big tracked Courier section name dominates, italic
-    // subtitle carries the project identity, asterism divider before
-    // credits.
+    // Section masthead — same vocabulary as the prose covers.
+    // Section name is the small eyebrow (with flanking rules), the
+    // film title is the dominant bold element.
     markup.push_str(
         r#"#block(width: 100%)[
   #align(center)[
-    #v(1cm)
+    #v(2cm)
     #box(width: 22mm, baseline: -3pt)[#line(length: 100%, stroke: 0.5pt + luma(150))]
     #h(0.8em)
-    #text(size: 9pt, weight: "bold", tracking: 0.22em, fill: luma(120))[PRODUCTION]
+    #text(size: 9pt, weight: "bold", tracking: 0.22em, fill: luma(120))[SCENE BREAKDOWN]
     #h(0.8em)
     #box(width: 22mm, baseline: -3pt)[#line(length: 100%, stroke: 0.5pt + luma(150))]
-  ]
-]
-#block(width: 100%)[
-  #align(center)[
-    #v(0.6cm)
-    #text(font: "Courier Prime", size: 30pt, weight: "bold", tracking: 0.06em)[SCENE BREAKDOWN]
   ]
 ]
 "#,
@@ -2009,12 +2011,25 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
         markup.push_str(&format!(
             r#"#block(width: 100%)[
   #align(center)[
-    #v(0.45cm)
-    #text(size: 13pt, style: "italic", fill: luma(90))[{}]
+    #v(0.6cm)
+    #text(size: 28pt, weight: "bold", tracking: 0.02em)[{}]
   ]
 ]
 "#,
             escape_typst(meta.title.trim())
+        ));
+    }
+
+    if !meta.draft_date.trim().is_empty() {
+        markup.push_str(&format!(
+            r#"#block(width: 100%)[
+  #align(center)[
+    #v(0.4cm)
+    #text(size: 10pt, style: "italic", fill: luma(120))[{}]
+  ]
+]
+"#,
+            escape_typst(meta.draft_date.trim())
         ));
     }
 
@@ -2276,25 +2291,18 @@ pub fn generate_shoot_list_markup(
         numbering_opts, font_name
     ));
 
-    // Section masthead — same vocabulary as the prose covers and
-    // scene-cards opener: tracked-caps eyebrow with flanking rules,
-    // big tracked Courier section name, italic subtitle, asterism
-    // before credits.
+    // Section masthead — section name as the small eyebrow, film
+    // title as the dominant bold element. Same vocabulary as the
+    // prose covers and the scene-cards opener.
     markup.push_str(
         r#"#block(width: 100%)[
   #align(center)[
-    #v(1cm)
+    #v(2cm)
     #box(width: 22mm, baseline: -3pt)[#line(length: 100%, stroke: 0.5pt + luma(150))]
     #h(0.8em)
-    #text(size: 9pt, weight: "bold", tracking: 0.22em, fill: luma(120))[PRODUCTION]
+    #text(size: 9pt, weight: "bold", tracking: 0.22em, fill: luma(120))[DAILY SHOOT LIST]
     #h(0.8em)
     #box(width: 22mm, baseline: -3pt)[#line(length: 100%, stroke: 0.5pt + luma(150))]
-  ]
-]
-#block(width: 100%)[
-  #align(center)[
-    #v(0.6cm)
-    #text(font: "Courier Prime", size: 30pt, weight: "bold", tracking: 0.06em)[DAILY SHOOT LIST]
   ]
 ]
 "#,
@@ -2304,12 +2312,25 @@ pub fn generate_shoot_list_markup(
         markup.push_str(&format!(
             r#"#block(width: 100%)[
   #align(center)[
-    #v(0.45cm)
-    #text(size: 13pt, style: "italic", fill: luma(90))[{}]
+    #v(0.6cm)
+    #text(size: 28pt, weight: "bold", tracking: 0.02em)[{}]
   ]
 ]
 "#,
             escape_typst(meta.title.trim())
+        ));
+    }
+
+    if !meta.draft_date.trim().is_empty() {
+        markup.push_str(&format!(
+            r#"#block(width: 100%)[
+  #align(center)[
+    #v(0.4cm)
+    #text(size: 10pt, style: "italic", fill: luma(120))[{}]
+  ]
+]
+"#,
+            escape_typst(meta.draft_date.trim())
         ));
     }
 

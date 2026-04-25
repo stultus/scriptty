@@ -99,6 +99,10 @@
 
 <div class="title-bar">
   <div class="btn-group left">
+    <!-- App mark — small ഋ glyph at the far left as the brand anchor (#170).
+         Decorative; the menu bar still carries the app name. Falls back
+         to a soft bullet if the Malayalam character can't be rendered. -->
+    <span class="app-mark" aria-hidden="true" title="Scriptty">ഋ</span>
     <button
       class="btn-icon"
       onclick={onToggleSidebar}
@@ -199,17 +203,37 @@
 
 
 <style>
+  /* Bumped from 32px to 38px so the 26px buttons get proper vertical
+     padding and the title text breathes (#170). */
   .title-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 32px;
-    padding: 0 10px;
+    height: 38px;
+    padding: 0 12px;
     background: var(--surface-elevated);
     border-bottom: 1px solid var(--border-subtle);
     font-family: system-ui, -apple-system, sans-serif;
     user-select: none;
     flex-shrink: 0;
+  }
+
+  /* App mark — ഋ glyph at the far left as the brand anchor. Soft accent
+     tint so it reads as decorative identity, not as a button. (#170) */
+  .app-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    margin-right: 2px;
+    color: var(--accent);
+    font-family: 'Manjari', 'Noto Sans Malayalam', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
+    user-select: none;
+    -webkit-app-region: drag;
   }
 
   .btn-group {
@@ -229,10 +253,16 @@
     min-width: 0;
   }
 
+  /* Title set in Courier Prime so it reads as printed-on-paper rather
+     than generic UI text — picks up Scriptty's typographic identity
+     (#170). Mixed-script titles fall through to Manjari/Noto for
+     non-Latin glyphs via the editor-font-ml chain. */
   .title {
-    color: var(--text-secondary);
-    font-size: 13px;
-    font-weight: 500;
+    color: var(--text-primary);
+    font-family: var(--editor-font-en), 'Manjari', 'Noto Sans Malayalam', ui-monospace, monospace;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

@@ -821,11 +821,20 @@
 </div>
 
 <style>
+  /* Cards canvas reads as the writer's planning desk — borrows the
+     editor's --page-grain texture so the surface feels like the same
+     paper environment, scaled to desk-size rather than page-size (#155).
+     The grain is a CSS variable that adapts to the active theme so
+     light and dark modes both get a subtle, theme-appropriate texture. */
   .scene-cards-view {
     width: 100%;
     height: 100%;
     overflow-y: auto;
-    background: var(--surface-base);
+    background-color: var(--surface-base);
+    background-image: var(--page-grain);
+    background-repeat: repeat;
+    background-size: 360px 360px;
+    background-attachment: local;
     padding: 24px;
   }
 

@@ -171,7 +171,7 @@
               ondblclick={() => beginRename(index, ep.title)}
               title={ep.title ? `Episode ${ep.number} — ${ep.title}` : `Episode ${ep.number}`}
             >
-              <span class="episode-number">Ep {ep.number}</span>
+              <span class="episode-number">{String(ep.number).padStart(2, '0')}</span>
               <span class="episode-title">{ep.title || 'Untitled'}</span>
             </button>
             <div class="episode-actions">
@@ -351,11 +351,29 @@
     overflow: hidden;
   }
 
+  /* Zero-padded Courier chip — same identifier system EpisodeCardsView
+     uses (#145). Active episode's badge picks up the accent fill. */
   .episode-number {
-    color: var(--text-muted);
-    font-size: 10.5px;
-    font-variant-numeric: tabular-nums;
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: 4px;
+    background: var(--surface-elevated);
+    color: var(--text-muted);
+    font-family: var(--editor-font-en), var(--ui-font);
+    font-size: 10px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+  }
+
+  .episode-li.active .episode-number {
+    background: var(--accent);
+    color: var(--text-on-accent);
   }
 
   .episode-title {

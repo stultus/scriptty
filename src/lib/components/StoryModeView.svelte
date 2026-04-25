@@ -16,6 +16,24 @@
   // Track which textarea is currently focused for Malayalam input
   let activeTextarea = $state<HTMLTextAreaElement | null>(null);
 
+  /** Auto-grow the textarea to its content. We don't use the new
+   *  `field-sizing: content` CSS because it isn't reliably honored in
+   *  every Tauri WebView build — the textarea would extend past the page
+   *  card. Setting the height to scrollHeight after each input gives us
+   *  the same growth behavior with universal support. */
+  function autoGrow(el: HTMLTextAreaElement) {
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }
+
+  /** Action: bind to the textarea so it auto-sizes on mount, on tab
+   *  switch (the textarea unmounts/remounts), and after the value updates. */
+  function autoGrowAction(node: HTMLTextAreaElement) {
+    // Initial size after mount + after the value prop is applied. */
+    queueMicrotask(() => autoGrow(node));
+    return {};
+  }
+
   // Tab state — persisted to localStorage so a user returning to Story Mode
   // lands on the section they were last editing.
   type StoryField = 'idea' | 'synopsis' | 'treatment' | 'narrative';
@@ -108,6 +126,7 @@
         ta.selectionEnd = newCursorPos;
 
         updateField(field, newValue);
+        autoGrow(ta);
       }
     }
   }
@@ -115,6 +134,7 @@
 
 <div class="story-mode">
   <div class="story-editor">
+    <div class="story-editor-inner">
     <div class="page" style="--editor-font-ml: '{fontFamily}'">
       <div class="tab-bar" role="tablist" aria-label="Story sections">
         {#each tabs as tab}
@@ -137,7 +157,12 @@
               class="story-textarea"
               placeholder={tab.placeholder}
               value={fieldValue(tab.id)}
-              oninput={(e: Event) => updateField(tab.id, (e.target as HTMLTextAreaElement).value)}
+              use:autoGrowAction
+              oninput={(e: Event) => {
+                const ta = e.target as HTMLTextAreaElement;
+                updateField(tab.id, ta.value);
+                autoGrow(ta);
+              }}
               onkeydown={(e: KeyboardEvent) => handleKeydown(e, tab.id)}
               onfocus={(e: FocusEvent) => { activeTextarea = e.target as HTMLTextAreaElement; }}
             ></textarea>
@@ -145,11 +170,21 @@
         {/if}
       {/each}
     </div>
+    </div>
   </div>
 </div>
 
 <style>
+  /* Mirrors the writing view's geometry exactly — see Editor.svelte
+     `.editor-wrapper / .editor-scroll / .editor-with-annotations /
+     .editor-container / .ProseMirror`. Story view is a textarea instead
+     of a contenteditable, but the page card and scroll behavior should
+     feel identical, so the writer's eye doesn't lose its place when
+     switching tabs. */
   .story-mode {
+    position: relative;
+    width: 100%;
+    height: 100%;
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -157,27 +192,33 @@
     overflow: hidden;
   }
 
-  /* The editor area scrolls vertically — the page grows with the textarea
-     content (via field-sizing on the textarea), and longer entries push
-     the page taller while the outer container handles the scroll. Mirrors
-     the script view's "page grows down, outer scrolls" pattern. */
   .story-editor {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
     background: var(--surface-base);
     padding: 40px 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
   }
 
+  /* Flex-centered page wrapper — `min-height: 100%` keeps the page
+     vertically anchored to the visible scroll area when content is short. */
+  .story-editor-inner {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100%;
+    padding: 0 20px;
+  }
+
+  /* Fixed 680px wide column matching the writing view. */
   .page {
-    width: 100%;
+    flex: 0 0 680px;
     max-width: 680px;
-    /* Fill at least the visible canvas so an empty tab still feels like
-       a page, but allow growth past the viewport (the outer scrolls). */
-    min-height: calc(100vh - 80px - 28px);
+    min-width: 0;
+    /* Same generous min-height as .ProseMirror so the page feels like a
+       full sheet from the start; grows naturally as the textarea grows. */
+    min-height: 2000px;
     background-color: var(--page-bg);
     background-image: var(--page-grain);
     background-repeat: repeat;
@@ -187,9 +228,9 @@
       inset 0 1px 0 var(--page-edge-highlight),
       0 1px 2px var(--page-shadow-close),
       0 12px 32px var(--page-shadow);
-    padding: 32px 72px 60px;
-    display: flex;
-    flex-direction: column;
+    /* 60vh bottom padding mirrors .ProseMirror — the cursor always has
+       a generous breathing margin below; typing never reaches the page edge. */
+    padding: 60px 72px 60vh;
     box-sizing: border-box;
   }
 
@@ -232,33 +273,23 @@
     border-bottom-color: var(--accent);
   }
 
-  /* No flex:1 — the textarea sizes itself to content via `field-sizing`,
-     and the section just wraps it. The page's own min-height keeps an
-     empty tab feeling page-shaped without forcing the textarea to fill it. */
   .story-section {
-    display: flex;
-    flex-direction: column;
+    display: block;
   }
 
-  /* `field-sizing: content` makes the textarea grow with its own text
-     instead of carrying an internal scrollbar — combined with the outer
-     scroll on .story-editor, the page grows downward as the writer types.
-     `overflow-wrap: anywhere` ensures long Malayalam words / URLs break
-     onto a new line instead of forcing horizontal overflow on the page.
+  /* JS-driven auto-grow (autoGrow / autoGrowAction) keeps the textarea
+     sized to its content. The textarea sits inside the page's padding,
+     so long entries push the page taller, the outer scrolls, and the
+     cursor stays inside the page card. `overflow-wrap: anywhere` breaks
+     unbreakable runs (long Malayalam conjuncts, URLs) so the page never
+     produces a horizontal scrollbar.
      Body font — Courier Prime first for Latin, Malayalam font falls back
-     per-glyph so mixed-script prose still shapes correctly. Monospace
-     generic sits after the Malayalam font so it can't swallow Malayalam
-     glyphs via a system-monospace notdef. */
+     per-glyph so mixed-script prose still shapes correctly. */
   .story-textarea {
     display: block;
     width: 100%;
-    field-sizing: content;
-    /* Two empty lines of room when there's no content yet — gives the
-       placeholder space to breathe without forcing the textarea to fill
-       the whole page (which previously made the cursor land outside the
-       page on long text). The page's own min-height handles "feels like
-       a page when empty" instead. */
-    min-height: 2lh;
+    /* Two lines of placeholder breathing room before any input. */
+    min-height: 2.8em;
     font-size: 14px;
     line-height: 1.6;
     color: var(--text-on-page);

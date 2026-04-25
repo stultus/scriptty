@@ -1062,6 +1062,12 @@
     margin-right: auto;
     margin-top: 0;
     margin-bottom: 0.5em;
+    /* Each dialogue line is centered horizontally on the page so it
+       sits on the same visual axis as the character cue above. The
+       block is centered AND its text is centered — without the text
+       align, single-line / short dialogue visually drifts to the
+       left of the character. */
+    text-align: center;
     color: var(--text-on-page);
     opacity: 0.85;
   }

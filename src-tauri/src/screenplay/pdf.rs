@@ -960,12 +960,15 @@ pub fn generate_typst_markup(
                             // Auto-wrap dialogue in quotes if missing
                             let (prefix, suffix) = dialogue_quote_wrap(text);
                             // Dialogue: a 9cm box centered on the text
-                            // area. The outer #align(center) centers the
-                            // box; the box inherits left-aligned text by
-                            // default so wrapped lines read naturally.
+                            // area, with text *also* centered inside
+                            // the box so each wrapped line sits on the
+                            // same visual axis as the character cue
+                            // above. Without the inner #align(center),
+                            // short single-line dialogue would drift to
+                            // the left of the character's centerline.
                             let _ = text;
                             block.push_str(&format!(
-                                "  #align(center)[#box(width: 9cm)[{}{}{}]]\n",
+                                "  #align(center)[#box(width: 9cm)[#align(center)[{}{}{}]]]\n",
                                 prefix, typst_inline, suffix
                             ));
                         }

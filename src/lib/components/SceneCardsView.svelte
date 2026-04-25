@@ -52,6 +52,20 @@
 
   let cardLevel = $state<CardLevel>(initialLevel());
 
+  // ─── Compact mode for the Scene grid (#159) ─────────────────────────
+  // Mirror of EpisodeCardsView's compact toggle: collapses each scene
+  // card to a single row (number · setting · heading · cast · pages).
+  // Persisted to localStorage so the writer's choice sticks.
+  const SCENE_COMPACT_KEY = 'scriptty-scenes-compact';
+  let sceneCompact = $state(false);
+  if (typeof localStorage !== 'undefined') {
+    sceneCompact = localStorage.getItem(SCENE_COMPACT_KEY) === '1';
+  }
+  $effect(() => {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem(SCENE_COMPACT_KEY, sceneCompact ? '1' : '0');
+  });
+
   /** Reset the level when the document changes (open / new). The path
    *  changes on those flows, so re-seeding from localStorage gives the
    *  newly-loaded project its own remembered drill state. */
@@ -720,6 +734,10 @@
       </span>
 
       {#if cardLevel === 'scenes'}
+        <label class="toolbar-toggle" title="Compact view collapses each card to a single row — useful for at-a-glance episode planning">
+          <input type="checkbox" bind:checked={sceneCompact} />
+          <span>Compact</span>
+        </label>
         <label class="toolbar-toggle" title="Cluster cards by their Location group, then by Shoot date">
           <input type="checkbox" bind:checked={groupByLocation} />
           <span>Group by location</span>
@@ -735,7 +753,7 @@
       <EpisodeCardsView onOpenEpisode={openEpisode} />
     </div>
   {:else}
-  <div class="cards-grid" bind:this={gridEl}>
+  <div class="cards-grid" class:compact={sceneCompact} bind:this={gridEl}>
     {#each displayCards as card (card.key)}
       {@const headingUpper = card.heading.toUpperCase()}
       {@const cardSetting = headingUpper.startsWith('INT./EXT.') || headingUpper.startsWith('INT/EXT')
@@ -754,6 +772,7 @@
         && !card.extraCharacters.trim()
         && !card.scheduledDate.trim()
         && !card.locationGroup.trim()}
+      {@const hasProduction = !!(card.extraCharacters.trim() || card.locationGroup.trim() || card.scheduledDate.trim())}
       <div
         class="card scene-card"
         class:active={card.sceneOrder === editorStore.currentSceneIndex}
@@ -817,45 +836,64 @@
             oninput={(e) => updateDescription(card.sceneOrder, (e.target as HTMLTextAreaElement).value)}
             onkeydown={handleKeydown}
           ></textarea>
-          <label class="field-label" for="extras-{card.sceneNumber}">Non-speaking characters</label>
-          <input
-            id="extras-{card.sceneNumber}"
-            class="card-input"
-            type="text"
-            placeholder="Comma-separated, e.g. Extras, Guard"
-            value={card.extraCharacters}
-            oninput={(e) => updateExtraCharacters(card.sceneOrder, (e.target as HTMLInputElement).value)}
-            onkeydown={handleKeydown}
-          />
-          <!-- Shoot scheduling fields (#124) — two thin inputs on one row to
-               keep the card compact. Empty = unscheduled / ungrouped. -->
-          <div class="schedule-row">
-            <div class="schedule-field">
-              <label class="field-label" for="locgroup-{card.sceneNumber}">Location group</label>
+
+          <!-- Production-prep fields collapsed behind a disclosure (#159).
+               Auto-expanded if any production field already has content
+               (so a populated card never hides the writer's data); closed
+               by default for empty cards so the eyebrow wall is gone. -->
+          <details class="production-disclosure" open={hasProduction}>
+            <summary class="production-summary">
+              <svg class="caret" width="9" height="9" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true">
+                <path d="M3 2 L7 5 L3 8 Z" />
+              </svg>
+              <span class="production-label">Production</span>
+              {#if hasProduction}
+                <span class="production-hint">
+                  {#if card.locationGroup.trim()}<span>{card.locationGroup}</span>{/if}
+                  {#if card.scheduledDate.trim()}<span>· {card.scheduledDate}</span>{/if}
+                  {#if card.extraCharacters.trim()}<span>· extras</span>{/if}
+                </span>
+              {:else}
+                <span class="production-hint muted">Cast extras · location group · shoot date</span>
+              {/if}
+            </summary>
+            <div class="production-body">
+              <label class="field-label" for="extras-{card.sceneNumber}">Non-speaking characters</label>
               <input
-                id="locgroup-{card.sceneNumber}"
+                id="extras-{card.sceneNumber}"
                 class="card-input"
                 type="text"
-                placeholder="e.g. Main House, Studio Lot"
-                value={card.locationGroup}
-                oninput={(e) => updateLocationGroup(card.sceneOrder, (e.target as HTMLInputElement).value)}
+                placeholder="Comma-separated, e.g. Extras, Guard"
+                value={card.extraCharacters}
+                oninput={(e) => updateExtraCharacters(card.sceneOrder, (e.target as HTMLInputElement).value)}
                 onkeydown={handleKeydown}
               />
+              <!-- Shoot scheduling fields (#124) — two thin inputs on one row. -->
+              <div class="schedule-row">
+                <div class="schedule-field">
+                  <label class="field-label" for="locgroup-{card.sceneNumber}">Location group</label>
+                  <input
+                    id="locgroup-{card.sceneNumber}"
+                    class="card-input"
+                    type="text"
+                    placeholder="e.g. Main House, Studio Lot"
+                    value={card.locationGroup}
+                    oninput={(e) => updateLocationGroup(card.sceneOrder, (e.target as HTMLInputElement).value)}
+                    onkeydown={handleKeydown}
+                  />
+                </div>
+                <div class="schedule-field">
+                  <span class="field-label">Shoot date</span>
+                  <DatePicker
+                    value={card.scheduledDate}
+                    onChange={(v: string) => updateScheduledDate(card.sceneOrder, v)}
+                    placeholder="Pick a date"
+                  />
+                </div>
+              </div>
             </div>
-            <div class="schedule-field">
-              <span class="field-label">Shoot date</span>
-              <!-- DatePicker matches MetadataModal's pattern (#160).
-                   Stores ISO strings via two-way bind. Free-form values
-                   like "Day 3" aren't editable through the picker UI;
-                   if the writer needs that, the existing buildShootListData
-                   pipeline still respects the underlying string. -->
-              <DatePicker
-                value={card.scheduledDate}
-                onChange={(v: string) => updateScheduledDate(card.sceneOrder, v)}
-                placeholder="Pick a date"
-              />
-            </div>
-          </div>
+          </details>
+
           <label class="field-label" for="notes-{card.sceneNumber}">Notes</label>
           <textarea
             id="notes-{card.sceneNumber}"
@@ -1174,6 +1212,43 @@
     align-items: stretch;
   }
 
+  /* Compact mode (#159) — one card per row, single horizontal stripe.
+     Hides the editable body (only the header strip + a thin meta row
+     remain) so a long episode fits in one viewport for at-a-glance
+     review. The whole row stays clickable to drill back into the
+     full card by toggling Compact off. */
+  .cards-grid.compact {
+    grid-template-columns: 1fr;
+    grid-auto-rows: auto;
+    gap: 4px;
+  }
+
+  .cards-grid.compact .card {
+    min-height: 0;
+  }
+
+  .cards-grid.compact .card-meta,
+  .cards-grid.compact .card-editable {
+    display: none;
+  }
+
+  .cards-grid.compact .card-header {
+    border-bottom: none;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .cards-grid.compact .card-footer {
+    padding: 4px 14px 8px;
+  }
+
+  .cards-grid.compact .add-scene-card {
+    min-height: 44px;
+    flex-direction: row;
+    gap: 8px;
+    padding: 8px 14px;
+  }
+
   .card {
     position: relative;
     background: var(--surface-elevated);
@@ -1468,6 +1543,78 @@
     flex: 1;
     display: flex;
     flex-direction: column;
+  }
+
+  /* Production disclosure (#159) — collapses extras / location group
+     / shoot date behind a single tight summary row. Auto-opens when
+     any production field has content so populated cards never hide
+     the writer's data; collapsed by default for empty cards so the
+     eyebrow wall is gone. */
+  .production-disclosure {
+    margin: 8px 0 6px;
+    border-top: 1px dashed var(--border-subtle);
+    border-bottom: 1px dashed var(--border-subtle);
+  }
+
+  .production-disclosure[open] {
+    padding-bottom: 4px;
+  }
+
+  .production-summary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 0;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+  }
+
+  .production-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .production-summary .caret {
+    color: var(--text-muted);
+    transition: transform 120ms ease;
+    flex-shrink: 0;
+  }
+
+  .production-disclosure[open] .production-summary .caret {
+    transform: rotate(90deg);
+  }
+
+  .production-label {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+
+  .production-hint {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    flex: 1;
+    font-size: 10.5px;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+  }
+
+  .production-hint.muted {
+    font-style: italic;
+    opacity: 0.75;
+  }
+
+  .production-hint span + span {
+    margin-left: 4px;
+  }
+
+  .production-body {
+    padding: 4px 0 8px;
   }
 
   /* Shared tokens — keep in lock-step with .ann-label in Editor.svelte */

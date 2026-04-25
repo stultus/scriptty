@@ -23,11 +23,18 @@
    *  the trigger for the calendar. Flipped on open before the popover paints
    *  so the writer never sees a misplaced calendar. */
   let direction = $state<'down' | 'up'>('down');
+  /** Popover's screen coordinates — computed from the trigger's bounding
+   *  rect on open so the popover escapes any ancestor `overflow: hidden`
+   *  (scene cards, modal cards, etc.). Without this fixed positioning, the
+   *  calendar would clip inside the parent. */
+  let popoverLeft = $state(0);
+  let popoverTop = $state(0);
   /** Approx popover height — used for the flip decision. The actual rendered
    *  height varies (footer changes when a date is set), so we use a generous
    *  upper bound so a near-edge placement still flips correctly. */
   const POPOVER_HEIGHT_GUESS = 320;
   const POPOVER_GAP = 6;
+  const POPOVER_WIDTH = 264;
 
   // The calendar's "viewing" month — independent of `value` so the writer
   // can flip months without committing a date. Seeds from the value if set,
@@ -57,6 +64,18 @@
       direction = spaceBelow < POPOVER_HEIGHT_GUESS + POPOVER_GAP && spaceAbove > spaceBelow
         ? 'up'
         : 'down';
+
+      // Compute screen coordinates so the popover renders with `position:
+      // fixed` and escapes ancestor `overflow: hidden` (scene cards, modal
+      // bodies, etc.). Left edge tracks the trigger; clamp into the
+      // viewport so a near-right-edge trigger still shows the full popover.
+      let left = r.left;
+      const maxLeft = window.innerWidth - POPOVER_WIDTH - 8;
+      if (left > maxLeft) left = Math.max(8, maxLeft);
+      popoverLeft = left;
+      popoverTop = direction === 'up'
+        ? r.top - POPOVER_GAP - POPOVER_HEIGHT_GUESS
+        : r.bottom + POPOVER_GAP;
     } else {
       direction = 'down';
     }
@@ -171,6 +190,41 @@
     return () => document.removeEventListener('mousedown', onClick);
   });
 
+  // After the popover mounts, measure its actual height and adjust the
+  // up-direction popoverTop so it sits exactly POPOVER_GAP above the
+  // trigger (the open-effect uses POPOVER_HEIGHT_GUESS, which is a
+  // generous upper bound — without this measure the up-flipped popover
+  // would float a few px too high).
+  $effect(() => {
+    if (!open || !popoverEl || !triggerEl || direction !== 'up') return;
+    const tr = triggerEl.getBoundingClientRect();
+    const ph = popoverEl.getBoundingClientRect().height;
+    popoverTop = tr.top - POPOVER_GAP - ph;
+  });
+
+  // Reposition on scroll/resize so the popover tracks the trigger when
+  // the surrounding card grid scrolls. Capture-phase listener so we catch
+  // scrolls on any ancestor (the cards canvas, the workspace, the modal).
+  $effect(() => {
+    if (!open) return;
+    const reposition = () => {
+      if (!triggerEl) return;
+      const r = triggerEl.getBoundingClientRect();
+      let left = r.left;
+      const maxLeft = window.innerWidth - POPOVER_WIDTH - 8;
+      if (left > maxLeft) left = Math.max(8, maxLeft);
+      popoverLeft = left;
+      const ph = popoverEl?.getBoundingClientRect().height ?? POPOVER_HEIGHT_GUESS;
+      popoverTop = direction === 'up' ? r.top - POPOVER_GAP - ph : r.bottom + POPOVER_GAP;
+    };
+    window.addEventListener('scroll', reposition, true);
+    window.addEventListener('resize', reposition);
+    return () => {
+      window.removeEventListener('scroll', reposition, true);
+      window.removeEventListener('resize', reposition);
+    };
+  });
+
   const weekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 </script>
 
@@ -216,6 +270,7 @@
       bind:this={popoverEl}
       onkeydown={handlePopoverKey}
       tabindex="-1"
+      style="left: {popoverLeft}px; top: {popoverTop}px; width: {POPOVER_WIDTH}px;"
     >
       <div class="dp-head">
         <button type="button" class="dp-nav" onclick={prevMonth} aria-label="Previous month">
@@ -332,16 +387,14 @@
   }
 
   /* ─── Popover ─── */
-  /* Default opens DOWN (top: 100% + gap). When the trigger sits low in the
-     viewport, `.up` flips the popover above the trigger so it can't land
-     off-screen — the writer otherwise had to scroll the modal to see the
-     calendar (the original bug from the screenshot). */
+  /* Uses `position: fixed` with screen coordinates computed from the
+     trigger's bounding rect on open. This lets the popover escape any
+     ancestor `overflow: hidden` (scene cards, modal bodies). The flip
+     decision is also computed on open: `.up` means popoverTop already
+     places it above the trigger; `.up` only changes the entry animation. */
   .dp-popover {
-    position: absolute;
-    z-index: 20;
-    top: calc(100% + 6px);
-    left: 0;
-    width: 264px;
+    position: fixed;
+    z-index: 1000;
     padding: 12px;
     background: var(--surface-float);
     border: 1px solid var(--border-medium);
@@ -354,8 +407,6 @@
   }
 
   .dp-popover.up {
-    top: auto;
-    bottom: calc(100% + 6px);
     animation: dp-in-up 120ms ease-out;
   }
 

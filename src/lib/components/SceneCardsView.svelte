@@ -710,7 +710,7 @@
               ? `Scene ${card.sceneNumber} (drag disabled while grouped)`
               : `Drag to reorder scene ${card.sceneNumber}`}
             title={groupByLocation ? 'Switch off "Group by location" to drag-reorder' : ''}
-          >{card.sceneNumber}.</span>
+          >{String(card.sceneNumber).padStart(2, '0')}</span>
           <span class="card-heading">{card.heading.toUpperCase()}</span>
           <button
             class="card-delete"
@@ -1024,21 +1024,34 @@
     gap: 6px;
   }
 
+  /* Scene number badge — same zero-padded Courier chip the
+     EpisodeCardsView uses (#161). Reads as both an identifier and a
+     draggable affordance, not as plain typography in the heading row. */
   .card-number {
-    font-family: system-ui, -apple-system, sans-serif;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 24px;
+    padding: 0 8px;
+    border-radius: 5px;
+    background: var(--accent-muted);
+    color: var(--accent);
+    font-family: var(--editor-font-en), var(--ui-font);
     font-size: 12px;
     font-weight: 700;
-    color: var(--accent);
     font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
     cursor: grab;
     user-select: none;
-    padding: 2px 4px;
-    border-radius: 4px;
-    transition: background 120ms ease;
+    transition: background var(--motion-fast, 100ms) ease,
+                color var(--motion-fast, 100ms) ease;
   }
 
   .card-number:hover {
-    background: var(--accent-muted);
+    background: var(--accent);
+    color: var(--text-on-accent);
   }
 
   .card-number:active {

@@ -723,7 +723,10 @@
     <FindReplaceBar mode={findReplaceMode} onclose={() => { findReplaceOpen = false; }} />
   {/if}
   <div class="editor-scroll">
-    <div class="editor-with-annotations" style="--editor-font-ml: '{fontFamily}'">
+    <div
+      class="editor-with-annotations"
+      style="--editor-font-ml: '{fontFamily}'; --editor-font-size: {documentStore.activeSettings?.editor_font_size ?? 14}px"
+    >
       <div class="editor-container" bind:this={editorElement} style="--scene-counter-start: {(documentStore.activeSettings?.scene_number_start ?? 1) - 1}"></div>
       {#if showAnnotations}
       <div class="annotations-gutter" style="padding-top: {gutterTopPad}px" bind:this={gutterEl}>
@@ -925,7 +928,10 @@
     min-height: 2000px;
     outline: none;
     font-family: var(--editor-font-en), var(--editor-font-ml), ui-monospace, monospace;
-    font-size: 14px;
+    /* Per-document font size (#123) — driven by Settings → Editor text
+       size. Default falls back to the historical 14px when the setting
+       is missing on legacy files. */
+    font-size: var(--editor-font-size, 14px);
     line-height: 1.6;
     color: var(--text-on-page);
     background-color: var(--page-bg);

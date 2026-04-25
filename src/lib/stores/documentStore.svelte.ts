@@ -30,6 +30,9 @@ export interface ScreenplaySettings {
   input_scheme: string;
   scene_number_start: number;
   show_characters_below_header: boolean;
+  /** Editor font size in pixels — clamped to 10..=18 by the backend.
+   *  PDF output is unaffected (PDFs use their own fixed sizes). (#123) */
+  editor_font_size: number;
 }
 
 export interface ScreenplayStory {
@@ -418,6 +421,7 @@ class DocumentStore {
       input_scheme: 'mozhi',
       scene_number_start: 1,
       show_characters_below_header: false,
+      editor_font_size: 14,
     };
   }
 

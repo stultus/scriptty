@@ -111,6 +111,15 @@ pub struct ScreenplaySettings {
     /// scene. Defaults to false so existing files behave exactly as before.
     #[serde(default)]
     pub show_characters_below_header: bool,
+    /// Editor font size in pixels. Per-document so a writer with vision
+    /// needs can crank it up on a long-form project; PDF output is
+    /// unaffected (PDFs use their own fixed sizes). Clamped to 10..=18 on
+    /// deserialize so a hand-edited file can't break editor layout
+    /// (oversize text would push the gutter / annotations off-screen).
+    /// Defaults to 14 — the historical baseline before this setting
+    /// existed (#123).
+    #[serde(default = "default_editor_font_size", deserialize_with = "deserialize_editor_font_size")]
+    pub editor_font_size: u32,
 }
 
 /// Default value for `scene_number_start` — returns 1 so scenes start at 1
@@ -142,6 +151,24 @@ fn default_input_scheme() -> String {
     "mozhi".to_string()
 }
 
+/// Default editor font size in pixels — the value the app shipped with
+/// before `editor_font_size` was added, so old files render unchanged.
+fn default_editor_font_size() -> u32 {
+    14
+}
+
+/// Clamp `editor_font_size` to a sane range on deserialize. Values
+/// outside 10..=18 would push the editor's chrome out of alignment
+/// (gutter, annotation column) or render text unreadably small. A
+/// hand-edited file with a wild value falls back to the nearest valid one.
+fn deserialize_editor_font_size<'de, D>(deserializer: D) -> Result<u32, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let raw = u32::deserialize(deserializer)?;
+    Ok(raw.clamp(10, 18))
+}
+
 /// Clamp `scene_number_start` to a sane range on deserialize.
 ///
 /// The upper bound (9999) is well above anything a real screenplay needs and
@@ -169,6 +196,7 @@ impl Default for ScreenplaySettings {
             input_scheme: "mozhi".to_string(),
             scene_number_start: 1,
             show_characters_below_header: false,
+            editor_font_size: 14,
         }
     }
 }

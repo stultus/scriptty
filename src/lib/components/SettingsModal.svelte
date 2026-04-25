@@ -172,6 +172,32 @@
 
         <div class="setting-row">
           <div class="setting-label">
+            <span class="setting-name">Editor text size</span>
+            <span class="setting-desc">Screen only — PDFs use fixed sizes</span>
+          </div>
+          <div class="font-size-control">
+            <input
+              type="range"
+              min="10"
+              max="18"
+              step="1"
+              value={documentStore.activeSettings?.editor_font_size ?? 14}
+              oninput={(e: Event) => {
+                const val = parseInt((e.target as HTMLInputElement).value, 10);
+                const s = documentStore.activeSettings;
+                if (s && val >= 10 && val <= 18) {
+                  s.editor_font_size = val;
+                  documentStore.markDirty();
+                }
+              }}
+              aria-label="Editor text size"
+            />
+            <span class="font-size-value">{documentStore.activeSettings?.editor_font_size ?? 14}px</span>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
             <span class="setting-name">Characters under scene heading</span>
             <span class="setting-desc">Auto-list speaking characters</span>
           </div>
@@ -514,6 +540,27 @@
 
   .scene-start-input:focus {
     border-color: var(--accent);
+  }
+
+  /* ─── Editor font-size slider (#123) ─── */
+  .font-size-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .font-size-control input[type='range'] {
+    width: 110px;
+    accent-color: var(--accent);
+  }
+
+  .font-size-value {
+    width: 36px;
+    text-align: right;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
   }
 
   .scheme-select {

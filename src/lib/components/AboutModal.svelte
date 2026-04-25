@@ -44,21 +44,27 @@
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div class="modal-backdrop" onclick={handleBackdropClick} onkeydown={handleKeydown} role="dialog" aria-modal="true" tabindex="-1">
     <div class="modal-card" use:focusTrap>
-      <div class="logo-area">
-        <img src="/app-icon.png" alt="Scriptty" class="logo-img" />
+      <!-- Editorial masthead — same vocabulary as the WelcomeScreen
+           and the SceneCardsView hero. Eyebrow + tracked-caps title
+           + italic Manjari tagline + asterism divider. -->
+      <img src="/app-icon.png" alt="" class="logo-img" aria-hidden="true" />
+
+      <div class="masthead-eyebrow" aria-hidden="true">
+        <span class="eyebrow-rule"></span>
+        <span class="eyebrow-text">{version ? `Version ${version}` : 'About'}</span>
+        <span class="eyebrow-rule"></span>
       </div>
 
       <h1 class="app-name">Scriptty</h1>
-      {#if version}<p class="version">Version {version}</p>{/if}
       <p class="tagline">Write in the language you dream in.</p>
 
-      <hr class="divider" />
+      <div class="asterism" aria-hidden="true">· · ·</div>
 
       <div class="credits-section">
         <h3 class="credits-heading">Developers</h3>
         <p class="credits-name">Hrishikesh Bhaskaran (stultus)</p>
         <p class="credits-contact"><a href="mailto:hello@stultus.in" class="credits-link" onclick={(e) => openExternal(e, 'mailto:hello@stultus.in')}>hello@stultus.in</a> &middot; <a href="https://stultus.in" class="credits-link" onclick={(e) => openExternal(e, 'https://stultus.in')}>stultus.in</a></p>
-        <p class="credits-name" style="margin-top: 10px;">Hiran Venugopalan</p>
+        <p class="credits-name with-gap">Hiran Venugopalan</p>
         <p class="credits-contact"><a href="mailto:hiran.v@gmail.com" class="credits-link" onclick={(e) => openExternal(e, 'mailto:hiran.v@gmail.com')}>hiran.v@gmail.com</a> &middot; <a href="https://hiran.in" class="credits-link" onclick={(e) => openExternal(e, 'https://hiran.in')}>hiran.in</a></p>
       </div>
 
@@ -68,8 +74,6 @@
         <p class="credits-name">Aashiq Abu (Filmmaker)</p>
         <p class="credits-name">Sijith Vijayakumar</p>
       </div>
-
-      <hr class="divider" />
 
       <p class="license">MIT License &middot; &copy; 2026 Hrishikesh B.</p>
 
@@ -96,13 +100,16 @@
     background: var(--surface-float);
     border: 1px solid var(--border-medium);
     border-radius: var(--modal-radius);
-    padding: var(--modal-padding);
+    padding: 36px var(--modal-padding) 28px;
     width: var(--modal-w-base);
     max-width: 90vw;
     box-shadow: var(--modal-shadow);
     animation: modal-in var(--modal-anim-duration) ease-out;
     text-align: center;
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: var(--ui-font);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
   @keyframes modal-in {
@@ -110,64 +117,100 @@
     to { opacity: 1; transform: scale(1); }
   }
 
-  .logo-area {
-    margin: 0 auto 16px;
+  .logo-img {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    opacity: 0.92;
   }
 
-  .logo-img {
-    width: 80px;
-    height: 80px;
+  /* ─── Editorial masthead ─── */
+  .masthead-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .eyebrow-rule {
+    display: inline-block;
+    width: 32px;
+    height: 1px;
+    background: var(--border-medium);
+  }
+
+  .eyebrow-text {
+    font-family: var(--ui-font);
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
   }
 
   .app-name {
-    font-size: 20px;
+    margin: 0;
+    font-family: var(--ui-font);
+    font-size: 32px;
     font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     color: var(--text-primary);
-    margin: 0 0 4px;
-  }
-
-  .version {
-    font-size: 12px;
-    color: var(--text-muted);
-    margin: 0 0 12px;
+    line-height: 1;
   }
 
   .tagline {
-    font-size: 13px;
+    margin: 8px 0 0;
+    font-family: 'Manjari', var(--ui-font);
+    font-size: 13.5px;
+    font-style: italic;
     color: var(--text-secondary);
-    margin: 0;
-    line-height: 1.5;
+    line-height: 1.4;
   }
 
-  .divider {
-    border: none;
-    border-top: 1px solid var(--border-subtle);
-    margin: 20px 0;
+  .asterism {
+    margin: 22px 0 22px;
+    font-size: 14px;
+    color: var(--text-muted);
+    letter-spacing: 0.4em;
+    line-height: 1;
+    user-select: none;
   }
 
   .credits-section {
-    margin-bottom: 16px;
+    margin-bottom: 18px;
   }
 
+  /* Eyebrow style for credits headings — matches the masthead
+     vocabulary so they read as section subheads in the same system. */
   .credits-heading {
-    font-size: 11px;
-    font-weight: 600;
+    font-family: var(--ui-font);
+    font-size: 9.5px;
+    font-weight: 700;
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin: 0 0 6px;
+    letter-spacing: 0.18em;
+    margin: 0 0 8px;
   }
 
   .credits-name {
+    font-family: var(--ui-font);
     font-size: 13px;
     color: var(--text-primary);
     margin: 2px 0;
   }
 
+  .credits-name.with-gap {
+    margin-top: 10px;
+  }
+
   .credits-contact {
-    font-size: 12px;
+    font-family: var(--ui-font);
+    font-size: 11.5px;
     color: var(--text-secondary);
     margin: 2px 0;
+    font-style: italic;
   }
 
   .credits-link {
@@ -180,13 +223,20 @@
   }
 
   .license {
-    font-size: 11px;
+    margin: 18px 0 0;
+    font-family: var(--ui-font);
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
     color: var(--text-muted);
-    margin: 0;
+    padding-top: 18px;
+    border-top: 1px solid var(--border-subtle);
+    align-self: stretch;
   }
 
   .modal-footer {
-    margin-top: 20px;
+    margin-top: 18px;
   }
 
   .btn-ghost {

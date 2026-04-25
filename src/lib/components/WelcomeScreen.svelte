@@ -99,9 +99,20 @@
     </div>
 
     <div class="secondary-row">
-      <button class="open-existing" onclick={onOpen}>Open existing…</button>
-      <span class="secondary-divider" aria-hidden="true">·</span>
-      <button class="open-existing" onclick={handlePasteScript}>Paste script…</button>
+      <button class="pill-cta" onclick={onOpen}>
+        <svg class="pill-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 7 V19 A2 2 0 0 0 5 21 H19 A2 2 0 0 0 21 19 V9 A2 2 0 0 0 19 7 H12 L10 5 H5 A2 2 0 0 0 3 7 Z"/>
+        </svg>
+        <span>Open Existing</span>
+      </button>
+      <button class="pill-cta" onclick={handlePasteScript}>
+        <svg class="pill-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="6" y="4" width="12" height="16" rx="1"/>
+          <path d="M9 4 V3 A1 1 0 0 1 10 2 H14 A1 1 0 0 1 15 3 V4"/>
+          <path d="M9 11 H15 M9 15 H13"/>
+        </svg>
+        <span>Paste Script</span>
+      </button>
     </div>
 
     {#if recent.length > 0}
@@ -304,7 +315,11 @@
     line-height: 1.4;
   }
 
-  /* ─── Secondary actions — typeset link row ─────────────────────────── */
+  /* ─── Secondary CTAs — outlined typeset pills ─────────────────────── */
+  /* Same pill vocabulary as the SceneCardsView hero toolbar so the
+     two surfaces speak the same affordance. Hairline border at rest,
+     accent border + accent-muted fill on hover, leading SVG glyph
+     for visual weight. */
   .secondary-row {
     display: inline-flex;
     align-items: center;
@@ -312,30 +327,47 @@
     margin-top: 4px;
   }
 
-  .secondary-divider {
-    color: var(--border-medium);
-    font-size: 14px;
-    line-height: 1;
-    user-select: none;
-  }
-
-  .open-existing {
-    padding: 4px 8px;
+  .pill-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 32px;
+    padding: 0 14px 0 12px;
     background: transparent;
-    border: none;
+    border: 1px solid var(--border-medium);
+    border-radius: 16px;
     color: var(--text-secondary);
     font-family: var(--ui-font);
-    font-size: 11.5px;
-    font-weight: 500;
-    letter-spacing: 0.02em;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
     cursor: pointer;
-    border-radius: 4px;
-    transition: color 120ms ease, background 120ms ease;
+    transition: color 120ms ease,
+                border-color 120ms ease,
+                background 120ms ease,
+                transform 120ms ease;
   }
 
-  .open-existing:hover {
+  .pill-cta:hover {
     color: var(--accent);
-    background: var(--surface-hover);
+    border-color: var(--accent);
+    background: var(--accent-muted);
+  }
+
+  .pill-cta:active {
+    transform: translateY(0.5px);
+  }
+
+  .pill-icon {
+    flex-shrink: 0;
+    color: currentColor;
+    opacity: 0.75;
+    transition: opacity 120ms ease;
+  }
+
+  .pill-cta:hover .pill-icon {
+    opacity: 1;
   }
 
   /* ─── Recent index ─────────────────────────────────────────────────── */

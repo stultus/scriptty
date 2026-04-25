@@ -40,14 +40,43 @@
     return 'Untitled';
   });
 
-  // Episode badge — only shown for series projects.
-  let episodeLabel = $derived.by(() => {
-    if (!documentStore.isSeries) return '';
-    const ep = documentStore.activeEpisode;
-    if (!ep) return '';
-    const name = ep.title.trim();
-    return name ? `Ep ${ep.number} · ${name}` : `Ep ${ep.number}`;
+  // ─── Episode popover (#173) ───
+  // The episode badge is a button — opens a popover listing every
+  // episode with the active one highlighted. Clicking an episode
+  // switches active; "+ New episode" appends and switches.
+  let episodePopoverOpen = $state(false);
+  let episodePopoverTrigger = $state<HTMLButtonElement | null>(null);
+  let episodePopoverEl = $state<HTMLDivElement | null>(null);
+
+  $effect(() => {
+    if (!episodePopoverOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+      if (episodePopoverEl?.contains(target)) return;
+      if (episodePopoverTrigger?.contains(target)) return;
+      episodePopoverOpen = false;
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') episodePopoverOpen = false;
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKey);
+    };
   });
+
+  function pickEpisode(index: number) {
+    documentStore.setActiveEpisode(index);
+    episodePopoverOpen = false;
+  }
+
+  async function addEpisodeFromPopover() {
+    await documentStore.addEpisode('');
+    episodePopoverOpen = false;
+  }
 
   // Two-phase flag: `visible` drives CSS opacity so Svelte can transition
   // in (true) and out (false); we keep the text mounted for the fade-out
@@ -115,8 +144,22 @@
 
   <div class="title-zone">
     <span class="title">{displayTitle}</span>
-    {#if episodeLabel}
-      <span class="episode-label" title={`Active episode — ${episodeLabel}`}>{episodeLabel}</span>
+    {#if documentStore.isSeries && documentStore.activeEpisode}
+      <button
+        class="episode-label"
+        type="button"
+        onclick={() => { episodePopoverOpen = !episodePopoverOpen; }}
+        title="Switch episode"
+        aria-haspopup="listbox"
+        aria-expanded={episodePopoverOpen}
+        bind:this={episodePopoverTrigger}
+      >
+        <span class="ep-badge-mini">{String(documentStore.activeEpisode.number).padStart(2, '0')}</span>
+        <span class="ep-label-text">{documentStore.activeEpisode.title.trim() || 'Untitled'}</span>
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6 9 L12 15 L18 9"/>
+        </svg>
+      </button>
     {/if}
     {#if documentStore.isDirty}
       <span class="dirty-dot" title="Unsaved changes"></span>
@@ -126,6 +169,46 @@
         <svg class="status-tick" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
         {statusMessage}
       </span>
+    {/if}
+
+    <!-- Episode popover — anchored to the badge above. List of episodes
+         with active one highlighted; pick switches active, "+ New
+         episode" appends and switches. Same data as SeriesEpisodeList
+         in the sidebar (#173). -->
+    {#if episodePopoverOpen && documentStore.isSeries && documentStore.document?.series}
+      <div
+        class="ep-popover"
+        role="listbox"
+        aria-label="Switch episode"
+        bind:this={episodePopoverEl}
+      >
+        {#each documentStore.document.series.episodes as ep, idx (ep.id)}
+          <button
+            type="button"
+            class="ep-pop-row"
+            class:active={idx === documentStore.activeEpisodeIndex}
+            role="option"
+            aria-selected={idx === documentStore.activeEpisodeIndex}
+            onclick={() => pickEpisode(idx)}
+          >
+            <span class="ep-pop-badge">{String(ep.number).padStart(2, '0')}</span>
+            <span class="ep-pop-title">{ep.title.trim() || 'Untitled'}</span>
+            {#if idx === documentStore.activeEpisodeIndex}
+              <svg class="ep-pop-check" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            {/if}
+          </button>
+        {/each}
+        <div class="ep-pop-sep" aria-hidden="true"></div>
+        <button class="ep-pop-add" type="button" onclick={addEpisodeFromPopover}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          New episode
+        </button>
+      </div>
     {/if}
   </div>
 
@@ -244,6 +327,7 @@
   }
 
   .title-zone {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -268,23 +352,185 @@
     white-space: nowrap;
   }
 
+  /* Episode badge button — clickable popover trigger (#173). */
   .episode-label {
-    display: inline-block;
-    padding: 1px 7px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px 2px 4px;
     border: 1px solid var(--border-subtle);
     border-radius: 10px;
-    font-size: 10.5px;
-    color: var(--text-muted);
+    font-family: var(--ui-font);
+    font-size: 11px;
+    color: var(--text-secondary);
     background: var(--surface-base);
     letter-spacing: 0.02em;
     white-space: nowrap;
-    /* Let the label use whatever space the title bar has. The outer
-       flex row still truncates the series title first, so the episode
-       badge only starts shrinking when there is genuinely no room. */
+    cursor: pointer;
+    -webkit-app-region: no-drag;
     max-width: min(320px, 40vw);
     overflow: hidden;
-    text-overflow: ellipsis;
+    transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
     flex-shrink: 1;
+  }
+
+  .episode-label:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+    border-color: var(--border-medium);
+  }
+
+  .episode-label[aria-expanded='true'] {
+    background: var(--accent-muted);
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .ep-badge-mini {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 16px;
+    padding: 0 5px;
+    border-radius: 4px;
+    background: var(--accent-muted);
+    color: var(--accent);
+    font-family: var(--editor-font-en), var(--ui-font);
+    font-size: 9.5px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+  }
+
+  .episode-label[aria-expanded='true'] .ep-badge-mini {
+    background: var(--accent);
+    color: var(--text-on-accent);
+  }
+
+  .ep-label-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  /* ─── Episode popover ─── */
+  .ep-popover {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 260px;
+    max-width: 360px;
+    max-height: 50vh;
+    overflow-y: auto;
+    padding: 4px;
+    background: var(--surface-float);
+    border: 1px solid var(--border-medium);
+    border-radius: 8px;
+    box-shadow:
+      0 12px 32px var(--shadow-heavy),
+      0 2px 8px var(--shadow-soft);
+    z-index: 50;
+    -webkit-app-region: no-drag;
+    animation: ep-pop-in 120ms ease-out;
+  }
+
+  @keyframes ep-pop-in {
+    from { opacity: 0; transform: translate(-50%, -4px); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
+  }
+
+  .ep-pop-row {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 28px 1fr 14px;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 8px;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: var(--ui-font);
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+    transition: background 100ms ease, color 100ms ease;
+  }
+
+  .ep-pop-row:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+  }
+
+  .ep-pop-row.active {
+    background: var(--accent-muted);
+    color: var(--accent);
+  }
+
+  .ep-pop-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: 4px;
+    background: var(--surface-elevated);
+    color: var(--text-muted);
+    font-family: var(--editor-font-en), var(--ui-font);
+    font-size: 10px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+  }
+
+  .ep-pop-row.active .ep-pop-badge {
+    background: var(--accent);
+    color: var(--text-on-accent);
+  }
+
+  .ep-pop-title {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  .ep-pop-check {
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .ep-pop-sep {
+    height: 1px;
+    background: var(--border-subtle);
+    margin: 4px 6px;
+  }
+
+  .ep-pop-add {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 8px;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--accent);
+    font-family: var(--ui-font);
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .ep-pop-add:hover {
+    background: var(--accent-muted);
   }
 
   .dirty-dot {

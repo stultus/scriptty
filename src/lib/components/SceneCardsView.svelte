@@ -11,6 +11,7 @@
   import { InputModeManager } from '$lib/editor/input/InputModeManager';
   import StatusBar from '$lib/components/StatusBar.svelte';
   import EpisodeCardsView from '$lib/components/EpisodeCardsView.svelte';
+  import DatePicker from '$lib/components/DatePicker.svelte';
 
   // Map the font setting slug to a CSS font-family name
   let fontFamily = $derived(
@@ -856,15 +857,16 @@
               />
             </div>
             <div class="schedule-field">
-              <label class="field-label" for="schedule-{card.sceneNumber}">Shoot date</label>
-              <input
-                id="schedule-{card.sceneNumber}"
-                class="card-input"
-                type="text"
-                placeholder="ISO date or 'Day 3'"
+              <span class="field-label">Shoot date</span>
+              <!-- DatePicker matches MetadataModal's pattern (#160).
+                   Stores ISO strings via two-way bind. Free-form values
+                   like "Day 3" aren't editable through the picker UI;
+                   if the writer needs that, the existing buildShootListData
+                   pipeline still respects the underlying string. -->
+              <DatePicker
                 value={card.scheduledDate}
-                oninput={(e) => updateScheduledDate(card.sceneOrder, (e.target as HTMLInputElement).value)}
-                onkeydown={handleKeydown}
+                onChange={(v: string) => updateScheduledDate(card.sceneOrder, v)}
+                placeholder="Pick a date"
               />
             </div>
           </div>

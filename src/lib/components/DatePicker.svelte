@@ -6,9 +6,13 @@
   // as before, but the writer interacts with a calendar grid instead of
   // OS-default segmented digits.
 
-  let { value = $bindable(''), placeholder = 'Pick a date' } = $props<{
+  let { value = $bindable(''), placeholder = 'Pick a date', onChange } = $props<{
     value: string;
     placeholder?: string;
+    /** Optional callback fired when the value changes — useful when the
+     *  caller can't pass a bindable (e.g. a date stored on a derived
+     *  array element). Receives the new ISO string (or '' for clear). */
+    onChange?: (v: string) => void;
   }>();
 
   let open = $state(false);
@@ -108,13 +112,16 @@
   }
 
   function pick(d: Date) {
-    value = toISO(d);
+    const next = toISO(d);
+    value = next;
+    onChange?.(next);
     open = false;
     queueMicrotask(() => triggerEl?.focus());
   }
 
   function clear() {
     value = '';
+    onChange?.('');
     open = false;
     queueMicrotask(() => triggerEl?.focus());
   }

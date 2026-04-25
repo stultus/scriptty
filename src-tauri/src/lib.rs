@@ -185,6 +185,9 @@ pub fn run() {
       commands::export::export_plaintext,
       commands::export::export_fountain,
       commands::file::open_external_url,
+      commands::file::autosave_screenplay,
+      commands::file::discard_autosave,
+      commands::file::load_autosave,
     ])
     .build(tauri::generate_context!())
     .expect("error while building tauri application")

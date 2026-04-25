@@ -93,6 +93,15 @@ export interface ScreenplayDocument {
   scene_cards: SceneCard[];
 }
 
+/** Returned by the `load_autosave` Tauri command when an autosave sidecar
+ *  is newer than the file the user just opened (#118). The frontend
+ *  prompts the writer with Restore / Discard before applying. */
+export interface AutosaveInfo {
+  document: ScreenplayDocument;
+  autosave_time_ms: number;
+  original_time_ms: number;
+}
+
 /** Convert a ProseMirror-ish content payload into canonical
  *  `{type:'doc', content:[...]}` shape. Accepts three inputs:
  *    - an already-canonical doc (returned unchanged),
@@ -439,6 +448,11 @@ class DocumentStore {
       this.currentPath = savePath;
       this.isDirty = false;
       this.lastSavedAt = Date.now();
+      // Real save committed — the autosave sidecar is now stale, drop it
+      // (see #118). Cancel any pending autosave timer so we don't write
+      // a fresh sidecar moments after deleting the old one.
+      this.cancelPendingAutosave();
+      void this.#discardAutosave(savePath);
 
       // If no explicit title set, derive it from the filename
       if (!this.document.meta.title) {
@@ -453,7 +467,43 @@ class DocumentStore {
   /** Open a screenplay file from disk */
   async openDocument(path: string): Promise<void> {
     try {
-      const doc = await invoke<ScreenplayDocument>('open_screenplay', { path });
+      let doc = await invoke<ScreenplayDocument>('open_screenplay', { path });
+
+      // Crash-recovery (#118): if a `<path>.autosave` sidecar exists and
+      // is newer than the file we just loaded, the previous session
+      // crashed (or quit without saving) with unsaved work. Offer the
+      // writer a choice — restore the autosave or keep the saved file.
+      try {
+        const autosave = await invoke<AutosaveInfo | null>('load_autosave', { path });
+        if (autosave) {
+          const minutesOld = Math.max(
+            1,
+            Math.round((autosave.autosave_time_ms - autosave.original_time_ms) / 60_000),
+          );
+          const result: MessageDialogResult = await message(
+            `Scriptty found unsaved changes from your last session (about ${minutesOld} min newer than the saved file). Restore them?`,
+            {
+              title: 'Recover unsaved changes?',
+              kind: 'info',
+              buttons: { yes: 'Restore', no: 'Discard', cancel: 'Decide later' },
+            },
+          );
+          if (result === 'Restore') {
+            doc = autosave.document;
+            // Keep the autosave file in place; the user is now editing
+            // recovered content, and a save will overwrite both.
+          } else if (result === 'Discard') {
+            // Drop the stale sidecar so we don't keep prompting.
+            void this.#discardAutosave(path);
+          }
+          // 'Cancel' (Decide later) — keep the autosave file untouched and
+          // proceed with the saved version. We'll prompt again next open.
+        }
+      } catch (recoverErr) {
+        // Recovery is best-effort; never block opening the document.
+        console.warn('Autosave recovery check failed:', recoverErr);
+      }
+
       // Normalize every content payload into canonical ProseMirror shape
       // before anything else reads it. Slim-format files (series authored
       // by hand, Fountain-like episode blocks) can store content as a flat
@@ -537,6 +587,66 @@ class DocumentStore {
   /** Mark the document as having unsaved changes */
   markDirty(): void {
     this.isDirty = true;
+    this.#scheduleAutosave();
+  }
+
+  // ─── Autosave (#118) ──────────────────────────────────────────────
+  // The writer is the source of truth — never lose more than ~15s of
+  // typing to a crash, OS sleep, or accidental close. Autosave writes
+  // to `<path>.autosave` (a sidecar) on a debounced timer; the real
+  // save deletes the sidecar; on next open we check if a sidecar is
+  // newer than the file and offer to restore it.
+  //
+  // Untitled documents (no currentPath) are skipped — they have nothing
+  // to autosave alongside. The writer still gets the dirty-state guard
+  // on close, which is the existing protection for that case.
+  #autosaveTimer: ReturnType<typeof setTimeout> | null = null;
+  #AUTOSAVE_DELAY_MS = 15_000;
+
+  #scheduleAutosave(): void {
+    if (this.#autosaveTimer) clearTimeout(this.#autosaveTimer);
+    if (!this.currentPath || !this.document) return;
+    this.#autosaveTimer = setTimeout(() => {
+      this.#autosaveTimer = null;
+      this.#runAutosave();
+    }, this.#AUTOSAVE_DELAY_MS);
+  }
+
+  async #runAutosave(): Promise<void> {
+    // Bail if state changed under us between scheduling and firing.
+    if (!this.currentPath || !this.document || !this.isDirty) return;
+    try {
+      await invoke('autosave_screenplay', {
+        path: this.currentPath,
+        document: this.document,
+      });
+    } catch (error) {
+      // Best-effort — log but don't surface a toast for transient I/O failure.
+      console.warn('Autosave failed:', error);
+    }
+  }
+
+  /** Cancel any pending autosave timer (called on close-without-save). */
+  cancelPendingAutosave(): void {
+    if (this.#autosaveTimer) {
+      clearTimeout(this.#autosaveTimer);
+      this.#autosaveTimer = null;
+    }
+  }
+
+  /** Force an immediate autosave (called from beforeunload / window close
+   *  so a crash mid-typing never loses the most recent edits). */
+  async flushAutosave(): Promise<void> {
+    this.cancelPendingAutosave();
+    if (this.isDirty) await this.#runAutosave();
+  }
+
+  async #discardAutosave(path: string): Promise<void> {
+    try {
+      await invoke('discard_autosave', { path });
+    } catch (error) {
+      console.warn('Failed to discard autosave:', error);
+    }
   }
 
   /**
@@ -558,7 +668,13 @@ class DocumentStore {
 
       if (result === 'Cancel') return false;
       if (result === 'Save') await this.saveWithDialog();
-      // "Don't Save" — proceed without saving
+      else {
+        // "Don't Save" — the user explicitly said discard. Drop the
+        // autosave sidecar so the next open doesn't offer to restore
+        // changes the user just rejected (#118).
+        this.cancelPendingAutosave();
+        if (this.currentPath) void this.#discardAutosave(this.currentPath);
+      }
       return true;
     } catch (error) {
       console.error('[confirmIfDirty] dialog error:', error);

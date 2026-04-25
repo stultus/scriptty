@@ -122,6 +122,9 @@
       onclick={() => onViewChange?.('writing')}
       title="Writing view"
     >
+      <svg class="tab-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M16 3 L20 7 L8 19 L3 20 L4 15 Z"/>
+      </svg>
       <span class="tab-label">Writing</span>
     </button>
     <button
@@ -130,6 +133,10 @@
       onclick={() => onViewChange?.('cards')}
       title="Scene Cards (⌘⇧K)"
     >
+      <svg class="tab-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="5" width="8" height="14" rx="1.5"/>
+        <rect x="13" y="5" width="8" height="14" rx="1.5"/>
+      </svg>
       <span class="tab-label">Cards</span>
     </button>
     <button
@@ -138,6 +145,11 @@
       onclick={() => onViewChange?.('story')}
       title="Story view (⌘⇧L)"
     >
+      <svg class="tab-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="5" y1="7"  x2="19" y2="7"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+        <line x1="5" y1="17" x2="14" y2="17"/>
+      </svg>
       <span class="tab-label">Story</span>
     </button>
   </div>
@@ -293,6 +305,20 @@
 
   .view-tab:hover {
     color: var(--text-secondary);
+  }
+
+  .tab-icon {
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: color 100ms ease;
+  }
+
+  .view-tab:hover .tab-icon {
+    color: var(--text-secondary);
+  }
+
+  .view-tab.active .tab-icon {
+    color: var(--accent);
   }
 
   .view-tab.active {

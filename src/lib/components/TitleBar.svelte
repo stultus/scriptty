@@ -301,36 +301,36 @@
     box-shadow: 0 1px 2px var(--shadow-soft);
   }
 
-  /* ─── Ghost button (Export) ───
-     Carries a subtle outline so it reads as a button at rest, not as
-     ghost text next to the view switcher (#107). The outline disappears
-     on hover into the same surface treatment used by other ghost buttons. */
+  /* ─── Export and Save are visual peers (#164) ───
+     Both are completion actions — Save persists, Export ships. They get
+     the same dimensions, weight, font, and corner radius. Save keeps
+     the filled-accent treatment (it's the more frequent action); Export
+     gets an accent-tinted soft fill — equal-but-distinguishable.
+     Supersedes #107's "make Export visible" patch with a fuller
+     statement of equality. */
   .btn-ghost {
     height: 26px;
-    padding: 0 12px;
+    padding: 0 14px;
     border-radius: 5px;
-    border: 1px solid var(--border-medium);
-    background: transparent;
-    color: var(--text-secondary);
+    border: 1px solid var(--accent);
+    background: var(--accent-muted);
+    color: var(--accent);
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
     font-family: system-ui, -apple-system, sans-serif;
     cursor: pointer;
     transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
   }
   .btn-ghost:hover {
-    background: var(--surface-hover);
-    color: var(--text-primary);
-    border-color: var(--border-strong, var(--border-medium));
+    background: var(--accent);
+    color: var(--text-on-accent);
+    border-color: var(--accent);
   }
   .btn-ghost:active {
-    background: var(--surface-active);
+    filter: brightness(0.96);
   }
 
-  /* ─── Primary button (Save) ───
-     The only true primary action in the title bar. Bumped to 26px,
-     bolder weight, and a stronger filled accent so it reads as the
-     unmistakable primary among the right-group buttons (#107). */
+  /* ─── Save — filled accent peer to Export ─── */
   .btn-primary {
     height: 26px;
     padding: 0 14px;

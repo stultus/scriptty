@@ -157,13 +157,14 @@
     overflow: hidden;
   }
 
-  /* The editor area doesn't scroll — the page is sized to fit the viewport
-     and the active textarea scrolls internally. This keeps every tab
-     rendering on an identically sized page regardless of how much text
-     is stored in any individual section. */
+  /* The editor area scrolls vertically — the page grows with the textarea
+     content (via field-sizing on the textarea), and longer entries push
+     the page taller while the outer container handles the scroll. Mirrors
+     the script view's "page grows down, outer scrolls" pattern. */
   .story-editor {
     flex: 1;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
     background: var(--surface-base);
     padding: 40px 0;
     display: flex;
@@ -174,6 +175,9 @@
   .page {
     width: 100%;
     max-width: 680px;
+    /* Fill at least the visible canvas so an empty tab still feels like
+       a page, but allow growth past the viewport (the outer scrolls). */
+    min-height: calc(100vh - 80px - 28px);
     background-color: var(--page-bg);
     background-image: var(--page-grain);
     background-repeat: repeat;
@@ -186,8 +190,6 @@
     padding: 32px 72px 60px;
     display: flex;
     flex-direction: column;
-    flex: 1;
-    min-height: 0;
     box-sizing: border-box;
   }
 
@@ -234,19 +236,22 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-height: 0;
   }
 
-  /* No field-sizing: the textarea occupies the fixed page body and scrolls
-     its own content. All four tabs therefore render on an identical page. */
-  /* Body font — Courier Prime first for Latin, Malayalam font falls back
+  /* `field-sizing: content` makes the textarea grow with its own text
+     instead of carrying an internal scrollbar — combined with the outer
+     scroll on .story-editor, the page grows downward as the writer types.
+     `overflow-wrap: anywhere` ensures long Malayalam words / URLs break
+     onto a new line instead of forcing horizontal overflow on the page.
+     Body font — Courier Prime first for Latin, Malayalam font falls back
      per-glyph so mixed-script prose still shapes correctly. Monospace
      generic sits after the Malayalam font so it can't swallow Malayalam
      glyphs via a system-monospace notdef. */
   .story-textarea {
     width: 100%;
     flex: 1;
-    min-height: 0;
+    field-sizing: content;
+    min-height: 60vh;
     font-size: 14px;
     line-height: 1.6;
     color: var(--text-on-page);
@@ -256,7 +261,9 @@
     resize: none;
     box-sizing: border-box;
     padding: 0;
-    overflow-y: auto;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .story-textarea:focus {

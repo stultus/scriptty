@@ -51,6 +51,69 @@
   let dropTargetScene = $state<number | null>(null);
   let listEl = $state<HTMLUListElement | null>(null);
 
+  // ─── Keyboard navigation (#139) ─────────────────────────────────────
+  // Roving tabindex over the scene items: only one .scene-item button is
+  // Tab-reachable at a time. ArrowUp/Down move focus by one row,
+  // Home/End jump to first/last. Enter activates (the button's own
+  // click handler).
+  //
+  // `focusedSceneIdx === -1` means the writer hasn't started keyboarding
+  // yet — we fall back to the editor's currentSceneIndex (or 0) so Tab
+  // into the list lands on the active scene by default.
+  let focusedSceneIdx = $state(-1);
+
+  let effectiveFocused = $derived(
+    focusedSceneIdx >= 0
+      ? focusedSceneIdx
+      : editorStore.currentSceneIndex >= 0
+        ? editorStore.currentSceneIndex
+        : 0,
+  );
+
+  function handleListKey(event: KeyboardEvent) {
+    const total = scenes.length;
+    if (total === 0) return;
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        focusedSceneIdx = Math.min(total - 1, effectiveFocused + 1);
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        focusedSceneIdx = Math.max(0, effectiveFocused - 1);
+        break;
+      case 'Home':
+        event.preventDefault();
+        focusedSceneIdx = 0;
+        break;
+      case 'End':
+        event.preventDefault();
+        focusedSceneIdx = total - 1;
+        break;
+    }
+  }
+
+  // After focusedSceneIdx changes, move DOM focus to the corresponding
+  // .scene-item button — but only if focus is already inside the list
+  // (so we don't steal focus from elsewhere when the editor's active
+  // scene changes).
+  $effect(() => {
+    if (focusedSceneIdx < 0) return;
+    const active = document.activeElement;
+    const insideList = !!(active && listEl?.contains(active));
+    if (!insideList) return;
+    const items = listEl?.querySelectorAll<HTMLButtonElement>('.scene-item');
+    items?.[focusedSceneIdx]?.focus();
+  });
+
+  // Reset focusedSceneIdx if the scenes list shrinks past the focused
+  // index (e.g. scene deleted in the editor).
+  $effect(() => {
+    if (focusedSceneIdx >= scenes.length) {
+      focusedSceneIdx = scenes.length > 0 ? scenes.length - 1 : -1;
+    }
+  });
+
   // Extract scene headings from the ProseMirror JSON document.
   // Reads the *active* content — top-level for films, active episode for series —
   // so this component works for both project shapes without branching.
@@ -410,10 +473,17 @@
       </button>
     </div>
   {:else}
-    <ul class="scene-list" bind:this={listEl}>
-      {#each scenes as scene (scene.index)}
+    <ul
+      class="scene-list"
+      bind:this={listEl}
+      onkeydown={handleListKey}
+      role="listbox"
+      aria-label="Scene navigator"
+    >
+      {#each scenes as scene, sceneArrayIdx (scene.index)}
         {@const sceneOrder = scene.number - (documentStore.activeSettings?.scene_number_start ?? 1)}
         {@const isActive = sceneOrder === editorStore.currentSceneIndex}
+        {@const isFocusable = sceneArrayIdx === effectiveFocused}
         <li
           class="scene-li"
           class:active={isActive}
@@ -442,7 +512,13 @@
             class="scene-item"
             data-time={scene.time ?? ''}
             data-setting={scene.setting ?? ''}
+            role="option"
+            tabindex={isFocusable ? 0 : -1}
+            aria-selected={isActive}
+            aria-posinset={sceneArrayIdx + 1}
+            aria-setsize={scenes.length}
             onclick={() => scrollToScene(scene.index)}
+            onfocus={() => { focusedSceneIdx = sceneArrayIdx; }}
             title="Scene {scene.number} · {scene.text.toUpperCase()} · ~{scene.pages} pages"
           >
             <!-- Setting marker — typographic so it never reads as a
@@ -731,6 +807,12 @@
   .scene-item:hover {
     background: var(--surface-hover);
     color: var(--text-primary);
+  }
+
+  /* Keyboard focus ring — visible against the active accent bg too. */
+  .scene-item:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--accent);
   }
 
   /* Active scene — the one the editor cursor is currently inside. Stays

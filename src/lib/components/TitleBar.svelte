@@ -128,10 +128,12 @@
 
 <div class="title-bar">
   <div class="btn-group left">
-    <!-- App mark — small ഋ glyph at the far left as the brand anchor (#170).
-         Decorative; the menu bar still carries the app name. Falls back
-         to a soft bullet if the Malayalam character can't be rendered. -->
-    <span class="app-mark" aria-hidden="true" title="Scriptty">ഋ</span>
+    <!-- App wordmark — "Scriptty" set in bold tracked-caps Courier
+         to match the screenplay-cover wordmark used everywhere else
+         (welcome screen, about modal, PDF cover). The Malayalam ഋ
+         glyph that lived here previously was a one-off mark that
+         didn't speak the same vocabulary as the rest of the app. -->
+    <span class="app-wordmark" aria-hidden="true" title="Scriptty">Scriptty</span>
     <button
       class="btn-icon"
       onclick={onToggleSidebar}
@@ -301,19 +303,22 @@
     flex-shrink: 0;
   }
 
-  /* App mark — ഋ glyph at the far left as the brand anchor. Soft accent
-     tint so it reads as decorative identity, not as a button. (#170) */
-  .app-mark {
+  /* App wordmark — "Scriptty" in bold tracked-caps Courier matches
+     the screenplay-cover wordmark used by the welcome surface,
+     about modal, and printed cover. The Courier face ties the
+     title-bar identity to the rest of the editorial vocabulary. */
+  .app-wordmark {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    width: 22px;
     height: 22px;
-    margin-right: 2px;
+    margin: 0 4px 0 2px;
+    padding: 0 4px;
     color: var(--accent);
-    font-family: 'Manjari', 'Noto Sans Malayalam', sans-serif;
-    font-size: 18px;
+    font-family: var(--editor-font-en), ui-monospace, monospace;
+    font-size: 12px;
     font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     line-height: 1;
     user-select: none;
     -webkit-app-region: drag;

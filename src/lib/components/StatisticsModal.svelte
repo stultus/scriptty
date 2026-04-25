@@ -22,13 +22,16 @@
   }
 
   /** One row in the Schedule report — listed in document order so the
-   *  writer can plan a sequence (or sort by location to group shoots). */
+   *  writer can plan a sequence (or sort by location to group shoots).
+   *  `locationGroup` and `scheduledDate` come from the SceneCard (#124). */
   interface ScheduleEntry {
     sceneNumber: number;
     setting: string;
     location: string;
     time: string;
     characterCount: number;
+    locationGroup: string;
+    scheduledDate: string;
   }
 
   interface Stats {
@@ -164,6 +167,17 @@
     const sceneCharacters = new Map<number, Set<string>>();
     const schedule: ScheduleEntry[] = [];
 
+    // Pull SceneCard scheduling fields up-front so the per-scene loop
+    // can attach them by 0-based index. activeSceneCards is small (≤ scene
+    // count); a Map is cheaper to look up per scene than a linear find. (#124)
+    const cardsByIndex = new Map<number, { scheduled_date: string; location_group: string }>();
+    for (const c of documentStore.activeSceneCards) {
+      cardsByIndex.set(c.scene_index, {
+        scheduled_date: c.scheduled_date ?? '',
+        location_group: c.location_group ?? '',
+      });
+    }
+
     for (const node of nodes) {
       const type = node.type;
       const text = (node.content ?? []).map((c) => c.text ?? '').join('');
@@ -213,12 +227,15 @@
           acc.scenes++;
           if (parsed.setting) acc.settings.add(parsed.setting);
         }
+        const card = cardsByIndex.get(sceneCount - 1);
         schedule.push({
           sceneNumber: sceneCount,
           setting: parsed.setting,
           location: parsed.location,
           time: parsed.time,
           characterCount: 0, // filled below from sceneCharacters
+          locationGroup: card?.location_group ?? '',
+          scheduledDate: card?.scheduled_date ?? '',
         });
       }
 
@@ -443,6 +460,8 @@
                   <th class="col-name">Location</th>
                   <th class="col-meta">Time</th>
                   <th class="col-num">Cast</th>
+                  <th class="col-meta">Group</th>
+                  <th class="col-meta">Day</th>
                 </tr>
               </thead>
               <tbody>
@@ -453,6 +472,8 @@
                     <td class="col-name">{row.location || '(empty)'}</td>
                     <td class="col-meta">{row.time || '—'}</td>
                     <td class="col-num">{row.characterCount}</td>
+                    <td class="col-meta">{row.locationGroup || '—'}</td>
+                    <td class="col-meta">{row.scheduledDate || '—'}</td>
                   </tr>
                 {/each}
               </tbody>

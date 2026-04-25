@@ -251,6 +251,21 @@ pub struct SceneCard {
     /// .screenplay files don't carry this, hence `#[serde(default)]`.
     #[serde(default)]
     pub extra_characters: String,
+    /// ISO date string (e.g. "2026-05-12") for when this scene is
+    /// scheduled to shoot. Optional — empty string means "unscheduled".
+    /// Used by the Schedule report and a future Daily Shoot List PDF
+    /// to group scenes by shoot day. Stored as a free-form string
+    /// rather than a typed date so writers can use partial values
+    /// (e.g. "Day 3", "TBD") during early planning. (#124)
+    #[serde(default)]
+    pub scheduled_date: String,
+    /// Free-text grouping tag for shoot planning — typically the
+    /// real-world filming location (a single soundstage, a backlot
+    /// street, a specific house) which may host multiple in-script
+    /// locations. Empty string means "no group". The SceneCardsView's
+    /// "Group by location" toggle uses this to cluster cards. (#124)
+    #[serde(default)]
+    pub location_group: String,
 }
 
 /// Default ProseMirror document JSON — a single empty scene heading.

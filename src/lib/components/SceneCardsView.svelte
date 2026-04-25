@@ -68,6 +68,10 @@
     shootNotes: string;
     /** Comma-separated non-speaking characters (extras present in the scene) */
     extraCharacters: string;
+    /** Shoot date — ISO or free-form ("Day 3"). Empty = unscheduled (#124). */
+    scheduledDate: string;
+    /** Free-text grouping tag for shoot planning (#124). */
+    locationGroup: string;
     /**
      * Stable identity for {#each}/animate:flip. Derived from the heading text
      * plus an occurrence counter so duplicate headings still get unique keys.
@@ -81,6 +85,38 @@
   let dragFromScene = $state<number | null>(null);
   let dropTargetScene = $state<number | null>(null);
   let gridEl = $state<HTMLDivElement | null>(null);
+
+  /** When true, render cards clustered by Location group → Shoot date so
+   *  the writer can see the shoot plan as a sequence rather than the
+   *  document's narrative order. Drag-to-reorder is disabled in this
+   *  mode (it would still mutate document order, which would be
+   *  surprising when the visual order is sorted). (#124) */
+  let groupByLocation = $state(false);
+
+  /** Cards in the order they should render — either the raw cards array
+   *  (document order, for normal editing) or grouped by location_group
+   *  with empty-group cards last and within-group sort by shoot date. */
+  let displayCards = $derived.by(() => {
+    if (!groupByLocation) return cards;
+    return [...cards].sort((a, b) => {
+      // Ungrouped cards (empty location_group) go to the end.
+      const aGroup = a.locationGroup.trim();
+      const bGroup = b.locationGroup.trim();
+      if (!aGroup && bGroup) return 1;
+      if (aGroup && !bGroup) return -1;
+      if (aGroup !== bGroup) return aGroup.localeCompare(bGroup);
+      // Same group — sort by shoot date (string compare works for ISO
+      // dates and stays sensible-ish for free-form values like "Day 3").
+      const aDate = a.scheduledDate.trim();
+      const bDate = b.scheduledDate.trim();
+      if (!aDate && bDate) return 1;
+      if (aDate && !bDate) return -1;
+      if (aDate !== bDate) return aDate.localeCompare(bDate);
+      // Final tiebreaker — preserve document order so the writer's
+      // intended sequence shows through within a group/date.
+      return a.sceneNumber - b.sceneNumber;
+    });
+  });
 
   // Floating "ghost" card that follows the cursor while dragging. The original
   // card stays in its grid slot (dimmed) so the layout doesn't collapse; the
@@ -170,6 +206,8 @@
         description: storedCard?.description ?? '',
         shootNotes: storedCard?.shoot_notes ?? '',
         extraCharacters: storedCard?.extra_characters ?? '',
+        scheduledDate: storedCard?.scheduled_date ?? '',
+        locationGroup: storedCard?.location_group ?? '',
         key: `${currentHeading}#${occurrence}`,
       });
     }
@@ -205,6 +243,19 @@
     return result;
   }
 
+  /** Defaults for a freshly-created SceneCard — keeps the create paths
+   *  in sync as the schema grows (#124 added two new optional fields). */
+  function blankCard(sceneIndex: number) {
+    return {
+      scene_index: sceneIndex,
+      description: '',
+      shoot_notes: '',
+      extra_characters: '',
+      scheduled_date: '',
+      location_group: '',
+    };
+  }
+
   /** Update the description for a scene card */
   function updateDescription(sceneIndex: number, value: string) {
     if (!documentStore.document) return;
@@ -212,12 +263,7 @@
     if (existing) {
       existing.description = value;
     } else {
-      documentStore.activeSceneCards.push({
-        scene_index: sceneIndex,
-        description: value,
-        shoot_notes: '',
-        extra_characters: '',
-      });
+      documentStore.activeSceneCards.push({ ...blankCard(sceneIndex), description: value });
     }
     documentStore.markDirty();
   }
@@ -229,12 +275,7 @@
     if (existing) {
       existing.shoot_notes = value;
     } else {
-      documentStore.activeSceneCards.push({
-        scene_index: sceneIndex,
-        description: '',
-        shoot_notes: value,
-        extra_characters: '',
-      });
+      documentStore.activeSceneCards.push({ ...blankCard(sceneIndex), shoot_notes: value });
     }
     documentStore.markDirty();
   }
@@ -246,12 +287,31 @@
     if (existing) {
       existing.extra_characters = value;
     } else {
-      documentStore.activeSceneCards.push({
-        scene_index: sceneIndex,
-        description: '',
-        shoot_notes: '',
-        extra_characters: value,
-      });
+      documentStore.activeSceneCards.push({ ...blankCard(sceneIndex), extra_characters: value });
+    }
+    documentStore.markDirty();
+  }
+
+  /** Update the scheduled shoot date for a scene card (#124). */
+  function updateScheduledDate(sceneIndex: number, value: string) {
+    if (!documentStore.document) return;
+    const existing = documentStore.activeSceneCards.find((c) => c.scene_index === sceneIndex);
+    if (existing) {
+      existing.scheduled_date = value;
+    } else {
+      documentStore.activeSceneCards.push({ ...blankCard(sceneIndex), scheduled_date: value });
+    }
+    documentStore.markDirty();
+  }
+
+  /** Update the free-text location group for a scene card (#124). */
+  function updateLocationGroup(sceneIndex: number, value: string) {
+    if (!documentStore.document) return;
+    const existing = documentStore.activeSceneCards.find((c) => c.scene_index === sceneIndex);
+    if (existing) {
+      existing.location_group = value;
+    } else {
+      documentStore.activeSceneCards.push({ ...blankCard(sceneIndex), location_group: value });
     }
     documentStore.markDirty();
   }
@@ -524,8 +584,16 @@
 </script>
 
 <div class="scene-cards-view" style="--editor-font-ml: '{fontFamily}'">
+  <div class="cards-toolbar">
+    <span class="toolbar-count">{cards.length} {cards.length === 1 ? 'scene' : 'scenes'}</span>
+    <div class="toolbar-spacer"></div>
+    <label class="toolbar-toggle" title="Cluster cards by their Location group, then by Shoot date">
+      <input type="checkbox" bind:checked={groupByLocation} />
+      <span>Group by location</span>
+    </label>
+  </div>
   <div class="cards-grid" bind:this={gridEl}>
-    {#each cards as card (card.key)}
+    {#each displayCards as card (card.key)}
       <div
         class="card scene-card"
         class:dragging={dragFromScene === card.sceneNumber}
@@ -536,10 +604,14 @@
           <!-- Scene number badge is the drag handle -->
           <span
             class="card-number"
-            onmousedown={(e: MouseEvent) => startDrag(e, card.sceneNumber)}
+            class:disabled={groupByLocation}
+            onmousedown={(e: MouseEvent) => { if (!groupByLocation) startDrag(e, card.sceneNumber); }}
             role="button"
             tabindex="-1"
-            aria-label="Drag to reorder scene {card.sceneNumber}"
+            aria-label={groupByLocation
+              ? `Scene ${card.sceneNumber} (drag disabled while grouped)`
+              : `Drag to reorder scene ${card.sceneNumber}`}
+            title={groupByLocation ? 'Switch off "Group by location" to drag-reorder' : ''}
           >{card.sceneNumber}.</span>
           <span class="card-heading">{card.heading.toUpperCase()}</span>
           <button
@@ -583,6 +655,34 @@
             oninput={(e) => updateExtraCharacters(card.sceneOrder, (e.target as HTMLInputElement).value)}
             onkeydown={handleKeydown}
           />
+          <!-- Shoot scheduling fields (#124) — two thin inputs on one row to
+               keep the card compact. Empty = unscheduled / ungrouped. -->
+          <div class="schedule-row">
+            <div class="schedule-field">
+              <label class="field-label" for="locgroup-{card.sceneNumber}">Location group</label>
+              <input
+                id="locgroup-{card.sceneNumber}"
+                class="card-input"
+                type="text"
+                placeholder="e.g. Main House, Studio Lot"
+                value={card.locationGroup}
+                oninput={(e) => updateLocationGroup(card.sceneOrder, (e.target as HTMLInputElement).value)}
+                onkeydown={handleKeydown}
+              />
+            </div>
+            <div class="schedule-field">
+              <label class="field-label" for="schedule-{card.sceneNumber}">Shoot date</label>
+              <input
+                id="schedule-{card.sceneNumber}"
+                class="card-input"
+                type="text"
+                placeholder="ISO date or 'Day 3'"
+                value={card.scheduledDate}
+                oninput={(e) => updateScheduledDate(card.sceneOrder, (e.target as HTMLInputElement).value)}
+                onkeydown={handleKeydown}
+              />
+            </div>
+          </div>
           <label class="field-label" for="notes-{card.sceneNumber}">Notes</label>
           <textarea
             id="notes-{card.sceneNumber}"
@@ -628,6 +728,63 @@
     overflow-y: auto;
     background: var(--surface-base);
     padding: 24px;
+  }
+
+  /* Toolbar above the grid — scene count on the left, "Group by location"
+     toggle on the right (#124). Sticky-ish lightweight strip rather than
+     a full sub-bar; the page already has its own status bar. */
+  .cards-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+    padding: 0 4px;
+    font-family: var(--ui-font);
+    font-size: 11.5px;
+    color: var(--text-muted);
+  }
+
+  .toolbar-count {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .toolbar-spacer {
+    flex: 1;
+  }
+
+  .toolbar-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    user-select: none;
+  }
+
+  .toolbar-toggle input[type='checkbox'] {
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  /* Drag handle becomes visually disabled while Group by location is on,
+     since drag-reorder would mutate document order behind a sorted view. */
+  .card-number.disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+
+  /* Two-up row holding the new scheduling fields (#124). */
+  .schedule-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .schedule-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
   }
 
   .cards-grid {

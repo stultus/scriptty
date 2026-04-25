@@ -423,7 +423,14 @@
     // Ensure a scene_card entry exists
     const cards = documentStore.activeSceneCards;
     if (!cards.find((c: { scene_index: number }) => c.scene_index === sceneOrder)) {
-      cards.push({ scene_index: sceneOrder, description: '', shoot_notes: '', extra_characters: '' });
+      cards.push({
+        scene_index: sceneOrder,
+        description: '',
+        shoot_notes: '',
+        extra_characters: '',
+        scheduled_date: '',
+        location_group: '',
+      });
     }
 
     // Show annotation fields for this scene and trigger update
@@ -454,6 +461,8 @@
         description: field === 'description' ? value : '',
         shoot_notes: field === 'shoot_notes' ? value : '',
         extra_characters: '',
+        scheduled_date: '',
+        location_group: '',
       });
     }
     documentStore.markDirty();

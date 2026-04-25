@@ -59,6 +59,14 @@ export interface SceneCard {
   /** Comma-separated characters present in the scene but with no dialogue.
    *  Merged with auto-detected speakers when rendering the characters line. */
   extra_characters: string;
+  /** ISO date or free-form "Day N" string for shoot planning (#124).
+   *  Empty means unscheduled. Stored as a string so partial planning
+   *  values are permitted before a real schedule firms up. */
+  scheduled_date: string;
+  /** Free-text grouping tag — typically the real-world filming location.
+   *  Empty means ungrouped. SceneCardsView's "Group by location" toggle
+   *  clusters cards on this value. (#124) */
+  location_group: string;
 }
 
 /** One episode in a Series project — mirrors the film-level shape so every

@@ -225,6 +225,8 @@
       description: string;
       shoot_notes: string;
       extra_characters: string;
+      scheduled_date: string;
+      location_group: string;
     }> = [];
     let sceneOffset = 0;
 

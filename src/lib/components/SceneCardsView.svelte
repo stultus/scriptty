@@ -694,6 +694,7 @@
     {#each displayCards as card (card.key)}
       <div
         class="card scene-card"
+        class:active={card.sceneOrder === editorStore.currentSceneIndex}
         class:dragging={dragFromScene === card.sceneNumber}
         class:drop-target={dropTargetScene === card.sceneNumber}
         animate:flip={{ duration: 450, easing: cubicInOut }}
@@ -986,6 +987,19 @@
     /* Mask the interior so the empty slot hints where the card came from
        without competing visually with the floating ghost. */
     filter: grayscale(0.4);
+  }
+
+  /* Active scene — the card whose underlying scene_heading the editor's
+     cursor is currently inside. Mirrors the navigator's active row so
+     "where am I?" reads the same on both surfaces (#157). */
+  .card.active {
+    border-color: var(--accent);
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+
+  .card.active .card-number {
+    background: var(--accent);
+    color: var(--text-on-accent);
   }
 
   .card.drop-target {

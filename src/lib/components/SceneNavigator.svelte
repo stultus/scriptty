@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { Fragment, type Node as PMNode } from 'prosemirror-model';
   import { TextSelection } from 'prosemirror-state';
   import { documentStore } from '$lib/stores/documentStore.svelte';
@@ -53,7 +54,18 @@
   // Extract scene headings from the ProseMirror JSON document.
   // Reads the *active* content — top-level for films, active episode for series —
   // so this component works for both project shapes without branching.
+  //
+  // Perf: We track ONLY `contentVersionDebounced` (#98). The actual content
+  // is read inside `untrack()` so we don't subscribe to per-keystroke
+  // mutations of `activeContent` — the navigator catches up ~200ms after the
+  // last edit, which is invisible to the user but skips ~90% of the
+  // recompute storm during active typing on a long screenplay.
   let scenes = $derived.by(() => {
+    documentStore.contentVersionDebounced;
+    return untrack(() => computeScenes());
+  });
+
+  function computeScenes(): SceneEntry[] {
     const doc = documentStore.document;
     if (!doc) return [];
     const rawContent = documentStore.activeContent;
@@ -105,7 +117,7 @@
     finalize();
 
     return entries;
-  });
+  }
 
   // Add a blank scene heading at the end of the document and focus it.
   // Mirrors the Cards view's "Add Scene" behavior so both entry points

@@ -157,6 +157,46 @@ class DocumentStore {
    *  to avoid re-triggering on every keystroke. */
   loadedContent = $state<unknown>(null);
 
+  /** Monotonically increasing on every content change (setContent, episode
+   *  switch, new/open). Consumers that only need eventually-consistent views
+   *  of the document (Scene Navigator, Scene Cards, Statistics, etc.) read
+   *  `contentVersionDebounced` below — bumped ~200 ms after the latest
+   *  edit — to skip the per-keystroke recompute storm (#98–#101). */
+  contentVersion = $state(0);
+
+  /** Trails `contentVersion` by ~200 ms of idle. Reading this in a $derived
+   *  re-runs once per "burst of typing" rather than once per keystroke.
+   *  Components that need real-time updates (the editor itself) keep reading
+   *  `activeContent` directly. */
+  contentVersionDebounced = $state(0);
+
+  /** Internal debounce timer for `contentVersionDebounced`. Module-level
+   *  rather than $state because a setTimeout handle is not reactive data. */
+  #debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  #DEBOUNCE_MS = 200;
+
+  /** Bump both content versions. The debounced one trails by DEBOUNCE_MS
+   *  of typing-idle; the immediate one fires synchronously for any consumer
+   *  that wants tightly coupled reactivity. Episode switches and new/open
+   *  flush both immediately (the writer expects an instant view refresh
+   *  when changing context). */
+  #bumpContentVersion(immediate: boolean = false): void {
+    this.contentVersion++;
+    if (immediate) {
+      if (this.#debounceTimer) {
+        clearTimeout(this.#debounceTimer);
+        this.#debounceTimer = null;
+      }
+      this.contentVersionDebounced = this.contentVersion;
+      return;
+    }
+    if (this.#debounceTimer) clearTimeout(this.#debounceTimer);
+    this.#debounceTimer = setTimeout(() => {
+      this.contentVersionDebounced = this.contentVersion;
+      this.#debounceTimer = null;
+    }, this.#DEBOUNCE_MS);
+  }
+
   /** True when the open document is a multi-episode Series. Missing or
    *  `"film"` on the top-level `type` field both count as film (old files
    *  never wrote the field). */
@@ -234,6 +274,9 @@ class DocumentStore {
     this.activeEpisodeIndex = clamped;
     this.loadedContent = eps[clamped].content;
     this.loadTrigger++;
+    // Episode switch is a context change — refresh derived views immediately,
+    // not on the typing-debounce.
+    this.#bumpContentVersion(true);
   }
 
   /** Create a brand-new Series project with one empty episode. Title can
@@ -251,6 +294,7 @@ class DocumentStore {
       this.activeEpisodeIndex = 0;
       this.loadedContent = ep.content;
       this.loadTrigger++;
+      this.#bumpContentVersion(true);
     } catch (error) {
       console.error('Failed to create new series:', error);
     }
@@ -379,6 +423,7 @@ class DocumentStore {
       this.activeEpisodeIndex = 0;
       this.loadedContent = doc.content;
       this.loadTrigger++;
+      this.#bumpContentVersion(true);
     } catch (error) {
       console.error('Failed to create new screenplay:', error);
     }
@@ -431,6 +476,7 @@ class DocumentStore {
       const loaded = doc.type === 'series' ? doc.series?.episodes?.[0]?.content ?? doc.content : doc.content;
       this.loadedContent = loaded;
       this.loadTrigger++;
+      this.#bumpContentVersion(true);
     } catch (error) {
       console.error('Failed to open screenplay:', error);
     }
@@ -532,6 +578,8 @@ class DocumentStore {
     } else {
       this.document.content = content;
     }
+    // Debounced bump — Navigator/Cards/Statistics will catch up in ~200ms.
+    this.#bumpContentVersion();
   }
 
   /** Title used for save-dialog defaults and window-title formatting. In

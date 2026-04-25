@@ -196,22 +196,22 @@
     position: fixed;
     inset: 0;
     background: var(--backdrop);
-    backdrop-filter: blur(4px);
+    backdrop-filter: var(--backdrop-blur);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: var(--modal-z);
   }
 
   .modal-card {
     background: var(--surface-float);
     border: 1px solid var(--border-medium);
-    border-radius: 12px;
-    padding: 24px;
-    width: 480px;
+    border-radius: var(--modal-radius);
+    padding: var(--modal-padding);
+    width: var(--modal-w-base);
     max-width: 90vw;
-    box-shadow: 0 8px 32px var(--shadow-heavy);
-    animation: modal-in 150ms ease-out;
+    box-shadow: var(--modal-shadow);
+    animation: modal-in var(--modal-anim-duration) ease-out;
   }
 
   @keyframes modal-in {
@@ -264,10 +264,10 @@
 
   .modal-header h2 {
     margin: 0;
-    font-size: 15px;
+    font-size: var(--modal-header-size);
     color: var(--text-primary);
     font-family: system-ui, -apple-system, sans-serif;
-    font-weight: 600;
+    font-weight: var(--modal-header-weight);
   }
 
   .btn-close {

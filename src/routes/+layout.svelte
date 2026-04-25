@@ -170,6 +170,27 @@
        on some platforms) would intercept the fallback chain. */
     --ui-font: system-ui, -apple-system, sans-serif;
     --editor-font-en: 'Courier Prime';
+
+    /* ─── Modal architecture tokens (issue #108) ───
+       Centered modals (Metadata, Export, Statistics, About, Help, etc.)
+       all use these tokens so chrome stays unified as new modals land.
+       Width can override per-modal: dialogs go narrower (`--modal-w-sm`),
+       references go wider (`--modal-w-lg`); everything else uses the base.
+       The `--popover-z` token sits one layer below modals so a modal
+       opened from a popover correctly overlays it. */
+    --modal-radius: 12px;
+    --modal-padding: 24px;
+    --modal-w-sm: 420px;
+    --modal-w-base: 480px;
+    --modal-w-lg: 960px;
+    --modal-shadow: 0 8px 32px var(--shadow-heavy);
+    --modal-anim-duration: 150ms;
+    --modal-header-size: 15px;
+    --modal-header-weight: 600;
+    --backdrop-blur: blur(4px);
+    --popover-z: 900;
+    --modal-z: 1000;
+    --modal-z-stacked: 1100;
   }
 
   /* ─── Disabled button baseline ───

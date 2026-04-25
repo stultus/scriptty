@@ -414,23 +414,23 @@
     position: fixed;
     inset: 0;
     background: var(--backdrop);
-    backdrop-filter: blur(4px);
+    backdrop-filter: var(--backdrop-blur);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: var(--modal-z);
   }
 
   .modal-card {
     background: var(--surface-float);
     border: 1px solid var(--border-medium);
-    border-radius: 12px;
-    width: 960px;
+    border-radius: var(--modal-radius);
+    width: var(--modal-w-lg);
     max-width: 92vw;
     height: 82vh;
     max-height: 820px;
-    box-shadow: 0 8px 32px var(--shadow-heavy);
-    animation: modal-in 150ms ease-out;
+    box-shadow: var(--modal-shadow);
+    animation: modal-in var(--modal-anim-duration) ease-out;
     font-family: system-ui, -apple-system, sans-serif;
     display: flex;
     flex-direction: column;

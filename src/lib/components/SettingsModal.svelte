@@ -237,10 +237,13 @@
 {/if}
 
 <style>
+  /* Popover, not a centered modal — anchored to the gear in the status
+     bar. Sits below the modal layer so a real modal opened from inside
+     SettingsModal correctly overlays it (see #108 architecture rule). */
   .modal-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 999;
+    z-index: var(--popover-z);
     /* Invisible backdrop just for capturing outside clicks */
   }
 
@@ -265,7 +268,7 @@
                 0 2px 8px var(--shadow-soft);
     animation: menu-in 120ms ease-out;
     font-family: system-ui, -apple-system, sans-serif;
-    z-index: 1000;
+    z-index: calc(var(--popover-z) + 1);
   }
 
   /* Subtle fade at the bottom of the card hints there is more content
@@ -533,10 +536,12 @@
     position: relative;
   }
 
+  /* Dropdown sits above the SettingsModal popover (which sits above the
+     dropdown-backdrop, which sits above SettingsModal's own backdrop). */
   .dropdown-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 1000;
+    z-index: calc(var(--popover-z) + 2);
   }
 
   .custom-options {
@@ -549,7 +554,7 @@
     border-radius: 6px;
     box-shadow: 0 4px 16px var(--shadow-soft);
     padding: 4px;
-    z-index: 1001;
+    z-index: calc(var(--popover-z) + 3);
     display: flex;
     flex-direction: column;
     gap: 2px;

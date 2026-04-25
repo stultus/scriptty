@@ -401,6 +401,27 @@ Full format spec: see `SCREENPLAY_FORMAT.md` at project root.
 - Keyboard scheme selector shown only when Malayalam mode is active
 - Escape to close, click outside to dismiss
 
+### Modal Architecture (issue #108)
+
+Two distinct modal idioms — pick the one that matches the surface:
+
+| Idiom | Examples | When to use |
+|---|---|---|
+| **Centered card** | Metadata, Export, Statistics, About, Help, SeriesTitleDialog | Forms, references, anything with multiple inputs or its own focus context. Backdrop dims the page. |
+| **Popover** | Settings (anchored to status-bar gear), Command Palette dropdown | UI anchored to a trigger; settings or quick lookups that should not block the page. Invisible click-catcher backdrop. |
+
+All centered modals share tokens defined in `src/routes/+layout.svelte`:
+
+- `--modal-radius` (12px), `--modal-padding` (24px)
+- `--modal-w-sm` (420px), `--modal-w-base` (480px), `--modal-w-lg` (960px)
+- `--modal-shadow`, `--modal-anim-duration` (150ms)
+- `--modal-header-size` (15px) + `--modal-header-weight` (600)
+- `--backdrop-blur` (4px)
+- `--popover-z` (900) sits **below** `--modal-z` (1000) so a centered modal opened from inside a popover correctly overlays it
+- `--modal-z-stacked` (1100) for modals launched on top of another modal (e.g. SeriesTitleDialog from WelcomeScreen)
+
+Add to the tokens — don't hardcode new modal geometry per component.
+
 ### Editor Layout
 
 - Continuous page view — single scrollable editor without page breaks

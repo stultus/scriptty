@@ -671,9 +671,9 @@
   <!-- Hero header — makes the current level (Episodes vs Scenes)
        impossible to miss (#150). The big title states what level you're
        at; the subtitle gives context (series name or episode title).
-       For series projects, a segmented Episodes/Scenes toggle on the
-       right makes the two-level structure visible regardless of which
-       level you're currently viewing. -->
+       For series projects in the Scenes level, a breadcrumb above the
+       title hands the writer back to Episodes — it's a drill-down
+       hierarchy, not a parallel-view toggle. -->
   <header class="cards-hero">
     <div class="hero-text">
       {#if documentStore.isSeries && cardLevel === 'episodes'}
@@ -690,6 +690,15 @@
           {/if}
         </p>
       {:else if documentStore.isSeries && cardLevel === 'scenes'}
+        <button
+          type="button"
+          class="hero-crumb"
+          onclick={backToEpisodes}
+          aria-label="Back to episodes"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18 L9 12 L15 6"/></svg>
+          <span>Episodes</span>
+        </button>
         <h1 class="hero-level">Scenes</h1>
         <p class="hero-subtitle">
           <span class="hero-ep-badge">{String(documentStore.activeEpisode?.number ?? 1).padStart(2, '0')}</span>
@@ -702,29 +711,6 @@
     </div>
 
     <div class="hero-actions">
-      {#if documentStore.isSeries}
-        <!-- Segmented Episodes/Scenes toggle — the level switcher. Click
-             "Scenes" while at the Episode level drills into the active
-             episode (or the last-viewed episode if available). Click
-             "Episodes" while drilled in returns to the episode level.
-             Always visible for series projects so the writer knows two
-             levels exist even before they've drilled in. -->
-        <div class="level-segmented" role="group" aria-label="Card view level">
-          <button
-            type="button"
-            class="level-seg"
-            class:active={cardLevel === 'episodes'}
-            onclick={backToEpisodes}
-          >Episodes</button>
-          <button
-            type="button"
-            class="level-seg"
-            class:active={cardLevel === 'scenes'}
-            onclick={() => openEpisode(documentStore.activeEpisodeIndex)}
-          >Scenes</button>
-        </div>
-      {/if}
-
       <span class="hero-count">
         {#if documentStore.isSeries && cardLevel === 'episodes'}
           {(documentStore.document?.series?.episodes?.length ?? 0)} {(documentStore.document?.series?.episodes?.length ?? 0) === 1 ? 'episode' : 'episodes'}
@@ -1020,36 +1006,34 @@
     flex-shrink: 0;
   }
 
-  /* Segmented Episodes/Scenes toggle — series-only, always visible so
-     the writer knows two levels exist (#150). */
-  .level-segmented {
+  /* Breadcrumb back-link — series-only, shown above the "Scenes" hero
+     title when drilled into an episode. The level relationship is a
+     drill-down, not a parallel toggle, so the breadcrumb form
+     (← Episodes) reads correctly: it points back up the hierarchy. */
+  .hero-crumb {
+    align-self: flex-start;
     display: inline-flex;
-    background: var(--surface-elevated);
-    border: 1px solid var(--border-subtle);
-    border-radius: 7px;
-    padding: 2px;
-  }
-
-  .level-seg {
-    background: transparent;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 6px;
+    padding: 3px 8px 3px 5px;
     border: none;
-    padding: 5px 12px;
-    border-radius: 5px;
+    background: transparent;
     color: var(--text-muted);
     font-family: var(--ui-font);
-    font-size: 11.5px;
+    font-size: 10.5px;
     font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-radius: 5px;
     cursor: pointer;
     transition: background var(--motion-fast, 100ms) ease,
                 color var(--motion-fast, 100ms) ease;
   }
 
-  .level-seg:hover { color: var(--text-secondary); }
-
-  .level-seg.active {
-    background: var(--surface-float);
+  .hero-crumb:hover {
+    background: var(--surface-hover);
     color: var(--accent);
-    box-shadow: 0 1px 2px var(--shadow-soft);
   }
 
   .hero-count {

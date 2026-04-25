@@ -152,18 +152,32 @@ export const findReplacePlugin = new Plugin<FindReplaceState>({
         }
       }
 
-      // If the document changed while a search is active, recompute matches
+      // Document changed while a search is active. Map existing matches
+      // through the transaction (instant, O(matches)) instead of re-scanning
+      // the whole doc on every keystroke (was O(text-nodes) per keystroke,
+      // #101). The view-level debounced rescan below catches up with any
+      // newly typed text after ~200ms of idle so brand-new matches still
+      // appear — just not on the keystroke that added them.
       if (tr.docChanged && prev.query) {
-        const matches = findMatches(newState.doc, prev.query, prev.caseSensitive);
-        // Try to keep the current index reasonable
-        const currentIndex = matches.length === 0
+        const remapped: Match[] = [];
+        for (const m of prev.matches) {
+          const from = tr.mapping.map(m.from, 1);
+          const to = tr.mapping.map(m.to, -1);
+          // Match was deleted or its range collapsed — drop it.
+          if (to <= from) continue;
+          // Length changed (text inserted into the match) — drop too,
+          // the rescan will recover it with the new shape.
+          if (to - from !== prev.query.length) continue;
+          remapped.push({ from, to });
+        }
+        const currentIndex = remapped.length === 0
           ? -1
-          : Math.min(prev.currentIndex, matches.length - 1);
+          : Math.min(Math.max(prev.currentIndex, 0), remapped.length - 1);
         return {
           ...prev,
-          matches,
+          matches: remapped,
           currentIndex,
-          decorations: buildDecorations(newState.doc, matches, currentIndex),
+          decorations: prev.decorations.map(tr.mapping, newState.doc),
         };
       }
 
@@ -176,6 +190,56 @@ export const findReplacePlugin = new Plugin<FindReplaceState>({
       const pluginState = findReplaceKey.getState(state);
       return pluginState?.decorations ?? DecorationSet.empty;
     },
+  },
+
+  // Debounced re-scan after the user stops typing. Existing matches are
+  // already remapped synchronously in apply() above, so highlights stay
+  // visible during typing; this view plugin picks up newly typed-in
+  // matches once the doc settles (~200ms idle) (#101).
+  view() {
+    let rescanTimer: ReturnType<typeof setTimeout> | null = null;
+    return {
+      update(view, prevState) {
+        const state = findReplaceKey.getState(view.state);
+        if (!state || !state.query) {
+          if (rescanTimer) {
+            clearTimeout(rescanTimer);
+            rescanTimer = null;
+          }
+          return;
+        }
+        // Only debounce if the doc actually changed.
+        if (view.state.doc === prevState.doc) return;
+        if (rescanTimer) clearTimeout(rescanTimer);
+        rescanTimer = setTimeout(() => {
+          rescanTimer = null;
+          const cur = findReplaceKey.getState(view.state);
+          if (!cur || !cur.query) return;
+          // Re-trigger the search action so apply() recomputes from scratch.
+          // Preserve the user's current match index when possible.
+          const prevIndex = cur.currentIndex;
+          view.dispatch(
+            view.state.tr.setMeta(findReplaceKey, {
+              type: 'search',
+              query: cur.query,
+              caseSensitive: cur.caseSensitive,
+            } as FindReplaceAction)
+          );
+          const after = findReplaceKey.getState(view.state);
+          if (after && after.matches.length > 0 && prevIndex >= 0 && prevIndex < after.matches.length) {
+            view.dispatch(
+              view.state.tr.setMeta(findReplaceKey, {
+                type: 'setCurrent',
+                index: prevIndex,
+              } as FindReplaceAction)
+            );
+          }
+        }, 200);
+      },
+      destroy() {
+        if (rescanTimer) clearTimeout(rescanTimer);
+      },
+    };
   },
 });
 

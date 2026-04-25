@@ -232,8 +232,10 @@
     border-bottom-color: var(--accent);
   }
 
+  /* No flex:1 — the textarea sizes itself to content via `field-sizing`,
+     and the section just wraps it. The page's own min-height keeps an
+     empty tab feeling page-shaped without forcing the textarea to fill it. */
   .story-section {
-    flex: 1;
     display: flex;
     flex-direction: column;
   }
@@ -248,10 +250,15 @@
      generic sits after the Malayalam font so it can't swallow Malayalam
      glyphs via a system-monospace notdef. */
   .story-textarea {
+    display: block;
     width: 100%;
-    flex: 1;
     field-sizing: content;
-    min-height: 60vh;
+    /* Two empty lines of room when there's no content yet — gives the
+       placeholder space to breathe without forcing the textarea to fill
+       the whole page (which previously made the cursor land outside the
+       page on long text). The page's own min-height handles "feels like
+       a page when empty" instead. */
+    min-height: 2lh;
     font-size: 14px;
     line-height: 1.6;
     color: var(--text-on-page);

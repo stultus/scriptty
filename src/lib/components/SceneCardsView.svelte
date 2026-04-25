@@ -1036,32 +1036,37 @@
                 {/if}
               </summary>
               <div class="production-body">
-                <input
-                  class="card-input"
-                  type="text"
-                  placeholder="Non-speaking characters — Extras, Guard…"
-                  aria-label="Non-speaking characters"
-                  value={card.extraCharacters}
-                  oninput={(e) => updateExtraCharacters(card.sceneOrder, (e.target as HTMLInputElement).value)}
-                  onkeydown={handleKeydown}
-                />
-                <div class="schedule-row">
-                  <div class="schedule-field">
+                <div class="prod-field">
+                  <label class="prod-label" for="extras-{card.sceneNumber}">Cast extras</label>
+                  <input
+                    id="extras-{card.sceneNumber}"
+                    class="prod-input"
+                    type="text"
+                    placeholder="e.g. Extras, Guard"
+                    value={card.extraCharacters}
+                    oninput={(e) => updateExtraCharacters(card.sceneOrder, (e.target as HTMLInputElement).value)}
+                    onkeydown={handleKeydown}
+                  />
+                </div>
+                <div class="prod-row">
+                  <div class="prod-field">
+                    <label class="prod-label" for="locgroup-{card.sceneNumber}">Location group</label>
                     <input
-                      class="card-input"
+                      id="locgroup-{card.sceneNumber}"
+                      class="prod-input"
                       type="text"
-                      placeholder="Location group — Main House…"
-                      aria-label="Location group"
+                      placeholder="e.g. Main House"
                       value={card.locationGroup}
                       oninput={(e) => updateLocationGroup(card.sceneOrder, (e.target as HTMLInputElement).value)}
                       onkeydown={handleKeydown}
                     />
                   </div>
-                  <div class="schedule-field">
+                  <div class="prod-field">
+                    <span class="prod-label">Shoot date</span>
                     <DatePicker
                       value={card.scheduledDate}
                       onChange={(v: string) => updateScheduledDate(card.sceneOrder, v)}
-                      placeholder="Shoot date"
+                      placeholder="Pick a date"
                     />
                   </div>
                 </div>
@@ -1278,19 +1283,6 @@
   }
 
 
-  /* Two-up row holding the new scheduling fields (#124). */
-  .schedule-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-
-  .schedule-field {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 0;
-  }
 
   .cards-grid {
     display: grid;
@@ -1403,13 +1395,11 @@
     box-shadow: 0 4px 14px var(--shadow-soft, rgba(0, 0, 0, 0.04));
   }
 
-  .card.skeleton .card-textarea,
-  .card.skeleton .card-input {
+  .card.skeleton .card-textarea {
     background: transparent;
   }
 
-  .card.skeleton .card-textarea::placeholder,
-  .card.skeleton .card-input::placeholder {
+  .card.skeleton .card-textarea::placeholder {
     font-style: italic;
   }
 
@@ -1822,10 +1812,80 @@
   }
 
   .production-body {
-    padding: 4px 0 4px;
+    padding: 6px 0 4px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 10px;
+  }
+
+  /* Production-scoped fields — distinct from the body notepad style.
+     These are scheduling metadata (extras, location, date), so they
+     read as compact form cells with tiny tracked labels above and
+     bordered input boxes below. The labels are scoped to inside the
+     disclosure, so they don't add to the top-level eyebrow wall. */
+  .prod-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .prod-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .prod-label {
+    font-family: var(--ui-font);
+    font-size: 8.5px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .prod-input {
+    width: 100%;
+    height: 28px;
+    padding: 0 9px;
+    font-size: 11.5px;
+    line-height: 1.3;
+    color: var(--text-primary);
+    background: var(--surface-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: 5px;
+    font-family: var(--editor-font-en), var(--editor-font-ml), var(--ui-font);
+    box-sizing: border-box;
+    transition: border-color 120ms ease, background 120ms ease;
+  }
+
+  .prod-input:hover {
+    border-color: var(--border-medium);
+  }
+
+  .prod-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: var(--surface-float);
+  }
+
+  .prod-input::placeholder {
+    color: var(--text-muted);
+    font-style: italic;
+    opacity: 0.7;
+  }
+
+  /* Match the DatePicker trigger height to the prod-input height so
+     the schedule row reads as a single typographic register. The
+     DatePicker styles its own trigger; this is just an override
+     wrapper for the same row. */
+  .prod-field :global(.dp-trigger) {
+    height: 28px;
+    padding: 0 9px;
+    font-size: 11.5px;
+    border-radius: 5px;
   }
 
   /* Textareas + inputs: notepad treatment. No border at rest — a soft
@@ -1848,6 +1908,29 @@
     transition: border-color 160ms ease, background 160ms ease;
     flex: 1;
     min-height: 56px;
+    overflow: auto;
+    /* Tame the WebKit scrollbar so it reads as a hairline groove in
+       the page rather than a separate scrollable-region affordance. */
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-medium) transparent;
+  }
+
+  .card-textarea::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .card-textarea::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .card-textarea::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 2px;
+  }
+
+  .card-textarea:hover::-webkit-scrollbar-thumb,
+  .card-textarea:focus::-webkit-scrollbar-thumb {
+    background: var(--border-medium);
   }
 
   .card-textarea.card-notes {
@@ -1876,41 +1959,6 @@
     color: var(--text-muted);
   }
 
-  /* Single-line input for non-speaking characters / location group —
-     same notepad treatment as the textarea. */
-  .card-input {
-    width: 100%;
-    padding: 6px 0;
-    font-size: 11.5px;
-    line-height: 1.5;
-    color: var(--text-primary);
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid transparent;
-    border-radius: 0;
-    font-family: var(--editor-font-en), var(--editor-font-ml), var(--ui-font);
-    box-sizing: border-box;
-    transition: border-color 160ms ease, background 160ms ease;
-  }
-
-  .card-input:hover {
-    border-bottom-color: var(--border-subtle);
-  }
-
-  .card-input:focus {
-    outline: none;
-    background: var(--surface-base);
-    border-bottom-color: var(--accent);
-    padding: 6px 8px;
-    margin: 0 -8px;
-    width: calc(100% + 16px);
-    border-radius: 4px 4px 0 0;
-  }
-
-  .card-input::placeholder {
-    color: var(--text-muted);
-    font-style: italic;
-  }
 
   /* ─── Add Scene placeholder ─── */
   .add-scene-card {

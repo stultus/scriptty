@@ -861,36 +861,6 @@
                 color var(--motion-fast, 100ms) ease;
   }
 
-  /* Time-of-day stripe: a 3px bar at the left edge — visible at rest as
-     a rhythm of warm / cool / neutral blocks down the rail. */
-  .scene-item::before {
-    content: '';
-    position: absolute;
-    left: 4px;
-    top: 8px;
-    bottom: 8px;
-    width: 3px;
-    border-radius: 2px;
-    background: var(--border-subtle);
-    transition: background var(--motion-fast, 100ms) ease;
-  }
-  .scene-item[data-time='DAY']::before,
-  .scene-item[data-time='MORNING']::before,
-  .scene-item[data-time='AFTERNOON']::before,
-  .scene-item[data-time='DAWN']::before {
-    background: var(--accent-warm, #d6a14a);
-  }
-  .scene-item[data-time='NIGHT']::before,
-  .scene-item[data-time='DUSK']::before,
-  .scene-item[data-time='EVENING']::before {
-    background: var(--accent-deep, #2a4d5c);
-  }
-  .scene-item[data-time='CONTINUOUS']::before,
-  .scene-item[data-time='LATER']::before {
-    background: var(--text-muted);
-    opacity: 0.4;
-  }
-
   .scene-item:hover {
     background: var(--surface-hover);
     color: var(--text-primary);
@@ -908,11 +878,6 @@
     background: var(--accent-muted);
     color: var(--text-primary);
     box-shadow: inset 2px 0 0 var(--accent);
-  }
-
-  .scene-li.active .scene-item::before {
-    /* Hide the time stripe behind the accent inset bar (inset overlaps it). */
-    left: 6px;
   }
 
   /* Scene number chip — zero-padded Courier badge, mirrors the
@@ -951,21 +916,14 @@
     line-height: 1.35;
   }
 
-  /* Time-of-day glyph — sun for daytime, moon for night. Replaces the
-     page pill: at the navigator's narrow width, page-size wasn't the
-     useful signal; day vs night is. */
+  /* Time-of-day glyph — sun for daytime, moon for night. The shape
+     carries the signal; warm/cool color tinting was a duplicate
+     channel that read as a separate color-code system rather than as
+     a marginal note, so the glyph stays in a single muted tone. */
   .time-glyph {
     flex-shrink: 0;
     color: var(--text-muted);
     transition: color var(--motion-fast, 100ms) ease;
-  }
-
-  .time-glyph.time-day {
-    color: var(--accent-warm, #d6a14a);
-  }
-
-  .time-glyph.time-night {
-    color: var(--accent-deep, #2a4d5c);
   }
 
   .scene-li.active .time-glyph {

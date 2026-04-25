@@ -52,6 +52,55 @@
   type Tab = 'overview' | 'characters' | 'locations' | 'schedule';
   let activeTab = $state<Tab>('overview');
 
+  // ─── Per-table sort state (#135) ────────────────────────────────────
+  // Each table starts in its computed default order (sortKey === null).
+  // Clicking a header cycles: default → asc → desc → default. State is
+  // session-only — reset every time the modal opens so the writer always
+  // sees the recommended ordering first.
+  type CharSortKey = 'name' | 'scenes' | 'dialogueBlocks' | 'percentage';
+  type LocSortKey = 'name' | 'scenes' | 'setting';
+  type SchedSortKey =
+    | 'sceneNumber'
+    | 'setting'
+    | 'location'
+    | 'time'
+    | 'characterCount'
+    | 'locationGroup'
+    | 'scheduledDate';
+  type SortDir = 'asc' | 'desc';
+
+  let charSortKey = $state<CharSortKey | null>(null);
+  let charSortDir = $state<SortDir>('asc');
+  let locSortKey = $state<LocSortKey | null>(null);
+  let locSortDir = $state<SortDir>('asc');
+  let schedSortKey = $state<SchedSortKey | null>(null);
+  let schedSortDir = $state<SortDir>('asc');
+
+  function cycleCharSort(key: CharSortKey) {
+    if (charSortKey !== key) { charSortKey = key; charSortDir = 'asc'; }
+    else if (charSortDir === 'asc') { charSortDir = 'desc'; }
+    else { charSortKey = null; charSortDir = 'asc'; }
+  }
+  function cycleLocSort(key: LocSortKey) {
+    if (locSortKey !== key) { locSortKey = key; locSortDir = 'asc'; }
+    else if (locSortDir === 'asc') { locSortDir = 'desc'; }
+    else { locSortKey = null; locSortDir = 'asc'; }
+  }
+  function cycleSchedSort(key: SchedSortKey) {
+    if (schedSortKey !== key) { schedSortKey = key; schedSortDir = 'asc'; }
+    else if (schedSortDir === 'asc') { schedSortDir = 'desc'; }
+    else { schedSortKey = null; schedSortDir = 'asc'; }
+  }
+
+  /** Stable comparator: numbers compared numerically, strings via
+   *  localeCompare. Returns -1/0/1 in the asc direction. */
+  function cmp(a: string | number, b: string | number): number {
+    if (typeof a === 'number' && typeof b === 'number') {
+      return a < b ? -1 : a > b ? 1 : 0;
+    }
+    return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
+  }
+
   /** Label pair surfaced in the right pane's header — eyebrow gives the
    *  category, title gives the human-readable name. Keeps the right-pane
    *  geometry stable while signalling which view is active. */
@@ -75,8 +124,49 @@
   $effect(() => {
     if (open) {
       untrack(() => { stats = computeStats(); });
+      // Reset sorts on open so the writer always sees the default
+      // ordering first — sort choices are session-only (#135).
+      charSortKey = null; charSortDir = 'asc';
+      locSortKey = null; locSortDir = 'asc';
+      schedSortKey = null; schedSortDir = 'asc';
     }
   });
+
+  // Derived sorted views — the original arrays come back when sortKey
+  // is null (default order from computeStats: characters by dialogue
+  // desc, locations by scenes desc, schedule by document order).
+  let sortedCharacters = $derived.by(() => {
+    if (!charSortKey) return stats.characters;
+    const arr = [...stats.characters];
+    const key = charSortKey;
+    const dir = charSortDir === 'asc' ? 1 : -1;
+    arr.sort((a, b) => cmp(a[key], b[key]) * dir);
+    return arr;
+  });
+
+  let sortedLocations = $derived.by(() => {
+    if (!locSortKey) return stats.locations;
+    const arr = [...stats.locations];
+    const key = locSortKey;
+    const dir = locSortDir === 'asc' ? 1 : -1;
+    arr.sort((a, b) => cmp(a[key], b[key]) * dir);
+    return arr;
+  });
+
+  let sortedSchedule = $derived.by(() => {
+    if (!schedSortKey) return stats.schedule;
+    const arr = [...stats.schedule];
+    const key = schedSortKey;
+    const dir = schedSortDir === 'asc' ? 1 : -1;
+    arr.sort((a, b) => cmp(a[key], b[key]) * dir);
+    return arr;
+  });
+
+  /** Maps a sortKey + dir to the aria-sort value the table cell needs. */
+  function ariaSortFor(active: boolean, dir: SortDir): 'none' | 'ascending' | 'descending' {
+    if (!active) return 'none';
+    return dir === 'asc' ? 'ascending' : 'descending';
+  }
 
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Escape') {
@@ -490,14 +580,34 @@
                 <table class="data-table">
                   <thead>
                     <tr>
-                      <th class="col-name">Character</th>
-                      <th class="col-num">Scenes</th>
-                      <th class="col-num">Dialogue</th>
-                      <th class="col-bar">Share</th>
+                      <th class="col-name" aria-sort={ariaSortFor(charSortKey === 'name', charSortDir)}>
+                        <button class="sort-btn" onclick={() => cycleCharSort('name')}>
+                          Character
+                          <span class="sort-ind" class:active={charSortKey === 'name'} data-dir={charSortKey === 'name' ? charSortDir : ''} aria-hidden="true"></span>
+                        </button>
+                      </th>
+                      <th class="col-num" aria-sort={ariaSortFor(charSortKey === 'scenes', charSortDir)}>
+                        <button class="sort-btn align-end" onclick={() => cycleCharSort('scenes')}>
+                          Scenes
+                          <span class="sort-ind" class:active={charSortKey === 'scenes'} data-dir={charSortKey === 'scenes' ? charSortDir : ''} aria-hidden="true"></span>
+                        </button>
+                      </th>
+                      <th class="col-num" aria-sort={ariaSortFor(charSortKey === 'dialogueBlocks', charSortDir)}>
+                        <button class="sort-btn align-end" onclick={() => cycleCharSort('dialogueBlocks')}>
+                          Dialogue
+                          <span class="sort-ind" class:active={charSortKey === 'dialogueBlocks'} data-dir={charSortKey === 'dialogueBlocks' ? charSortDir : ''} aria-hidden="true"></span>
+                        </button>
+                      </th>
+                      <th class="col-bar" aria-sort={ariaSortFor(charSortKey === 'percentage', charSortDir)}>
+                        <button class="sort-btn" onclick={() => cycleCharSort('percentage')}>
+                          Share
+                          <span class="sort-ind" class:active={charSortKey === 'percentage'} data-dir={charSortKey === 'percentage' ? charSortDir : ''} aria-hidden="true"></span>
+                        </button>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {#each stats.characters as char, i}
+                    {#each sortedCharacters as char, i}
                       <tr>
                         <td class="col-name"><span class="rank">{i + 1}</span>{char.name}</td>
                         <td class="col-num">{char.scenes}</td>
@@ -523,13 +633,28 @@
                 <table class="data-table">
                   <thead>
                     <tr>
-                      <th class="col-name">Location</th>
-                      <th class="col-num">Scenes</th>
-                      <th class="col-meta">Setting</th>
+                      <th class="col-name" aria-sort={ariaSortFor(locSortKey === 'name', locSortDir)}>
+                        <button class="sort-btn" onclick={() => cycleLocSort('name')}>
+                          Location
+                          <span class="sort-ind" class:active={locSortKey === 'name'} data-dir={locSortKey === 'name' ? locSortDir : ''} aria-hidden="true"></span>
+                        </button>
+                      </th>
+                      <th class="col-num" aria-sort={ariaSortFor(locSortKey === 'scenes', locSortDir)}>
+                        <button class="sort-btn align-end" onclick={() => cycleLocSort('scenes')}>
+                          Scenes
+                          <span class="sort-ind" class:active={locSortKey === 'scenes'} data-dir={locSortKey === 'scenes' ? locSortDir : ''} aria-hidden="true"></span>
+                        </button>
+                      </th>
+                      <th class="col-meta" aria-sort={ariaSortFor(locSortKey === 'setting', locSortDir)}>
+                        <button class="sort-btn" onclick={() => cycleLocSort('setting')}>
+                          Setting
+                          <span class="sort-ind" class:active={locSortKey === 'setting'} data-dir={locSortKey === 'setting' ? locSortDir : ''} aria-hidden="true"></span>
+                        </button>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {#each stats.locations as loc, i}
+                    {#each sortedLocations as loc, i}
                       <tr>
                         <td class="col-name"><span class="rank">{i + 1}</span>{loc.name}</td>
                         <td class="col-num">{loc.scenes}</td>
@@ -551,17 +676,52 @@
                 <table class="data-table schedule-table">
                   <thead>
                     <tr>
-                      <th class="col-snum">#</th>
-                      <th class="col-meta">Setting</th>
-                      <th class="col-name">Location</th>
-                      <th class="col-meta">Time</th>
-                      <th class="col-num">Cast</th>
-                      <th class="col-meta">Group</th>
-                      <th class="col-meta">Day</th>
+                      <th class="col-snum" aria-sort={ariaSortFor(schedSortKey === 'sceneNumber', schedSortDir)}>
+                        <button class="sort-btn align-end" onclick={() => cycleSchedSort('sceneNumber')}>
+                          #
+                          <span class="sort-ind" class:active={schedSortKey === 'sceneNumber'} data-dir={schedSortKey === 'sceneNumber' ? schedSortDir : ''} aria-hidden="true"></span>
+                        </button>
+                      </th>
+                      <th class="col-meta" aria-sort={ariaSortFor(schedSortKey === 'setting', schedSortDir)}>
+                        <button class="sort-btn" onclick={() => cycleSchedSort('setting')}>
+                          Setting
+                          <span class="sort-ind" class:active={schedSortKey === 'setting'} data-dir={schedSortKey === 'setting' ? schedSortDir : ''} aria-hidden="true"></span>
+                        </button>
+                      </th>
+                      <th class="col-name" aria-sort={ariaSortFor(schedSortKey === 'location', schedSortDir)}>
+                        <button class="sort-btn" onclick={() => cycleSchedSort('location')}>
+                          Location
+                          <span class="sort-ind" class:active={schedSortKey === 'location'} data-dir={schedSortKey === 'location' ? schedSortDir : ''} aria-hidden="true"></span>
+                        </button>
+                      </th>
+                      <th class="col-meta" aria-sort={ariaSortFor(schedSortKey === 'time', schedSortDir)}>
+                        <button class="sort-btn" onclick={() => cycleSchedSort('time')}>
+                          Time
+                          <span class="sort-ind" class:active={schedSortKey === 'time'} data-dir={schedSortKey === 'time' ? schedSortDir : ''} aria-hidden="true"></span>
+                        </button>
+                      </th>
+                      <th class="col-num" aria-sort={ariaSortFor(schedSortKey === 'characterCount', schedSortDir)}>
+                        <button class="sort-btn align-end" onclick={() => cycleSchedSort('characterCount')}>
+                          Cast
+                          <span class="sort-ind" class:active={schedSortKey === 'characterCount'} data-dir={schedSortKey === 'characterCount' ? schedSortDir : ''} aria-hidden="true"></span>
+                        </button>
+                      </th>
+                      <th class="col-meta" aria-sort={ariaSortFor(schedSortKey === 'locationGroup', schedSortDir)}>
+                        <button class="sort-btn" onclick={() => cycleSchedSort('locationGroup')}>
+                          Group
+                          <span class="sort-ind" class:active={schedSortKey === 'locationGroup'} data-dir={schedSortKey === 'locationGroup' ? schedSortDir : ''} aria-hidden="true"></span>
+                        </button>
+                      </th>
+                      <th class="col-meta" aria-sort={ariaSortFor(schedSortKey === 'scheduledDate', schedSortDir)}>
+                        <button class="sort-btn" onclick={() => cycleSchedSort('scheduledDate')}>
+                          Day
+                          <span class="sort-ind" class:active={schedSortKey === 'scheduledDate'} data-dir={schedSortKey === 'scheduledDate' ? schedSortDir : ''} aria-hidden="true"></span>
+                        </button>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {#each stats.schedule as row}
+                    {#each sortedSchedule as row}
                       <tr>
                         <td class="col-snum">{row.sceneNumber}</td>
                         <td class="col-meta">{row.setting || '—'}</td>
@@ -970,13 +1130,90 @@
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    padding: 10px 12px;
+    padding: 0;
     border-bottom: 1px solid var(--border-subtle);
     text-align: left;
     position: sticky;
     top: 0;
     background: var(--surface-base);
     z-index: 1;
+  }
+
+  /* Sort button — fills the th so the entire header cell is the click
+     target. Inherits th typography. The arrow indicator on the right
+     fades in only on the active sort column; inactive columns get a
+     subtle hover hint so the writer learns they're clickable. (#135) */
+  .sort-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 10px 12px;
+    background: transparent;
+    border: none;
+    color: inherit;
+    font: inherit;
+    text-transform: inherit;
+    letter-spacing: inherit;
+    text-align: inherit;
+    cursor: pointer;
+    transition: color var(--motion-fast, 100ms) ease,
+                background var(--motion-fast, 100ms) ease;
+  }
+
+  .sort-btn:hover {
+    color: var(--text-primary);
+    background: var(--surface-hover);
+  }
+
+  .sort-btn.align-end {
+    justify-content: flex-end;
+    text-align: right;
+  }
+
+  .sort-ind {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity var(--motion-fast, 100ms) ease;
+    background-image: linear-gradient(45deg, transparent 45%, currentColor 45%, currentColor 55%, transparent 55%);
+    /* Idle hint (light triangle) — show on hover for inactive columns. */
+  }
+
+  .sort-btn:hover .sort-ind:not(.active) {
+    opacity: 0.35;
+  }
+
+  .sort-ind.active {
+    opacity: 1;
+    color: var(--accent);
+  }
+
+  /* Up/down arrow rendered via two diagonal strokes. asc points up,
+     desc points down. */
+  .sort-ind.active[data-dir='asc'] {
+    background-image:
+      linear-gradient(45deg, transparent 38%, currentColor 38%, currentColor 50%, transparent 50%),
+      linear-gradient(-45deg, transparent 38%, currentColor 38%, currentColor 50%, transparent 50%);
+    background-position: left top, right top;
+    background-size: 50% 100%, 50% 100%;
+    background-repeat: no-repeat;
+  }
+
+  .sort-ind.active[data-dir='desc'] {
+    background-image:
+      linear-gradient(-45deg, transparent 38%, currentColor 38%, currentColor 50%, transparent 50%),
+      linear-gradient(45deg, transparent 38%, currentColor 38%, currentColor 50%, transparent 50%);
+    background-position: left bottom, right bottom;
+    background-size: 50% 100%, 50% 100%;
+    background-repeat: no-repeat;
+  }
+
+  th[aria-sort='ascending'],
+  th[aria-sort='descending'] {
+    color: var(--accent);
   }
 
   .data-table td {

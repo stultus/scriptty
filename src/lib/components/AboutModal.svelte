@@ -55,7 +55,7 @@
         <span class="eyebrow-rule"></span>
       </div>
 
-      <h1 class="app-name">Scriptty</h1>
+      <h1 class="app-name">SCRIPTTY</h1>
       <p class="tagline">Write in the language you dream in.</p>
 
       <div class="asterism" aria-hidden="true">· · ·</div>
@@ -149,12 +149,15 @@
     color: var(--text-secondary);
   }
 
+  /* SCRIPTTY in Courier Prime — the screenplay's own typeface, so
+     the wordmark reads as a printed cover-sheet title. Same
+     treatment as the Welcome screen. */
   .app-name {
     margin: 0;
-    font-family: var(--ui-font);
+    font-family: var(--editor-font-en), ui-monospace, monospace;
     font-size: 32px;
     font-weight: 700;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--text-primary);
     line-height: 1;

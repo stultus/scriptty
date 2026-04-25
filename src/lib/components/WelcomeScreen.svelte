@@ -79,10 +79,14 @@
       <span class="eyebrow-rule"></span>
     </div>
 
-    <h1 class="title">Scriptty</h1>
+    <h1 class="title">SCRIPTTY</h1>
     <p class="subtitle">for Malayalam &amp; English screenwriters</p>
 
-    <div class="asterism" aria-hidden="true">· · ·</div>
+    <div class="asterism" aria-hidden="true">
+      <span class="asterism-glyph">·</span>
+      <span class="asterism-glyph">·</span>
+      <span class="asterism-glyph">·</span>
+    </div>
 
     <div class="choice-row">
       <!-- svelte-ignore a11y_autofocus -->
@@ -204,35 +208,47 @@
     color: var(--text-secondary);
   }
 
+  /* SCRIPTTY in Courier Prime — the screenplay's own typeface. Sets
+     the wordmark in the same vocabulary as a printed cover sheet,
+     so the welcome reads as a title-page extract from the form of
+     work the app produces. */
   .title {
     margin: 0;
-    font-family: var(--ui-font);
+    font-family: var(--editor-font-en), ui-monospace, monospace;
     font-size: 36px;
     font-weight: 700;
     color: var(--text-primary);
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     line-height: 1;
   }
 
   .subtitle {
-    margin: 8px 0 0;
+    margin: 12px 0 0;
     font-family: 'Manjari', var(--ui-font);
     font-size: 14px;
     font-style: italic;
     color: var(--text-secondary);
+    line-height: 1.3;
     letter-spacing: 0.005em;
   }
 
-  /* Asterism — classical print divider. Sits between the masthead
-     and the action surface. */
+  /* Asterism — three middle-dots, classical print divider. Each
+     glyph gets its own span so we can space them confidently
+     without relying on letter-spacing collapsing in some fonts. */
   .asterism {
-    margin: 22px 0 24px;
-    font-size: 14px;
+    display: inline-flex;
+    gap: 16px;
+    margin: 26px 0 28px;
     color: var(--text-muted);
-    letter-spacing: 0.4em;
+    font-size: 16px;
     line-height: 1;
     user-select: none;
+  }
+
+  .asterism-glyph {
+    display: inline-block;
+    line-height: 1;
   }
 
   /* ─── Choice cards ─────────────────────────────────────────────────── */
@@ -408,13 +424,17 @@
     counter-reset: recent-counter;
   }
 
+  .recent ul li + li {
+    border-top: 1px dashed var(--border-subtle);
+  }
+
   .recent-item {
     width: 100%;
     display: grid;
-    grid-template-columns: 28px 1fr;
+    grid-template-columns: 32px 1fr;
     align-items: baseline;
-    gap: 10px;
-    padding: 8px 10px;
+    gap: 12px;
+    padding: 10px 8px;
     background: transparent;
     border: none;
     border-radius: 5px;
@@ -429,11 +449,12 @@
     counter-increment: recent-counter;
     content: counter(recent-counter, decimal-leading-zero);
     font-family: var(--editor-font-en), ui-monospace, monospace;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
     color: var(--text-muted);
     letter-spacing: 0.04em;
     text-align: right;
+    transition: color 120ms ease;
   }
 
   .recent-item:hover {
@@ -446,14 +467,16 @@
 
   .recent-name {
     font-family: var(--editor-font-en), ui-monospace, monospace;
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 700;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     color: var(--text-primary);
   }
 
   .recent-path {
     grid-column: 2;
+    margin-top: 2px;
     font-family: var(--ui-font);
     font-size: 10.5px;
     font-style: italic;
@@ -462,5 +485,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    opacity: 0.85;
   }
 </style>

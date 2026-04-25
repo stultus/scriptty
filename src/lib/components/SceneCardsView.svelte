@@ -599,6 +599,67 @@
     documentStore.markDirty();
   }
 
+  /** Duplicate a scene (#163). Clones the scene_heading + every
+   *  following top-level node until the next scene_heading, inserts
+   *  the clone immediately after the source, and copies the source
+   *  scene_card's authored fields onto the new card. All other cards
+   *  with scene_index > source shift up by one to track the new
+   *  ordering. */
+  function duplicateScene(sceneNumber: number, sceneOrder: number) {
+    const view = editorStore.view;
+    if (!view) return;
+    const doc = view.state.doc;
+
+    // Collect scene boundaries.
+    const bounds: { childIndex: number; offset: number }[] = [];
+    doc.forEach((node, offset, index) => {
+      if (node.type.name === 'scene_heading') bounds.push({ childIndex: index, offset });
+    });
+    if (sceneNumber < 1 || sceneNumber > bounds.length) return;
+    const idx = sceneNumber - 1;
+
+    const childStart = bounds[idx].childIndex;
+    const childEnd = idx + 1 < bounds.length ? bounds[idx + 1].childIndex : doc.childCount;
+    const startPos = bounds[idx].offset;
+    const endPos = idx + 1 < bounds.length ? bounds[idx + 1].offset : doc.content.size;
+
+    // Collect and copy the source scene's nodes. PMNode.copy() preserves
+    // the node's content and marks; that's what we want for a true
+    // duplicate (same heading text, same body lines).
+    const sceneNodes: PMNode[] = [];
+    for (let i = childStart; i < childEnd; i++) {
+      sceneNodes.push(doc.child(i));
+    }
+    const fragment = Fragment.from(sceneNodes);
+
+    const tr = view.state.tr.insert(endPos, fragment);
+    tr.scrollIntoView();
+    view.dispatch(tr);
+    documentStore.setContent(view.state.doc.toJSON());
+
+    // scene_cards: shift indices > source up by 1 so the slots for the
+    // new duplicate fit, then push a copy of the source card at
+    // sourceIndex + 1.
+    const cards = documentStore.activeSceneCards;
+    const source = cards.find((c) => c.scene_index === sceneOrder);
+    for (const c of cards) {
+      if (c.scene_index > sceneOrder) c.scene_index += 1;
+    }
+    if (source) {
+      cards.push({
+        ...source,
+        scene_index: sceneOrder + 1,
+        // Reset shoot scheduling on the duplicate — same heading +
+        // description make sense to clone, but two scenes shouldn't
+        // share a shoot date by default (writer almost certainly wants
+        // to re-schedule).
+        scheduled_date: '',
+      });
+    }
+
+    documentStore.markDirty();
+  }
+
   /** Add a new empty scene at the end of the ProseMirror document */
   function addScene() {
     const view = editorStore.view;
@@ -805,21 +866,35 @@
             </span>
           {/if}
           <span class="card-heading">{headingUpper}</span>
-          <button
-            class="card-delete"
-            type="button"
-            onclick={() => deleteScene(card.sceneNumber, card.sceneOrder)}
-            aria-label="Delete scene {card.sceneNumber}"
-            title="Delete scene"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-              <path d="M10 11v6"></path>
-              <path d="M14 11v6"></path>
-              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
-            </svg>
-          </button>
+          <div class="card-actions-cluster">
+            <button
+              class="card-delete"
+              type="button"
+              onclick={() => duplicateScene(card.sceneNumber, card.sceneOrder)}
+              aria-label="Duplicate scene {card.sceneNumber}"
+              title="Duplicate scene"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="11" height="11" rx="2"/>
+                <path d="M5 15 H4 A1 1 0 0 1 3 14 V4 A1 1 0 0 1 4 3 H14 A1 1 0 0 1 15 4 V5"/>
+              </svg>
+            </button>
+            <button
+              class="card-delete"
+              type="button"
+              onclick={() => deleteScene(card.sceneNumber, card.sceneOrder)}
+              aria-label="Delete scene {card.sceneNumber}"
+              title="Delete scene"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                <path d="M10 11v6"></path>
+                <path d="M14 11v6"></path>
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+              </svg>
+            </button>
+          </div>
         </div>
         {#if card.characters.length > 0}
           <div class="card-meta">
@@ -1478,6 +1553,16 @@
     white-space: nowrap;
     flex: 1;
     min-width: 0;
+  }
+
+  /* Cluster for the duplicate / delete buttons in the card header
+     (#163). Keeps them as a tight visual group on the right while
+     also reserving a single hover region. */
+  .card-actions-cluster {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+    flex-shrink: 0;
   }
 
   .card-delete {

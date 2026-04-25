@@ -314,6 +314,25 @@ pub enum ProjectType {
     Series,
 }
 
+/// Lifecycle marker for an episode (#141). Helps the writer track which
+/// episodes are still in the loglines / outline phase versus which are
+/// drafted, in revision, or fully locked.
+///
+/// Serialized as a lowercase string — `"outline"`, `"draft"`,
+/// `"revision"`, `"final"`. Defaults to `Outline`, so any existing
+/// `.screenplay` file (where the field is absent) loads as Outline
+/// without complaint. (`#[serde(default)]` on the host field handles
+/// the absent-key case; `Default` here picks the value used.)
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum EpisodeStatus {
+    #[default]
+    Outline,
+    Draft,
+    Revision,
+    Final,
+}
+
 /// One episode inside a Series project. Mirrors the film-level fields so
 /// every existing editor feature (scene navigator, export, scene cards,
 /// story panel) can operate on an episode without changing its code path.
@@ -327,6 +346,11 @@ pub struct Episode {
     pub number: u32,
     /// Episode title (e.g. "Pilot", "The Return"). Can be empty.
     pub title: String,
+    /// Lifecycle marker — see EpisodeStatus. `#[serde(default)]` so
+    /// existing `.screenplay` files (which predate the field) load as
+    /// Outline.
+    #[serde(default)]
+    pub status: EpisodeStatus,
     #[serde(default = "default_content", deserialize_with = "deserialize_content")]
     pub content: serde_json::Value,
     /// Each episode's meta mirrors the film-level meta. `#[serde(default)]`

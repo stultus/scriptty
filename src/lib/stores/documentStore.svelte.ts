@@ -69,6 +69,9 @@ export interface SceneCard {
   location_group: string;
 }
 
+/** Lifecycle marker for an episode (#141). */
+export type EpisodeStatus = 'outline' | 'draft' | 'revision' | 'final';
+
 /** One episode in a Series project — mirrors the film-level shape so every
  *  editor feature (navigator, export, scene cards, story) can run against it
  *  without branching on project type. */
@@ -76,6 +79,7 @@ export interface Episode {
   id: string;
   number: number;
   title: string;
+  status: EpisodeStatus;
   content: unknown;
   meta: ScreenplayMeta;
   settings: ScreenplaySettings;
@@ -369,6 +373,14 @@ class DocumentStore {
     this.markDirty();
   }
 
+  /** Update an episode's lifecycle status (#141). */
+  setEpisodeStatus(index: number, status: EpisodeStatus): void {
+    const eps = this.document?.series?.episodes;
+    if (!eps || index < 0 || index >= eps.length) return;
+    eps[index].status = status;
+    this.markDirty();
+  }
+
   /** Rename the series as a whole. */
   renameSeries(title: string): void {
     if (!this.document?.series) return;
@@ -398,6 +410,7 @@ class DocumentStore {
       id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
       number,
       title,
+      status: 'outline',
       content: { type: 'doc', content: [{ type: 'scene_heading' }] },
       meta: this.blankMeta(),
       settings,

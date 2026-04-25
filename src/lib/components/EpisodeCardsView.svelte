@@ -15,7 +15,24 @@
   import { flip } from 'svelte/animate';
   import { cubicInOut } from 'svelte/easing';
   import { confirm } from '@tauri-apps/plugin-dialog';
-  import { documentStore, type Episode } from '$lib/stores/documentStore.svelte';
+  import { documentStore, type Episode, type EpisodeStatus } from '$lib/stores/documentStore.svelte';
+
+  /** Ordered cycle for the status pill — clicking the pill walks
+   *  Outline → Draft → Revision → Final → Outline … (#141). */
+  const STATUS_CYCLE: EpisodeStatus[] = ['outline', 'draft', 'revision', 'final'];
+
+  function statusLabel(s: EpisodeStatus): string {
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  function nextStatus(current: EpisodeStatus): EpisodeStatus {
+    const i = STATUS_CYCLE.indexOf(current);
+    return STATUS_CYCLE[(i + 1) % STATUS_CYCLE.length];
+  }
+
+  function cycleStatus(index: number, current: EpisodeStatus) {
+    documentStore.setEpisodeStatus(index, nextStatus(current));
+  }
 
   let { onOpenEpisode }: { onOpenEpisode: (index: number) => void } = $props();
 
@@ -295,6 +312,16 @@
 
       <footer class="ep-footer">
         <div class="ep-stats">
+          <button
+            type="button"
+            class="ep-status status-{ep.status ?? 'outline'}"
+            onclick={(e) => { e.stopPropagation(); cycleStatus(index, ep.status ?? 'outline'); }}
+            title="Click to cycle status"
+            aria-label="Episode status: {statusLabel(ep.status ?? 'outline')}"
+          >
+            <span class="ep-status-dot" aria-hidden="true"></span>
+            {statusLabel(ep.status ?? 'outline')}
+          </button>
           <span class="ep-stat">
             <strong>{sceneCount}</strong>
             <span class="ep-stat-label">{sceneCount === 1 ? 'scene' : 'scenes'}</span>
@@ -674,10 +701,68 @@
 
   .ep-stats {
     display: flex;
-    align-items: baseline;
-    gap: 14px;
+    align-items: center;
+    gap: 12px;
     font-size: 11px;
     color: var(--text-muted);
+  }
+
+  /* Status pill — small clickable lifecycle marker (#141). Click cycles
+     Outline → Draft → Revision → Final → Outline. Color-coded:
+     Outline neutral, Draft warm, Revision accent, Final accent-deep. */
+  .ep-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 22px;
+    padding: 0 9px;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    font-family: var(--ui-font);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: filter var(--motion-fast, 100ms) ease,
+                transform var(--motion-fast, 100ms) ease;
+  }
+
+  .ep-status:hover {
+    filter: brightness(1.05);
+    transform: translateY(-0.5px);
+  }
+
+  .ep-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+
+  .ep-status.status-outline {
+    background: var(--surface-elevated);
+    color: var(--text-muted);
+    border-color: var(--border-subtle);
+  }
+
+  .ep-status.status-draft {
+    background: rgba(214, 161, 74, 0.14);
+    color: var(--accent-warm, #c47e1f);
+    border-color: rgba(214, 161, 74, 0.28);
+  }
+
+  .ep-status.status-revision {
+    background: var(--accent-muted);
+    color: var(--accent);
+    border-color: var(--accent-muted);
+  }
+
+  .ep-status.status-final {
+    background: var(--accent);
+    color: var(--text-on-accent);
+    border-color: var(--accent);
   }
 
   .ep-stat {

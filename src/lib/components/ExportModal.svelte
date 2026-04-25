@@ -22,6 +22,9 @@
   let includeScreenplay = $state(true);
   let includeNarrative = $state(false);
   let includeSceneCards = $state(false);
+  /** Daily Shoot List PDF section (#124) — only meaningful when at least
+   *  one scene card has a `scheduled_date`. */
+  let includeShootList = $state(false);
   let format = $state<'hollywood' | 'indian'>('hollywood');
   let pageBreakAfterScene = $state(false);
   // Page numbering is off by default — opt in per export.
@@ -55,6 +58,11 @@
   let hasSynopsis = $derived((documentStore.activeStory?.synopsis ?? '').trim().length > 0);
   let hasTreatment = $derived((documentStore.activeStory?.treatment ?? '').trim().length > 0);
   let hasNarrative = $derived((documentStore.activeStory?.narrative ?? '').trim().length > 0);
+  /** True when at least one scene card has a non-empty scheduled_date —
+   *  the Daily Shoot List checkbox only appears when there's data to print. */
+  let hasScheduledScenes = $derived(
+    documentStore.activeSceneCards.some((c) => (c.scheduled_date ?? '').trim().length > 0),
+  );
 
   // Count scene headings so the range inputs can clamp against the real
   // document size rather than an arbitrary cap.
@@ -188,6 +196,109 @@
     finalizePreviousScene();
 
     return cards;
+  }
+
+  /**
+   * Build the Daily Shoot List rows the backend renders into a per-day PDF
+   * (#124). Walks the same content as buildSceneCardsData but only emits
+   * scenes that have a non-empty `scheduled_date` on their SceneCard. Each
+   * row carries the auto-detected location/time/cast count plus the
+   * page-eighths estimate (1 page ≈ 8 eighths ≈ 3000 chars, so ~375 chars
+   * per eighth, with a 1-eighth floor so the shortest scenes still register).
+   *
+   * Rows are sorted by (scheduled_date, location_group, scene_number) so
+   * the backend can group on date / group boundaries with a simple linear
+   * walk.
+   */
+  function buildShootListData(
+    doc: ScreenplayDocument | null = documentStore.activeExportDocument,
+  ): Array<Record<string, unknown>> {
+    if (!doc || !doc.content) return [];
+
+    const content = doc.content as {
+      content?: Array<{ type?: string; content?: Array<{ text?: string }> }>;
+    };
+    if (!content.content) return [];
+
+    const startNum = doc.settings?.scene_number_start ?? 1;
+    let sceneIndex = -1;
+    let currentSceneCharacters: string[] = [];
+    let currentSceneCharCount = 0;
+    let currentSceneHeading = '';
+
+    interface Row extends Record<string, unknown> {
+      scheduled_date: string;
+      location_group: string;
+      scene_number: number;
+      heading: string;
+      location: string;
+      time: string;
+      character_count: number;
+      eighths: number;
+    }
+    const rows: Row[] = [];
+
+    const finalize = () => {
+      if (sceneIndex < 0) return;
+      const card = doc.scene_cards.find((c) => c.scene_index === sceneIndex);
+      const date = (card?.scheduled_date ?? '').trim();
+      if (!date) return; // Unscheduled scenes don't appear in the shoot list.
+
+      const { location, time } = parseSceneHeading(currentSceneHeading);
+      // Merge auto-detected speakers with extras for the cast count, same as
+      // the per-card characters line — non-speaking roles count as cast too.
+      const extras = (card?.extra_characters ?? '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+      const allCast = new Set([...currentSceneCharacters, ...extras]);
+
+      const eighths = Math.max(1, Math.round(currentSceneCharCount / 375));
+
+      rows.push({
+        scheduled_date: date,
+        location_group: (card?.location_group ?? '').trim(),
+        scene_number: startNum + sceneIndex,
+        heading: currentSceneHeading,
+        location,
+        time,
+        character_count: allCast.size,
+        eighths,
+      });
+    };
+
+    for (const node of content.content) {
+      if (node.type === 'scene_heading') {
+        finalize();
+        sceneIndex++;
+        currentSceneCharacters = [];
+        currentSceneCharCount = 0;
+        currentSceneHeading = (node.content ?? []).map((c) => c.text ?? '').join('');
+      } else if (node.type === 'character') {
+        const name = (node.content ?? []).map((c) => c.text ?? '').join('').trim();
+        if (name && !currentSceneCharacters.includes(name)) currentSceneCharacters.push(name);
+      }
+      if (node.content) {
+        currentSceneCharCount += node.content.reduce((sum, c) => sum + (c.text ?? '').length, 0);
+      }
+    }
+    finalize();
+
+    rows.sort((a, b) => {
+      if (a.scheduled_date !== b.scheduled_date) {
+        return a.scheduled_date.localeCompare(b.scheduled_date);
+      }
+      if (a.location_group !== b.location_group) {
+        // Empty groups go after named ones within a day so writer-noted
+        // location clusters head the list.
+        if (!a.location_group) return 1;
+        if (!b.location_group) return -1;
+        return a.location_group.localeCompare(b.location_group);
+      }
+      return a.scene_number - b.scene_number;
+    });
+
+    return rows;
   }
 
   /**
@@ -453,6 +564,7 @@
 
     try {
       const sceneCardsData = includeSceneCards ? buildSceneCardsData(doc) : [];
+      const shootListData = includeShootList ? buildShootListData(doc) : [];
 
       const bytes = await invoke<number[]>('export_combined_pdf', {
         document: doc,
@@ -463,11 +575,13 @@
           include_screenplay: includeScreenplay,
           include_narrative: includeNarrative,
           include_scene_cards: includeSceneCards,
+          include_shoot_list: includeShootList,
           format,
           page_break_after_scene: pageBreakAfterScene,
           characters_below_heading: charactersBelowHeading,
           include_page_numbers: includePageNumbers,
           scene_cards_data: sceneCardsData,
+          shoot_list_data: shootListData,
         },
       });
 
@@ -560,6 +674,12 @@
           <input type="checkbox" bind:checked={includeSceneCards} />
           <span>Scene Cards</span>
         </label>
+        {#if hasScheduledScenes}
+          <label class="checkbox-row">
+            <input type="checkbox" bind:checked={includeShootList} />
+            <span>Daily Shoot List</span>
+          </label>
+        {/if}
       </div>
       {#if !hasSynopsis || !hasTreatment || !hasNarrative}
         <p class="unavailable-hint">

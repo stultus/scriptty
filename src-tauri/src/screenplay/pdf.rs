@@ -1950,6 +1950,188 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
     markup
 }
 
+/// Render the Daily Shoot List section: scenes grouped by `scheduled_date`,
+/// each day starting on a fresh page, sub-grouped by `location_group`,
+/// with cast counts, page-eighths per scene, and a per-day eighths total.
+///
+/// `shoot_list_data` is a JSON array assembled by the frontend (it has the
+/// auto-detected location/time/character_count already computed for the
+/// Cards view). Items missing `scheduled_date` are filtered out by the
+/// caller — the writer only sees scheduled scenes here. (#124)
+///
+/// The page-eighths convention: 1 page = 8 eighths, where a "page" is the
+/// existing 3000-character heuristic. So eighths = max(1, round(chars/375)).
+/// Frontend computes that and passes it as `eighths` per row.
+#[allow(clippy::too_many_arguments)]
+pub fn generate_shoot_list_markup(
+    rows: &Value,
+    font_name: &str,
+    meta: &ScreenplayMeta,
+    needs_pagebreak: bool,
+    page_numbers: bool,
+) -> String {
+    let mut markup = String::new();
+
+    if needs_pagebreak {
+        markup.push_str("#pagebreak()\n\n");
+    }
+
+    let numbering_opts = if page_numbers {
+        r#", numbering: "1.", number-align: right + top"#
+    } else {
+        ""
+    };
+
+    // Reset to the same prose-style page geometry the other report sections use.
+    markup.push_str(&format!(
+        r#"// Daily shoot list: reset layout
+#set page(margin: (top: 2.5cm, bottom: 2.5cm, left: 2.5cm, right: 2.5cm){})
+#set text(font: "{}", size: 11pt, lang: "ml", hyphenate: true)
+#set par(justify: false, first-line-indent: 0cm, leading: 0.65em)
+
+"#,
+        numbering_opts, font_name
+    ));
+
+    // Project title
+    if !meta.title.trim().is_empty() {
+        markup.push_str(&format!(
+            r#"#par(first-line-indent: 0cm)[
+  #align(center)[
+    #v(1cm)
+    #text(size: 20pt, weight: "bold")[{}]
+  ]
+]
+"#,
+            escape_typst(meta.title.trim())
+        ));
+    }
+
+    // "Daily Shoot List" subtitle
+    markup.push_str(&format!(
+        r#"#par(first-line-indent: 0cm)[
+  #align(center)[
+    {}#text(size: 12pt, tracking: 0.15em, fill: luma(100))[DAILY SHOOT LIST]
+  ]
+]
+"#,
+        if meta.title.trim().is_empty() { "#v(1cm)\n    " } else { "#v(0.6cm)\n    " }
+    ));
+
+    // Credit lines
+    let credits = format_credit_lines(&meta.author, &meta.director);
+    for (label, name) in &credits {
+        markup.push_str(&format!(
+            r#"#par(first-line-indent: 0cm)[
+  #align(center)[
+    #v(0.3cm)
+    #text(size: 11pt)[#text(fill: luma(120))[#emph[{}]] {}]
+  ]
+]
+"#,
+            escape_typst(label),
+            escape_typst(name)
+        ));
+    }
+
+    markup.push_str("\n#v(1.2cm)\n\n");
+
+    let arr = match rows.as_array() {
+        Some(a) => a,
+        None => return markup,
+    };
+
+    if arr.is_empty() {
+        markup.push_str(
+            "#align(center)[#text(fill: luma(140))[No scenes scheduled yet — add a Shoot date on a Scene Card to populate this report.]]\n",
+        );
+        return markup;
+    }
+
+    // The frontend hands us rows already sorted by (scheduled_date,
+    // location_group, scene_number). Walk linearly and emit a header
+    // every time the date or group changes.
+    let mut current_date: Option<String> = None;
+    let mut current_group: Option<String> = None;
+    let mut day_eighths: u64 = 0;
+    let mut day_first_emit = true;
+
+    let flush_day_total = |markup: &mut String, total: u64, first: bool| {
+        if first || total == 0 { return; }
+        let pages = (total as f64) / 8.0;
+        markup.push_str(&format!(
+            "#v(6pt)\n#align(right)[#text(size: 10pt, fill: luma(110))[Day total: {} eighths (~{:.1} pages)]]\n\n",
+            total, pages
+        ));
+    };
+
+    for row in arr {
+        let date = row.get("scheduled_date").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        let group = row.get("location_group").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        let scene_num = row.get("scene_number").and_then(|v| v.as_u64()).unwrap_or(0);
+        let heading = row.get("heading").and_then(|v| v.as_str()).unwrap_or("");
+        let location = row.get("location").and_then(|v| v.as_str()).unwrap_or("");
+        let time = row.get("time").and_then(|v| v.as_str()).unwrap_or("");
+        let char_count = row.get("character_count").and_then(|v| v.as_u64()).unwrap_or(0);
+        let eighths = row.get("eighths").and_then(|v| v.as_u64()).unwrap_or(1);
+
+        // Day boundary — flush prior day's total + pagebreak before the next.
+        if Some(&date) != current_date.as_ref() {
+            flush_day_total(&mut markup, day_eighths, day_first_emit);
+            if !day_first_emit {
+                markup.push_str("#pagebreak()\n\n");
+            }
+            day_eighths = 0;
+            day_first_emit = false;
+
+            // Day header — date prominent, day-of-week-style block.
+            let date_label = if date.is_empty() { "Unscheduled".to_string() } else { date.clone() };
+            markup.push_str(&format!(
+                "#text(size: 14pt, weight: \"bold\")[{}]\n#v(2pt)\n#line(length: 100%, stroke: 0.5pt + luma(180))\n#v(8pt)\n\n",
+                escape_typst(&date_label)
+            ));
+            current_date = Some(date.clone());
+            current_group = None;
+        }
+
+        // Group boundary within a day.
+        if Some(&group) != current_group.as_ref() {
+            let group_label = if group.is_empty() { "(no group)".to_string() } else { group.clone() };
+            markup.push_str(&format!(
+                "#v(4pt)\n#text(size: 11pt, weight: \"semibold\", fill: luma(80))[{}]\n#v(4pt)\n\n",
+                escape_typst(&group_label)
+            ));
+            current_group = Some(group.clone());
+        }
+
+        // Per-scene row — scene number, heading, location/time, cast, eighths.
+        let mut meta_bits: Vec<String> = Vec::new();
+        if !location.is_empty() {
+            meta_bits.push(escape_typst(location));
+        }
+        if !time.is_empty() {
+            meta_bits.push(escape_typst(time));
+        }
+        meta_bits.push(format!("{} cast", char_count));
+        meta_bits.push(format!("{} eighths", eighths));
+        let meta_line = meta_bits.join(" · ");
+
+        markup.push_str(&format!(
+            "#block(inset: (left: 12pt, top: 4pt, bottom: 4pt))[\n  #text(weight: \"semibold\")[{}.] #text[{}]\n  #v(2pt)\n  #text(size: 10pt, fill: luma(110))[{}]\n]\n\n",
+            scene_num,
+            escape_typst(heading),
+            meta_line,
+        ));
+
+        day_eighths += eighths;
+    }
+
+    // Flush the final day's total.
+    flush_day_total(&mut markup, day_eighths, day_first_emit);
+
+    markup
+}
+
 /// Compiles a complete Typst markup string (with preamble already included)
 /// into PDF bytes. Shared helper used by the combined export command.
 pub fn compile_markup_to_pdf(markup: &str, font_data: &FontData) -> Result<Vec<u8>, String> {

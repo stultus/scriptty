@@ -216,6 +216,21 @@ pub struct ExportOptions {
     pub include_narrative: bool,
     /// Include scene cards breakdown
     pub include_scene_cards: bool,
+    /// Include the Daily Shoot List — scenes grouped by scheduled_date,
+    /// sub-grouped by location_group, with page-eighths totals per day.
+    /// `#[serde(default)]` so older frontends omit the field harmlessly. (#124)
+    #[serde(default)]
+    pub include_shoot_list: bool,
+    /// Pre-computed shoot-list rows as JSON. The frontend already knows the
+    /// auto-detected location/time/character-count per scene (it builds them
+    /// for the Cards view), so we hand the assembled list to the backend
+    /// rather than recomputing here. Each item shape:
+    ///   { scheduled_date, location_group, scene_number, heading, location,
+    ///     time, character_count, eighths }
+    /// `#[serde(default)]` so the field can be omitted when the section
+    /// isn't requested. (#124)
+    #[serde(default)]
+    pub shoot_list_data: serde_json::Value,
     /// Screenplay format: "hollywood" or "indian"
     pub format: String,
     /// Insert a page break after each scene in the PDF
@@ -371,6 +386,18 @@ pub fn export_combined_pdf(
     if options.include_scene_cards {
         markup.push_str(&pdf::generate_scene_cards_markup(
             &options.scene_cards_data,
+            font_name,
+            &document.meta,
+            has_content,
+            options.include_page_numbers,
+        ));
+        has_content = true;
+    }
+
+    // Append the Daily Shoot List if requested (#124).
+    if options.include_shoot_list {
+        markup.push_str(&pdf::generate_shoot_list_markup(
+            &options.shoot_list_data,
             font_name,
             &document.meta,
             has_content,

@@ -66,30 +66,51 @@
 
 <div class="welcome">
   <div class="welcome-card">
-    <img class="logo" src="/app-icon.png" alt="Scriptty" />
+    <!-- Editorial masthead — eyebrow with flanking hairlines, big
+         tracked title, italic Manjari subtitle, asterism divider.
+         Same vocabulary as SceneCardsView's hero and the title-page
+         preview, so the writer's first impression and their work
+         surface speak the same design system. -->
+    <img class="logo" src="/app-icon.png" alt="" aria-hidden="true" />
+
+    <div class="masthead-eyebrow" aria-hidden="true">
+      <span class="eyebrow-rule"></span>
+      <span class="eyebrow-text">A Screenplay Editor</span>
+      <span class="eyebrow-rule"></span>
+    </div>
+
     <h1 class="title">Scriptty</h1>
-    <p class="subtitle">Start a new project or open an existing one.</p>
+    <p class="subtitle">for Malayalam &amp; English screenwriters</p>
+
+    <div class="asterism" aria-hidden="true">· · ·</div>
 
     <div class="choice-row">
       <!-- svelte-ignore a11y_autofocus -->
       <button class="choice primary" onclick={handleNewFilm} autofocus>
+        <span class="choice-eyebrow">Begin</span>
         <span class="choice-title">New Film</span>
-        <span class="choice-desc">A single screenplay.</span>
+        <span class="choice-desc">A single screenplay</span>
       </button>
       <button class="choice" onclick={handleNewSeries}>
+        <span class="choice-eyebrow">Begin</span>
         <span class="choice-title">New Series</span>
-        <span class="choice-desc">Multiple episodes in one project.</span>
+        <span class="choice-desc">Multiple episodes in one project</span>
       </button>
     </div>
 
     <div class="secondary-row">
-      <button class="open-existing" onclick={onOpen}>Open Existing…</button>
-      <button class="open-existing" onclick={handlePasteScript}>Paste Script…</button>
+      <button class="open-existing" onclick={onOpen}>Open existing…</button>
+      <span class="secondary-divider" aria-hidden="true">·</span>
+      <button class="open-existing" onclick={handlePasteScript}>Paste script…</button>
     </div>
 
     {#if recent.length > 0}
       <div class="recent">
-        <div class="recent-label">Recent</div>
+        <div class="recent-eyebrow" aria-hidden="true">
+          <span class="eyebrow-rule"></span>
+          <span class="eyebrow-text">Recent</span>
+          <span class="eyebrow-rule"></span>
+        </div>
         <ul>
           {#each recent as item (item.path)}
             <li>
@@ -116,164 +137,228 @@
     align-items: center;
     justify-content: center;
     background: var(--surface-base);
+    background-image: var(--page-grain);
+    background-size: 240px 240px;
     z-index: 100;
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: var(--ui-font);
   }
 
   .welcome-card {
     position: relative;
-    width: 560px;
-    max-width: 90vw;
-    padding: 40px 36px 32px;
+    width: 580px;
+    max-width: 92vw;
+    padding: 36px 44px 32px;
     background: var(--surface-float);
     border: 1px solid var(--border-medium);
-    border-radius: 14px;
+    border-radius: 12px;
     box-shadow: 0 16px 48px var(--shadow-heavy),
                 0 2px 8px var(--shadow-soft);
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    overflow: hidden;
-  }
-
-  /* Soft accent stripe at the top of the card so the welcome lands as
-     an intentional surface, not a flat panel — addresses the low
-     contrast between --surface-float and --surface-base (#110). */
-  .welcome-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      var(--accent) 30%,
-      var(--accent) 70%,
-      transparent 100%
-    );
-    opacity: 0.7;
   }
 
   .logo {
-    width: 72px;
-    height: 72px;
-    border-radius: 14px;
-    margin-bottom: 12px;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    margin-bottom: 18px;
+    opacity: 0.92;
+  }
+
+  /* ─── Editorial masthead ──────────────────────────────────────────── */
+  /* Eyebrow with flanking hairlines — same vocabulary as the
+     SceneCardsView hero, the title-page preview, and the PDF cover. */
+  .masthead-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .eyebrow-rule {
+    display: inline-block;
+    width: 32px;
+    height: 1px;
+    background: var(--border-medium);
+  }
+
+  .eyebrow-text {
+    font-family: var(--ui-font);
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
   }
 
   .title {
     margin: 0;
-    font-size: 22px;
-    font-weight: 600;
+    font-family: var(--ui-font);
+    font-size: 36px;
+    font-weight: 700;
     color: var(--text-primary);
-    letter-spacing: 0.01em;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1;
   }
 
   .subtitle {
-    margin: 4px 0 24px;
-    font-size: 13px;
-    color: var(--text-muted);
+    margin: 8px 0 0;
+    font-family: 'Manjari', var(--ui-font);
+    font-size: 14px;
+    font-style: italic;
+    color: var(--text-secondary);
+    letter-spacing: 0.005em;
   }
 
+  /* Asterism — classical print divider. Sits between the masthead
+     and the action surface. */
+  .asterism {
+    margin: 22px 0 24px;
+    font-size: 14px;
+    color: var(--text-muted);
+    letter-spacing: 0.4em;
+    line-height: 1;
+    user-select: none;
+  }
+
+  /* ─── Choice cards ─────────────────────────────────────────────────── */
   .choice-row {
     display: flex;
-    gap: 12px;
+    gap: 10px;
     width: 100%;
-    margin-bottom: 10px;
+    margin-bottom: 14px;
   }
 
+  /* Each choice is a typeset card: tracked-caps eyebrow, bold title,
+     italic descriptor. Reads like a section header from a book. */
   .choice {
     flex: 1;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 4px;
+    gap: 6px;
     padding: 16px 18px;
     background: var(--surface-base);
-    border: 1px solid var(--border-medium);
-    border-radius: 10px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
     cursor: pointer;
     color: var(--text-primary);
     font-family: inherit;
     text-align: left;
-    transition: border-color 120ms ease, background 120ms ease;
+    transition: border-color 160ms ease, background 160ms ease,
+                box-shadow 200ms ease;
   }
 
   .choice:hover {
+    border-color: var(--border-medium);
     background: var(--surface-hover);
-    border-color: var(--accent);
+    box-shadow: 0 4px 14px var(--shadow-soft);
   }
 
-  /* Implicit primary — most writers start with a single screenplay,
-     so "New Film" gets the accent treatment. New Series is the ghost
-     option for the smaller subset already thinking series-first. */
   .choice.primary {
     background: var(--accent-muted);
-    border-color: var(--accent);
+    border-color: transparent;
   }
 
   .choice.primary:hover {
     background: var(--accent-muted);
     filter: brightness(1.05);
+    box-shadow: 0 4px 18px var(--shadow-soft);
+  }
+
+  .choice-eyebrow {
+    font-family: var(--ui-font);
+    font-size: 8.5px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .choice.primary .choice-eyebrow {
+    color: var(--accent);
+    opacity: 0.7;
+  }
+
+  .choice-title {
+    font-family: var(--editor-font-en), ui-monospace, monospace;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-primary);
   }
 
   .choice.primary .choice-title {
     color: var(--accent);
   }
 
-  .choice-title {
-    font-size: 14px;
-    font-weight: 600;
-  }
-
   .choice-desc {
-    font-size: 12px;
-    color: var(--text-muted);
+    font-family: var(--ui-font);
+    font-size: 11.5px;
+    font-style: italic;
+    color: var(--text-secondary);
+    line-height: 1.4;
   }
 
-  /* Two-button row under the primary cards — Open Existing and Paste
-     Script live here as equal-weight ghost buttons. */
+  /* ─── Secondary actions — typeset link row ─────────────────────────── */
   .secondary-row {
-    display: flex;
-    gap: 8px;
-    margin-top: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .secondary-divider {
+    color: var(--border-medium);
+    font-size: 14px;
+    line-height: 1;
+    user-select: none;
   }
 
   .open-existing {
-    height: 32px;
-    padding: 0 16px;
+    padding: 4px 8px;
     background: transparent;
-    border: 1px solid var(--border-medium);
-    border-radius: 8px;
+    border: none;
     color: var(--text-secondary);
-    font-size: 12.5px;
-    font-family: inherit;
+    font-family: var(--ui-font);
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
     cursor: pointer;
-    transition: background 120ms ease, color 120ms ease;
+    border-radius: 4px;
+    transition: color 120ms ease, background 120ms ease;
   }
 
   .open-existing:hover {
+    color: var(--accent);
     background: var(--surface-hover);
-    color: var(--text-primary);
   }
 
+  /* ─── Recent index ─────────────────────────────────────────────────── */
   .recent {
     width: 100%;
     margin-top: 28px;
-    border-top: 1px solid var(--border-medium);
-    padding-top: 18px;
     text-align: left;
   }
 
-  .recent-label {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-muted);
-    margin-bottom: 8px;
+  /* Eyebrow row mirrors the masthead — flanking hairlines around the
+     "Recent" label so the section break reads as typeset, not as a
+     lazy header. */
+  .recent-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    justify-content: center;
+  }
+
+  .recent-eyebrow .eyebrow-rule {
+    flex: 1;
+    width: auto;
   }
 
   .recent ul {
@@ -282,35 +367,65 @@
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
+  }
+
+  /* Each recent file gets a Courier numeric prefix (counter) so the
+     list reads like a typeset index rather than a row of buttons. */
+  .recent ul {
+    counter-reset: recent-counter;
   }
 
   .recent-item {
     width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 6px 10px;
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    align-items: baseline;
+    gap: 10px;
+    padding: 8px 10px;
     background: transparent;
     border: none;
-    border-radius: 6px;
+    border-radius: 5px;
     cursor: pointer;
     color: var(--text-primary);
     font-family: inherit;
     text-align: left;
+    transition: background 120ms ease;
+  }
+
+  .recent-item::before {
+    counter-increment: recent-counter;
+    content: counter(recent-counter, decimal-leading-zero);
+    font-family: var(--editor-font-en), ui-monospace, monospace;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    text-align: right;
   }
 
   .recent-item:hover {
     background: var(--surface-hover);
   }
 
+  .recent-item:hover::before {
+    color: var(--accent);
+  }
+
   .recent-name {
-    font-size: 12.5px;
+    font-family: var(--editor-font-en), ui-monospace, monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--text-primary);
   }
 
   .recent-path {
+    grid-column: 2;
+    font-family: var(--ui-font);
     font-size: 10.5px;
-    color: var(--text-muted);
+    font-style: italic;
+    color: var(--text-secondary);
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;

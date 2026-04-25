@@ -60,45 +60,68 @@
 
 <div class="status-bar">
   <div class="status-left">
-    <button
-      class="icon-btn"
-      onclick={() => onOpenSettings?.()}
-      title="Settings — language, input scheme, font, theme"
-      aria-label="Open settings"
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line>
-        <line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line>
-        <line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line>
-        <line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line>
-        <line x1="17" y1="16" x2="23" y2="16"></line>
-      </svg>
-    </button>
-    {#if onShowHelp}
+    <!-- Zone 1: chrome actions -->
+    <div class="zone">
       <button
         class="icon-btn"
-        onclick={() => onShowHelp?.()}
-        title="How to use Scriptty"
-        aria-label="Open help"
+        onclick={() => onOpenSettings?.()}
+        title="Settings — language, input scheme, font, theme"
+        aria-label="Open settings"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          <line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line>
+          <line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line>
+          <line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line>
+          <line x1="17" y1="16" x2="23" y2="16"></line>
         </svg>
       </button>
-    {/if}
-    <button
-      class="palette-hint"
-      onclick={() => onOpenPalette?.()}
-      title="Open the command palette (⌘K) to run any action"
-    >
-      <span class="kbd">⌘K</span>
-      <span>Commands</span>
-    </button>
-    <span class="status-lang" class:malayalam={isMalayalam} title="Input language — toggle with ⌃Space">
-      {isMalayalam ? 'MAL' : 'ENG'}
-    </span>
+      {#if onShowHelp}
+        <button
+          class="icon-btn"
+          onclick={() => onShowHelp?.()}
+          title="How to use Scriptty"
+          aria-label="Open help"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </button>
+      {/if}
+    </div>
+
+    <span class="separator" aria-hidden="true"></span>
+
+    <!-- Zone 2: command palette entry -->
+    <div class="zone">
+      <button
+        class="palette-hint"
+        onclick={() => onOpenPalette?.()}
+        title="Open the command palette (⌘K) to run any action"
+      >
+        <span class="kbd">⌘K</span>
+        <span>Commands</span>
+      </button>
+    </div>
+
+    <span class="separator" aria-hidden="true"></span>
+
+    <!-- Zone 3: input-mode toggle. Now actually clickable so the chip
+         matches the affordance the tooltip implies. -->
+    <div class="zone">
+      <button
+        type="button"
+        class="status-lang"
+        class:malayalam={isMalayalam}
+        onclick={() => inputManager.toggle()}
+        title="Input language — click or ⌃Space to toggle"
+        aria-label={isMalayalam ? 'Switch to English input' : 'Switch to Malayalam input'}
+      >
+        {isMalayalam ? 'MAL' : 'ENG'}
+      </button>
+    </div>
   </div>
   <div class="status-right">
     {#if saveLabel}
@@ -133,7 +156,25 @@
   .status-left {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+  }
+
+  /* Group of related controls — separators visually demarcate the zones
+     so the eye reads "actions | palette | input mode" instead of one
+     undifferentiated row of chips (#109). */
+  .zone {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .separator {
+    display: inline-block;
+    width: 1px;
+    height: 14px;
+    background: var(--border-subtle);
+    margin: 0 4px;
+    flex-shrink: 0;
   }
 
   .status-right {
@@ -199,19 +240,36 @@
     letter-spacing: 0;
   }
 
+  /* Input-mode toggle. Reads as a chip (state-bearing) but is now a
+     real button — click toggles the input mode just like ⌃Space. */
   .status-lang {
+    background: transparent;
+    border: none;
     color: var(--text-secondary);
+    font-family: var(--ui-font);
     font-size: 12px;
     font-weight: 500;
     letter-spacing: 0.05em;
     padding: 1px 6px;
     border-radius: 3px;
+    cursor: pointer;
     transition: background 120ms ease, color 120ms ease;
+  }
+
+  .status-lang:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
   }
 
   .status-lang.malayalam {
     color: var(--accent);
     background: var(--accent-muted);
+  }
+
+  .status-lang.malayalam:hover {
+    background: var(--accent-muted);
+    color: var(--accent);
+    filter: brightness(1.05);
   }
 
   .status-save {

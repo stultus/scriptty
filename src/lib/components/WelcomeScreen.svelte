@@ -59,7 +59,8 @@
     <p class="subtitle">Start a new project or open an existing one.</p>
 
     <div class="choice-row">
-      <button class="choice" onclick={handleNewFilm}>
+      <!-- svelte-ignore a11y_autofocus -->
+      <button class="choice primary" onclick={handleNewFilm} autofocus>
         <span class="choice-title">New Film</span>
         <span class="choice-desc">A single screenplay.</span>
       </button>
@@ -104,17 +105,40 @@
   }
 
   .welcome-card {
+    position: relative;
     width: 560px;
     max-width: 90vw;
     padding: 40px 36px 32px;
     background: var(--surface-float);
     border: 1px solid var(--border-medium);
     border-radius: 14px;
-    box-shadow: 0 16px 48px var(--shadow-heavy);
+    box-shadow: 0 16px 48px var(--shadow-heavy),
+                0 2px 8px var(--shadow-soft);
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
+    overflow: hidden;
+  }
+
+  /* Soft accent stripe at the top of the card so the welcome lands as
+     an intentional surface, not a flat panel — addresses the low
+     contrast between --surface-float and --surface-base (#110). */
+  .welcome-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--accent) 30%,
+      var(--accent) 70%,
+      transparent 100%
+    );
+    opacity: 0.7;
   }
 
   .logo {
@@ -165,6 +189,23 @@
   .choice:hover {
     background: var(--surface-hover);
     border-color: var(--accent);
+  }
+
+  /* Implicit primary — most writers start with a single screenplay,
+     so "New Film" gets the accent treatment. New Series is the ghost
+     option for the smaller subset already thinking series-first. */
+  .choice.primary {
+    background: var(--accent-muted);
+    border-color: var(--accent);
+  }
+
+  .choice.primary:hover {
+    background: var(--accent-muted);
+    filter: brightness(1.05);
+  }
+
+  .choice.primary .choice-title {
+    color: var(--accent);
   }
 
   .choice-title {

@@ -48,13 +48,15 @@
     border-radius: 10px;
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
     padding: 14px 16px;
-    animation: update-slide-in 220ms cubic-bezier(0.2, 0.7, 0.3, 1);
+    animation: update-slide-in var(--motion-slow) cubic-bezier(0.2, 0.7, 0.3, 1);
     font-family: inherit;
   }
 
+  /* Lighter slide travel (8px) — the toast is informational, not urgent,
+     so a smaller motion arc reads as a nudge rather than an alert (#112). */
   @keyframes update-slide-in {
     from {
-      transform: translateY(14px);
+      transform: translateY(8px);
       opacity: 0;
     }
     to {

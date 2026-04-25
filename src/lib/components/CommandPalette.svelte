@@ -260,7 +260,8 @@
     font-size: 13px;
     text-align: left;
     cursor: pointer;
-    transition: background 80ms ease, color 80ms ease;
+    transition: background var(--motion-fast) var(--motion-easing),
+                color var(--motion-fast) var(--motion-easing);
   }
 
   .item.selected {

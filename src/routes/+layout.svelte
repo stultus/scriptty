@@ -191,6 +191,21 @@
     --popover-z: 900;
     --modal-z: 1000;
     --modal-z-stacked: 1100;
+
+    /* ─── Motion tokens (issue #112) ───
+       Default to one of three buckets instead of inventing new durations
+       per component. Pick by intent, not feel:
+       - --motion-fast: micro-interactions where snap is wanted
+         (color/background changes that should feel instantaneous)
+       - --motion-base: standard hover/state transitions across chrome
+       - --motion-slow: slide-ins, modal entrances, prominent reveals
+       Custom durations are still allowed for one-off cases (e.g. the
+       progress-slide loop in ExportModal), but anything resembling a
+       hover or state change should use the tokens. */
+    --motion-fast: 100ms;
+    --motion-base: 160ms;
+    --motion-slow: 220ms;
+    --motion-easing: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* ─── Disabled button baseline ───

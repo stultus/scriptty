@@ -371,8 +371,37 @@
 </script>
 
 <div class="navigator-content">
+  <!-- Sticky header strip — gives the rail a clear identity ("Scenes")
+       plus a count and a quick add-scene action. Mirrors the eyebrow
+       style of the Stats / Export modals so the chrome reads as one
+       system across the app. -->
+  <header class="nav-header">
+    <div class="nav-header-text">
+      <span class="nav-eyebrow">Scenes</span>
+      <span class="nav-count">{scenes.length}</span>
+    </div>
+    {#if scenes.length > 0}
+      <button class="nav-add" onclick={addScene} title="Add a new scene at the end" aria-label="Add scene">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </button>
+    {/if}
+  </header>
+
   {#if scenes.length === 0}
+    <!-- Empty state — composed, single glyph, friendly aphorism. -->
     <div class="empty-state">
+      <div class="empty-glyph" aria-hidden="true">
+        <svg width="44" height="44" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="10" y="6" width="28" height="36" rx="2"/>
+          <line x1="14" y1="14" x2="34" y2="14"/>
+          <line x1="14" y1="20" x2="30" y2="20"/>
+          <line x1="14" y1="26" x2="34" y2="26"/>
+          <line x1="14" y1="32" x2="26" y2="32"/>
+        </svg>
+      </div>
       <p class="empty-title">No scenes yet</p>
       <p class="empty-hint">Start with a scene heading like <em>INT. ROOM — DAY</em>.</p>
       <button class="empty-cta" onclick={addScene}>
@@ -383,13 +412,16 @@
   {:else}
     <ul class="scene-list" bind:this={listEl}>
       {#each scenes as scene (scene.index)}
+        {@const sceneOrder = scene.number - (documentStore.activeSettings?.scene_number_start ?? 1)}
+        {@const isActive = sceneOrder === editorStore.currentSceneIndex}
         <li
           class="scene-li"
+          class:active={isActive}
           class:drop-above={dropTargetScene === scene.number && dragFromScene !== null && dragFromScene > scene.number}
           class:drop-below={dropTargetScene === scene.number && dragFromScene !== null && dragFromScene < scene.number}
           class:dragging={dragFromScene === scene.number}
         >
-          <!-- Drag handle: mousedown starts the custom drag operation -->
+          <!-- Drag handle: subtler at rest, full on hover. -->
           <span
             class="drag-handle"
             onmousedown={(e: MouseEvent) => startDrag(e, scene.number)}
@@ -397,23 +429,41 @@
             tabindex="-1"
             aria-label="Drag to reorder scene {scene.number}"
           >
-            <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor" aria-hidden="true">
-              <circle cx="2" cy="3" r="1.1"/>
-              <circle cx="8" cy="3" r="1.1"/>
-              <circle cx="2" cy="7" r="1.1"/>
-              <circle cx="8" cy="7" r="1.1"/>
-              <circle cx="2" cy="11" r="1.1"/>
-              <circle cx="8" cy="11" r="1.1"/>
+            <svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor" aria-hidden="true">
+              <circle cx="2" cy="3" r="1"/>
+              <circle cx="6" cy="3" r="1"/>
+              <circle cx="2" cy="7" r="1"/>
+              <circle cx="6" cy="7" r="1"/>
+              <circle cx="2" cy="11" r="1"/>
+              <circle cx="6" cy="11" r="1"/>
             </svg>
           </span>
           <button
             class="scene-item"
             data-time={scene.time ?? ''}
+            data-setting={scene.setting ?? ''}
             onclick={() => scrollToScene(scene.index)}
-            title={scene.time ? `${scene.text.toUpperCase()} — ~${scene.pages} pages` : `${scene.text.toUpperCase()} — ~${scene.pages} pages`}
+            title="Scene {scene.number} · {scene.text.toUpperCase()} · ~{scene.pages} pages"
           >
-            <span class="scene-number">{scene.number}.</span>
-            <span class="scene-text">{scene.text.toUpperCase()}</span>
+            <!-- Setting glyph — filled square (INT), hollow square (EXT),
+                 split square (INT/EXT). Reads at a glance and pairs with
+                 the time-of-day stripe on the left edge. -->
+            <span class="setting-glyph" aria-hidden="true">
+              {#if scene.setting === 'INT'}
+                <svg width="9" height="9" viewBox="0 0 9 9"><rect x="1" y="1" width="7" height="7" rx="1.2" fill="currentColor"/></svg>
+              {:else if scene.setting === 'EXT'}
+                <svg width="9" height="9" viewBox="0 0 9 9"><rect x="1.5" y="1.5" width="6" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+              {:else if scene.setting === 'INT_EXT'}
+                <svg width="9" height="9" viewBox="0 0 9 9">
+                  <path d="M1 1 H8 V8 H1 Z" fill="none" stroke="currentColor" stroke-width="1.2"/>
+                  <path d="M4.5 1 V8 H8 V1 Z" fill="currentColor" stroke="none"/>
+                </svg>
+              {:else}
+                <span class="setting-glyph-empty" aria-hidden="true"></span>
+              {/if}
+            </span>
+            <span class="scene-number">{scene.number}</span>
+            <span class="scene-text">{scene.text.toUpperCase() || '(empty)'}</span>
             <span class="page-pill" title="~{scene.pages} pages">{scene.pages}p</span>
           </button>
         </li>
@@ -423,24 +473,96 @@
 </div>
 
 <style>
+  /* The navigator reads as a "writer's index" — borrows the editor's
+     Courier Prime so each scene heading feels like an entry on a
+     printed table-of-contents page, while the chrome stays in the
+     UI font for clear hierarchy. */
   .navigator-content {
-    padding: 12px;
     overflow-y: auto;
     height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface-base);
   }
 
+  /* ─── Sticky header strip ─── */
+  .nav-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 14px 10px;
+    background: var(--surface-base);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .nav-header-text {
+    flex: 1;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .nav-eyebrow {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .nav-count {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    padding: 1px 7px;
+    border-radius: 9px;
+    background: var(--surface-elevated);
+    letter-spacing: 0.02em;
+  }
+
+  .nav-add {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background var(--motion-fast, 100ms) ease,
+                color var(--motion-fast, 100ms) ease;
+  }
+
+  .nav-add:hover {
+    background: var(--accent-muted);
+    color: var(--accent);
+  }
+
+  /* ─── Empty state ─── */
   .empty-state {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 4px;
-    font-family: system-ui, -apple-system, sans-serif;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+    padding: 32px 18px;
+    font-family: var(--ui-font);
+  }
+
+  .empty-glyph {
+    color: var(--border-medium);
+    margin-bottom: 4px;
   }
 
   .empty-title {
     margin: 0;
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 600;
     color: var(--text-secondary);
   }
@@ -450,14 +572,15 @@
     font-size: 11px;
     line-height: 1.45;
     color: var(--text-muted);
+    max-width: 200px;
   }
 
   .empty-hint em {
     font-style: normal;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-family: var(--editor-font-en), ui-monospace, monospace;
     font-size: 10.5px;
     color: var(--text-secondary);
-    background: var(--surface-base);
+    background: var(--surface-float);
     border: 1px solid var(--border-subtle);
     border-radius: 3px;
     padding: 0 4px;
@@ -466,18 +589,18 @@
   .empty-cta {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    margin-top: 2px;
-    padding: 5px 10px;
-    font-family: inherit;
-    font-size: 11px;
+    gap: 5px;
+    margin-top: 6px;
+    padding: 6px 12px;
+    font-family: var(--ui-font);
+    font-size: 11.5px;
     font-weight: 500;
     color: var(--accent);
     background: var(--accent-muted);
     border: 1px solid transparent;
     border-radius: 6px;
     cursor: pointer;
-    transition: background 120ms ease, border-color 120ms ease;
+    transition: background 120ms ease, color 120ms ease;
   }
 
   .empty-cta:hover {
@@ -485,29 +608,33 @@
     color: var(--text-on-accent);
   }
 
+  /* ─── Scene list ─── */
   .scene-list {
     list-style: none;
     margin: 0;
-    padding: 0;
+    padding: 6px 6px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
   }
 
   .scene-li {
     position: relative;
     display: flex;
-    align-items: center;
+    align-items: stretch;
   }
 
   .scene-li.dragging {
-    opacity: 0.4;
+    opacity: 0.45;
   }
 
-  /* Drop indicator line — teal line above or below the target item */
+  /* Drop indicator — teal line above or below the target item. */
   .scene-li.drop-above::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 8px;
-    right: 8px;
+    top: -1px;
+    left: 22px;
+    right: 6px;
     height: 2px;
     background: var(--accent);
     border-radius: 1px;
@@ -517,9 +644,9 @@
   .scene-li.drop-below::after {
     content: '';
     position: absolute;
-    bottom: 0;
-    left: 8px;
-    right: 8px;
+    bottom: -1px;
+    left: 22px;
+    right: 6px;
     height: 2px;
     background: var(--accent);
     border-radius: 1px;
@@ -530,13 +657,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 16px;
-    height: 32px;
+    width: 18px;
     flex-shrink: 0;
     color: var(--text-muted);
     cursor: grab;
-    opacity: 0.35;
-    transition: opacity 120ms ease;
+    opacity: 0;
+    transition: opacity var(--motion-fast, 100ms) ease;
     user-select: none;
   }
 
@@ -544,71 +670,71 @@
     cursor: grabbing;
   }
 
-  .scene-li:hover .drag-handle {
-    opacity: 1;
+  .scene-li:hover .drag-handle,
+  .scene-li.active .drag-handle {
+    opacity: 0.6;
   }
 
+  .drag-handle:hover {
+    opacity: 1 !important;
+    color: var(--text-secondary);
+  }
+
+  /* ─── Scene item ─── */
+  /* Card-like row — the soft surface and rounded corners signal that
+     each scene is a discrete unit the writer can act on. The left edge
+     carries the time-of-day stripe; the active row has an accent left
+     bar and accent-muted bg. */
   .scene-item {
     position: relative;
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
+    display: grid;
+    grid-template-columns: 14px 32px 1fr auto;
+    align-items: center;
+    gap: 8px;
     flex: 1;
     min-width: 0;
-    height: 32px;
-    padding: 0 8px 0 8px;
+    min-height: 38px;
+    padding: 7px 10px 7px 12px;
     border: none;
-    border-left: 2px solid transparent;
-    border-radius: 0 4px 4px 0;
+    border-radius: 6px;
     background: transparent;
     color: var(--text-secondary);
-    font-family: system-ui, -apple-system, sans-serif;
-    font-size: 12px;
+    font-family: var(--editor-font-en), var(--editor-font-ml), ui-monospace, monospace;
+    font-size: 11.5px;
     text-align: left;
     cursor: pointer;
-    line-height: 32px;
-    transition: background 120ms ease, color 120ms ease;
+    transition: background var(--motion-fast, 100ms) ease,
+                color var(--motion-fast, 100ms) ease;
   }
 
-  /* Time-of-day stripe: a 2px bar at the left edge of the row so the
-     outline reads as a rhythm of warm/cool blocks at a glance. No extra
-     horizontal space is consumed. */
+  /* Time-of-day stripe: a 3px bar at the left edge — visible at rest as
+     a rhythm of warm / cool / neutral blocks down the rail. */
+  .scene-item::before {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--border-subtle);
+    transition: background var(--motion-fast, 100ms) ease;
+  }
   .scene-item[data-time='DAY']::before,
   .scene-item[data-time='MORNING']::before,
   .scene-item[data-time='AFTERNOON']::before,
   .scene-item[data-time='DAWN']::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 6px;
-    bottom: 6px;
-    width: 2px;
-    border-radius: 1px;
-    background: var(--accent-warm);
+    background: var(--accent-warm, #d6a14a);
   }
   .scene-item[data-time='NIGHT']::before,
   .scene-item[data-time='DUSK']::before,
   .scene-item[data-time='EVENING']::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 6px;
-    bottom: 6px;
-    width: 2px;
-    border-radius: 1px;
-    background: var(--accent-deep);
+    background: var(--accent-deep, #2a4d5c);
   }
   .scene-item[data-time='CONTINUOUS']::before,
   .scene-item[data-time='LATER']::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 6px;
-    bottom: 6px;
-    width: 2px;
-    border-radius: 1px;
     background: var(--text-muted);
-    opacity: 0.5;
+    opacity: 0.4;
   }
 
   .scene-item:hover {
@@ -616,47 +742,96 @@
     color: var(--text-primary);
   }
 
-  .scene-item:active {
+  /* Active scene — the one the editor cursor is currently inside. Stays
+     prominent so the writer always knows where they are in the outline. */
+  .scene-li.active .scene-item {
     background: var(--accent-muted);
-    border-left-color: var(--accent);
     color: var(--text-primary);
+    box-shadow: inset 2px 0 0 var(--accent);
   }
 
-  .scene-number {
+  .scene-li.active .scene-item::before {
+    /* Hide the time stripe behind the accent inset bar (inset overlaps it). */
+    left: 6px;
+  }
+
+  /* Setting glyph (INT / EXT / INT_EXT) — small filled / outlined /
+     half-filled square. Reads as a quick "indoor or outdoor" cue
+     alongside the time stripe. */
+  .setting-glyph {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: var(--text-muted);
     flex-shrink: 0;
+  }
+
+  .scene-li.active .setting-glyph {
+    color: var(--accent);
+  }
+
+  .setting-glyph-empty {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+  }
+
+  /* Scene number — Courier Prime in tabular numerals; matches the
+     printed-on-page numbering used in the gutter. Active scene gets
+     bold + accent color. */
+  .scene-number {
+    flex-shrink: 0;
+    color: var(--text-muted);
     font-variant-numeric: tabular-nums;
-    font-size: 11px;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-align: right;
+  }
+
+  .scene-li.active .scene-number {
+    color: var(--accent);
+    font-weight: 700;
   }
 
   .scene-text {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    flex: 1;
     min-width: 0;
+    letter-spacing: 0.02em;
+    line-height: 1.35;
   }
 
-  /* Page pill — compact marker at the far right. Muted at rest, shows
-     on hover so it doesn't compete with the heading text at rest. */
+  /* Page pill — compact size marker at the far right. Always visible but
+     muted at rest; brighter on hover/active so it reads as a contextual
+     metadata, not a button. */
   .page-pill {
     flex-shrink: 0;
-    margin-left: auto;
-    padding: 0 4px;
-    border-radius: 6px;
+    padding: 1px 6px;
+    border-radius: 8px;
     color: var(--text-muted);
-    font-size: 10px;
-    font-weight: 500;
+    font-family: var(--ui-font);
+    font-size: 9.5px;
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
-    line-height: 1.4;
-    letter-spacing: 0.02em;
-    opacity: 0;
-    transition: opacity 120ms ease, color 120ms ease;
+    letter-spacing: 0.04em;
+    background: transparent;
+    border: 1px solid transparent;
+    transition: background var(--motion-fast, 100ms) ease,
+                color var(--motion-fast, 100ms) ease,
+                border-color var(--motion-fast, 100ms) ease;
   }
 
-  .scene-item:hover .page-pill,
-  .scene-item:focus-visible .page-pill {
-    opacity: 0.8;
+  .scene-item:hover .page-pill {
     color: var(--text-secondary);
+    border-color: var(--border-subtle);
   }
+
+  .scene-li.active .page-pill {
+    color: var(--accent);
+    background: var(--surface-float);
+    border-color: var(--accent-muted);
+  }
+
 </style>

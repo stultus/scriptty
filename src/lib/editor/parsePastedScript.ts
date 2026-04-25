@@ -11,8 +11,12 @@
 //
 //   scene_heading   — starts with INT./EXT./INT/EXT or "I/E"
 //   transition      — all-caps Latin and ends with ":" (e.g. "CUT TO:")
-//   character       — all-caps, no trailing punctuation, ≤ 60 chars
-//                     (followed by dialogue / parenthetical until blank)
+//   character       — Latin: all-caps, ≤ 60 chars, no trailing punct.
+//                   — Malayalam: short Malayalam line (< 30 chars / ≤ 5
+//                     words), no sentence-ending punctuation, AND the
+//                     next non-blank line exists and is longer (so a
+//                     stand-alone short Malayalam phrase isn't
+//                     misclassified as a speaker name).
 //   parenthetical   — wholly wrapped in parentheses, only valid right
 //                     after a character or another parenthetical
 //   dialogue        — any non-blank line right after a character or
@@ -22,6 +26,12 @@
 // Blank lines reset the "in dialogue block" state. Multiple consecutive
 // non-blank action lines are joined with a hard line break inside one
 // action node so paragraph shape survives the round-trip.
+//
+// Malayalam caveat: Malayalam has no upper/lower case, so the all-caps
+// signal can't apply. The Malayalam character rule above is necessarily
+// stricter (requires the lookahead). Malayalam screenplays often write
+// character names in English uppercase regardless — those still match
+// the Latin rule and are the reliable path.
 
 interface PMNode {
   type: string;
@@ -56,13 +66,53 @@ function isAllCaps(line: string): boolean {
   return line === line.toUpperCase();
 }
 
-function looksLikeCharacterName(line: string): boolean {
+/** Latin-script character name: all-caps, no terminal punctuation,
+ *  conservative shape. */
+function looksLikeLatinCharacterName(line: string): boolean {
   const t = line.trim();
   if (t.length === 0 || t.length > 60) return false;
   if (!isAllCaps(t)) return false;
-  // Character names typically don't end with punctuation other than ).
+  // Character names typically don't end with sentence punctuation.
   // "JOHN (V.O.)" and "JANE (CONT'D)" are common forms.
   return /^[A-Z0-9][A-Z0-9 .'()/,&-]*$/.test(t);
+}
+
+/** Malayalam-script character name candidate. Returns true if the line
+ *  *could* be a name based on its own shape — caller still confirms with
+ *  a lookahead at the next non-blank line, since a short Malayalam phrase
+ *  on its own is otherwise indistinguishable from an action sentence. */
+function looksLikeMalayalamNameCandidate(line: string): boolean {
+  const t = line.trim();
+  if (t.length === 0 || t.length > 30) return false;
+  // Has Malayalam content (at least one Malayalam codepoint).
+  if (!/[ഀ-ൿ]/.test(t)) return false;
+  // Reject lines with sentence-ending punctuation — character names
+  // never end a sentence. Includes Malayalam danda (।) which some
+  // writers use as a full stop.
+  if (/[.!?,;:।]$/.test(t)) return false;
+  // Reject lines with quotation marks — those are dialogue or quoted
+  // content, not a speaker name.
+  if (/[“”"‘’']/.test(t)) return false;
+  // Conservative word cap — names are 1–4 words; longer is almost
+  // certainly an action sentence.
+  if (t.split(/\s+/).length > 4) return false;
+  return true;
+}
+
+/** Combined check used by the parser. Latin all-caps is decisive on its
+ *  own; Malayalam needs the lookahead supplied by the caller. */
+function looksLikeCharacterName(line: string, nextNonBlank: string | null): boolean {
+  if (looksLikeLatinCharacterName(line)) return true;
+  if (looksLikeMalayalamNameCandidate(line)) {
+    // Lookahead — must be followed by a non-blank, non-scene-heading,
+    // non-transition line that's clearly content (longer than the name).
+    if (!nextNonBlank) return false;
+    if (SCENE_HEADING.test(nextNonBlank)) return false;
+    if (looksLikeTransition(nextNonBlank)) return false;
+    // Dialogue-feeling: next line is longer than the candidate name.
+    return nextNonBlank.length > line.trim().length;
+  }
+  return false;
 }
 
 function looksLikeTransition(line: string): boolean {
@@ -103,8 +153,20 @@ export function parsePastedScript(input: string): {
     actionBuffer = [];
   };
 
-  for (const raw of lines) {
-    const line = raw.trim();
+  /** Find the next non-blank line strictly after index `i`, trimmed.
+   *  Returns null at end of input. Used by the Malayalam character
+   *  detector to disambiguate "short Malayalam phrase" from "speaker
+   *  name followed by dialogue". */
+  const peekNextNonBlank = (i: number): string | null => {
+    for (let j = i + 1; j < lines.length; j++) {
+      const t = lines[j].trim();
+      if (t.length > 0) return t;
+    }
+    return null;
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
 
     if (line.length === 0) {
       flushAction();
@@ -140,7 +202,7 @@ export function parsePastedScript(input: string): {
       continue;
     }
 
-    if (looksLikeCharacterName(line)) {
+    if (looksLikeCharacterName(line, peekNextNonBlank(i))) {
       flushAction();
       nodes.push(block('character', line));
       inDialogueBlock = true;

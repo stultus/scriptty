@@ -83,8 +83,8 @@
 
       <p class="hint">
         Paste plain text and Scriptty will detect scene headings (INT./EXT.), character names
-        (ALL CAPS lines), dialogue, parentheticals, and transitions. You can refine the result in
-        the editor afterwards.
+        (ALL CAPS lines, or short Malayalam lines on their own row), dialogue, parentheticals,
+        and transitions. The preview shows what was detected — refine in the editor after.
       </p>
 
       <div class="paste-grid">

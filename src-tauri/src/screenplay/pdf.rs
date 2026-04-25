@@ -875,6 +875,15 @@ pub fn generate_typst_markup(
                 scene_index,
                 first_action_typst,
             } => {
+                // Skip scenes with an empty heading entirely. A blank
+                // scene_heading node previously rendered as just the
+                // bare slug number ("3.") on its own line — looked
+                // like a layout bug and gave no useful information.
+                // The numbering is purely positional, so skipping the
+                // ghost doesn't desynchronize anything that follows.
+                if heading_text.trim().is_empty() {
+                    continue;
+                }
                 let escaped_heading = escape_typst(heading_text);
                 // If page-break-after-scene is enabled, insert a page break before
                 // every scene except the first one.
@@ -885,7 +894,7 @@ pub fn generate_typst_markup(
                 // Wrap scene heading + first action in an unbreakable block so the
                 // heading never appears orphaned at the bottom of a page.
                 block.push_str(&format!(
-                    "#block(breakable: false, width: 100%)[\n  #v(1.8em)\n  #text(weight: \"bold\", size: 12pt)[{}. {}]\n",
+                    "#block(breakable: false, width: 100%)[\n  #v(1.8em)\n  #text(weight: \"bold\", size: 12pt)[{}.#h(0.6em){}]\n",
                     scene_number,
                     escaped_heading.to_uppercase()
                 ));
@@ -917,7 +926,11 @@ pub fn generate_typst_markup(
                 let escaped_name = escape_typst(name);
                 // Wrap the entire character + dialogue sequence in an
                 // unbreakable block so the character name is never
-                // separated from their lines.
+                // separated from their lines. `sticky: true` keeps
+                // the next element (commonly a transition) on the
+                // same page when there's room — fixes the bug where
+                // "FADE OUT." stranded alone on its own page after a
+                // dialogue block ended near a page boundary.
                 //
                 // Visual centerline alignment: character, parenthetical
                 // and dialogue all share the same horizontal axis so
@@ -1334,6 +1347,12 @@ pub fn generate_indian_markup(
         // We may wrap the heading + first action in an unbreakable block so
         // the heading doesn't get orphaned at the bottom of a page.
         if let Some(heading_text) = heading {
+            // Skip scenes with an empty heading entirely (matches the
+            // Hollywood path's behavior). A blank scene_heading node
+            // previously rendered as "3." alone — looked broken.
+            if heading_text.trim().is_empty() {
+                continue;
+            }
             scene_number += 1;
             // Capture and advance the absolute scene index so the lookup below
             // uses the stable document-order index for this particular scene.

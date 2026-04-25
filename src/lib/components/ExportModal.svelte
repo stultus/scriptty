@@ -609,160 +609,412 @@
 {#if open}
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div class="modal-backdrop" onclick={handleBackdropClick} onkeydown={handleKeydown} role="dialog" aria-modal="true" tabindex="-1">
-    <div class="modal-card" use:focusTrap>
+    <div class="modal-card export-card" use:focusTrap>
       {#if anyExporting}
         <div class="progress-bar" aria-hidden="true"><span class="progress-bar-fill"></span></div>
       {/if}
-      <div class="modal-header">
-        <h2>Export Document</h2>
-        <button class="btn-close" onclick={() => { open = false; }} disabled={anyExporting}>&times;</button>
-      </div>
+
+      <header class="export-header">
+        <div class="header-text">
+          <span class="header-eyebrow">Build &amp; export</span>
+          <h2>Export</h2>
+        </div>
+        <button class="btn-close" onclick={() => { open = false; }} disabled={anyExporting} aria-label="Close export">&times;</button>
+      </header>
 
       {#if isSeriesProject}
-        <div class="series-context">
-          <span class="series-context-label">Series</span>
-          <span class="series-context-value">{documentStore.document?.series?.title || 'Untitled Series'}</span>
-          <span class="series-context-ep">· Episode {documentStore.activeEpisode?.number ?? ''}{documentStore.activeEpisode?.title ? ` — ${documentStore.activeEpisode.title}` : ''}</span>
-        </div>
-        <div class="section-label">Scope</div>
-        <div class="radio-group">
-          <label class="radio-row">
-            <input type="radio" name="export-scope" value="episode" bind:group={exportScope} />
-            <span>Current episode only</span>
-          </label>
-          <label class="radio-row">
-            <input type="radio" name="export-scope" value="series" bind:group={exportScope} />
-            <span>Entire series (all episodes)</span>
-          </label>
-        </div>
-      {/if}
-
-      <div class="section-label">
-        <span>What to include</span>
-        <button type="button" class="inline-link" onclick={onEditMetadata} disabled={anyExporting}>
-          Edit metadata
-        </button>
-      </div>
-      <div class="checkbox-group">
-        <label class="checkbox-row">
-          <input type="checkbox" bind:checked={includeTitlePage} />
-          <span>Title Page</span>
-        </label>
-        {#if hasSynopsis}
-          <label class="checkbox-row">
-            <input type="checkbox" bind:checked={includeSynopsis} />
-            <span>Synopsis</span>
-          </label>
-        {/if}
-        {#if hasTreatment}
-          <label class="checkbox-row">
-            <input type="checkbox" bind:checked={includeTreatment} />
-            <span>Treatment</span>
-          </label>
-        {/if}
-        <label class="checkbox-row">
-          <input type="checkbox" bind:checked={includeScreenplay} />
-          <span>Screenplay</span>
-        </label>
-        {#if hasNarrative}
-          <label class="checkbox-row">
-            <input type="checkbox" bind:checked={includeNarrative} />
-            <span>Narrative</span>
-          </label>
-        {/if}
-        <label class="checkbox-row">
-          <input type="checkbox" bind:checked={includeSceneCards} />
-          <span>Scene Cards</span>
-        </label>
-        {#if hasScheduledScenes}
-          <label class="checkbox-row">
-            <input type="checkbox" bind:checked={includeShootList} />
-            <span>Daily Shoot List</span>
-          </label>
-        {/if}
-      </div>
-      {#if !hasSynopsis || !hasTreatment || !hasNarrative}
-        <p class="unavailable-hint">
-          Add text in the Story panel to include
-          {#if !hasSynopsis}synopsis{/if}{#if !hasSynopsis && (!hasTreatment || !hasNarrative)}{', '}{/if}{#if !hasTreatment}treatment{/if}{#if !hasTreatment && !hasNarrative}{', '}{/if}{#if !hasNarrative}narrative{/if}.
-        </p>
-      {/if}
-
-      {#if includeScreenplay}
-        <div class="section-label">Screenplay Format</div>
-        <div class="radio-group">
-          <label class="radio-row">
-            <input type="radio" name="format" value="hollywood" bind:group={format} />
-            <span>Hollywood (single column)</span>
-          </label>
-          <label class="radio-row">
-            <input type="radio" name="format" value="indian" bind:group={format} />
-            <span>Indian (two column)</span>
-          </label>
+        <div class="series-strip">
+          <div class="series-strip-meta">
+            <span class="series-strip-label">Series</span>
+            <span class="series-strip-value">{documentStore.document?.series?.title || 'Untitled Series'}</span>
+            <span class="series-strip-ep">Episode {documentStore.activeEpisode?.number ?? ''}{documentStore.activeEpisode?.title ? ` — ${documentStore.activeEpisode.title}` : ''}</span>
+          </div>
+          <div class="scope-segmented" role="group" aria-label="Export scope">
+            <button
+              type="button"
+              class="scope-seg"
+              class:active={exportScope === 'episode'}
+              onclick={() => { exportScope = 'episode'; }}
+            >This episode</button>
+            <button
+              type="button"
+              class="scope-seg"
+              class:active={exportScope === 'series'}
+              onclick={() => { exportScope = 'series'; }}
+            >Full series</button>
+          </div>
         </div>
       {/if}
 
-      <div class="section-label">Layout</div>
-      <div class="checkbox-group">
-        {#if includeScreenplay}
-          <label class="checkbox-row">
-            <input type="checkbox" bind:checked={pageBreakAfterScene} />
-            <span>Page break after each scene</span>
-          </label>
-          <label class="checkbox-row">
-            <input type="checkbox" bind:checked={charactersBelowHeading} />
-            <span>Characters list below scene heading</span>
-          </label>
-        {/if}
-        <label class="checkbox-row">
-          <input type="checkbox" bind:checked={includePageNumbers} />
-          <span>Page numbers</span>
-        </label>
-        {#if sceneCount > 0 && (includeScreenplay || includeSceneCards) && !(isSeriesProject && exportScope === 'series')}
-          <label class="checkbox-row">
-            <input type="checkbox" bind:checked={sceneRangeEnabled} />
-            <span>Only selected scenes</span>
-          </label>
-          {#if sceneRangeEnabled}
-            <div class="range-row">
-              <span class="range-label">Scenes</span>
-              <input
-                type="number"
-                min={firstSceneNumber}
-                max={lastSceneNumber}
-                bind:value={sceneRangeFrom}
-                aria-label="From scene number"
-              />
-              <span class="range-sep">to</span>
-              <input
-                type="number"
-                min={firstSceneNumber}
-                max={lastSceneNumber}
-                bind:value={sceneRangeTo}
-                aria-label="To scene number"
-              />
-              <span class="range-hint">(of {firstSceneNumber}–{lastSceneNumber})</span>
+      <div class="export-body">
+        <!-- ── Sections column ─────────────────────────────────── -->
+        <section class="col-sections" aria-labelledby="sections-heading">
+          <div class="col-heading">
+            <h3 id="sections-heading">Sections</h3>
+            <button type="button" class="inline-link" onclick={onEditMetadata} disabled={anyExporting}>
+              Edit metadata
+            </button>
+          </div>
+
+          <div class="section-grid">
+            <!-- Each card is a self-contained tile with icon, title, hint,
+                 toggle. Disabled tiles dim down (e.g. Synopsis when empty). -->
+            <button
+              type="button"
+              class="section-tile"
+              class:on={includeTitlePage}
+              onclick={() => { includeTitlePage = !includeTitlePage; }}
+              aria-pressed={includeTitlePage}
+            >
+              <span class="tile-icon" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="5" y="3" width="14" height="18" rx="1.5"/>
+                  <line x1="9" y1="8" x2="15" y2="8"/>
+                  <line x1="8" y1="12" x2="16" y2="12"/>
+                  <line x1="9" y1="15" x2="15" y2="15"/>
+                </svg>
+              </span>
+              <span class="tile-body">
+                <span class="tile-title">Title Page</span>
+                <span class="tile-hint">Auto-generated from metadata</span>
+              </span>
+              <span class="tile-check" aria-hidden="true"></span>
+            </button>
+
+            <button
+              type="button"
+              class="section-tile"
+              class:on={includeScreenplay}
+              onclick={() => { includeScreenplay = !includeScreenplay; }}
+              aria-pressed={includeScreenplay}
+            >
+              <span class="tile-icon tile-icon-accent" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="3" width="16" height="18" rx="1.5"/>
+                  <line x1="7" y1="7" x2="13" y2="7"/>
+                  <line x1="7" y1="11" x2="17" y2="11"/>
+                  <line x1="7" y1="15" x2="17" y2="15"/>
+                  <line x1="7" y1="19" x2="11" y2="19"/>
+                </svg>
+              </span>
+              <span class="tile-body">
+                <span class="tile-title">Screenplay</span>
+                <span class="tile-hint">{sceneCount} {sceneCount === 1 ? 'scene' : 'scenes'} · main content</span>
+              </span>
+              <span class="tile-check"></span>
+            </button>
+
+            <button
+              type="button"
+              class="section-tile"
+              class:on={includeSynopsis}
+              class:disabled={!hasSynopsis}
+              disabled={!hasSynopsis}
+              onclick={() => { includeSynopsis = !includeSynopsis; }}
+              aria-pressed={includeSynopsis}
+            >
+              <span class="tile-icon" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="5" y1="7" x2="19" y2="7"/>
+                  <line x1="5" y1="11" x2="19" y2="11"/>
+                  <line x1="5" y1="15" x2="14" y2="15"/>
+                </svg>
+              </span>
+              <span class="tile-body">
+                <span class="tile-title">Synopsis</span>
+                <span class="tile-hint">{hasSynopsis ? 'Story panel — short prose' : 'Add text in the Story panel'}</span>
+              </span>
+              <span class="tile-check"></span>
+            </button>
+
+            <button
+              type="button"
+              class="section-tile"
+              class:on={includeTreatment}
+              class:disabled={!hasTreatment}
+              disabled={!hasTreatment}
+              onclick={() => { includeTreatment = !includeTreatment; }}
+              aria-pressed={includeTreatment}
+            >
+              <span class="tile-icon" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="5" y1="6" x2="19" y2="6"/>
+                  <line x1="5" y1="10" x2="19" y2="10"/>
+                  <line x1="5" y1="14" x2="19" y2="14"/>
+                  <line x1="5" y1="18" x2="14" y2="18"/>
+                </svg>
+              </span>
+              <span class="tile-body">
+                <span class="tile-title">Treatment</span>
+                <span class="tile-hint">{hasTreatment ? 'Scene-by-scene prose' : 'Add text in the Story panel'}</span>
+              </span>
+              <span class="tile-check"></span>
+            </button>
+
+            <button
+              type="button"
+              class="section-tile"
+              class:on={includeNarrative}
+              class:disabled={!hasNarrative}
+              disabled={!hasNarrative}
+              onclick={() => { includeNarrative = !includeNarrative; }}
+              aria-pressed={includeNarrative}
+            >
+              <span class="tile-icon" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5 4 H19 V20 H5 Z"/>
+                  <line x1="8" y1="8" x2="16" y2="8"/>
+                  <line x1="8" y1="11" x2="16" y2="11"/>
+                  <line x1="8" y1="14" x2="16" y2="14"/>
+                  <line x1="8" y1="17" x2="13" y2="17"/>
+                </svg>
+              </span>
+              <span class="tile-body">
+                <span class="tile-title">Narrative</span>
+                <span class="tile-hint">{hasNarrative ? 'Long-form story' : 'Add text in the Story panel'}</span>
+              </span>
+              <span class="tile-check"></span>
+            </button>
+
+            <button
+              type="button"
+              class="section-tile"
+              class:on={includeSceneCards}
+              onclick={() => { includeSceneCards = !includeSceneCards; }}
+              aria-pressed={includeSceneCards}
+            >
+              <span class="tile-icon" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="5" width="7" height="14" rx="1.5"/>
+                  <rect x="13" y="5" width="7" height="14" rx="1.5"/>
+                </svg>
+              </span>
+              <span class="tile-body">
+                <span class="tile-title">Scene Cards</span>
+                <span class="tile-hint">Per-scene breakdown</span>
+              </span>
+              <span class="tile-check"></span>
+            </button>
+
+            {#if hasScheduledScenes}
+              <button
+                type="button"
+                class="section-tile"
+                class:on={includeShootList}
+                onclick={() => { includeShootList = !includeShootList; }}
+                aria-pressed={includeShootList}
+              >
+                <span class="tile-icon" aria-hidden="true">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="5" width="18" height="16" rx="2"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                    <line x1="8" y1="3" x2="8" y2="7"/>
+                    <line x1="16" y1="3" x2="16" y2="7"/>
+                  </svg>
+                </span>
+                <span class="tile-body">
+                  <span class="tile-title">Daily Shoot List</span>
+                  <span class="tile-hint">One page per shoot day</span>
+                </span>
+                <span class="tile-check"></span>
+              </button>
+            {/if}
+          </div>
+        </section>
+
+        <!-- ── Format & options column ─────────────────────────── -->
+        <section class="col-options" aria-labelledby="format-heading">
+          <div class="col-heading">
+            <h3 id="format-heading">Format &amp; options</h3>
+          </div>
+
+          {#if includeScreenplay}
+            <div class="format-picker" role="radiogroup" aria-label="Screenplay format">
+              <button
+                type="button"
+                class="format-card"
+                class:active={format === 'hollywood'}
+                role="radio"
+                aria-checked={format === 'hollywood'}
+                onclick={() => { format = 'hollywood'; }}
+              >
+                <span class="format-art" aria-hidden="true">
+                  <svg width="44" height="56" viewBox="0 0 44 56" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="38" height="50" rx="1.5"/>
+                    <line x1="9"  y1="11" x2="20" y2="11"/>
+                    <line x1="9"  y1="16" x2="35" y2="16"/>
+                    <line x1="9"  y1="20" x2="35" y2="20"/>
+                    <line x1="20" y1="26" x2="32" y2="26"/>
+                    <line x1="16" y1="30" x2="34" y2="30"/>
+                    <line x1="16" y1="34" x2="34" y2="34"/>
+                    <line x1="9"  y1="40" x2="35" y2="40"/>
+                    <line x1="9"  y1="44" x2="35" y2="44"/>
+                  </svg>
+                </span>
+                <span class="format-meta">
+                  <span class="format-name">Hollywood</span>
+                  <span class="format-desc">Single column, US standard</span>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                class="format-card"
+                class:active={format === 'indian'}
+                role="radio"
+                aria-checked={format === 'indian'}
+                onclick={() => { format = 'indian'; }}
+              >
+                <span class="format-art" aria-hidden="true">
+                  <svg width="44" height="56" viewBox="0 0 44 56" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="38" height="50" rx="1.5"/>
+                    <line x1="22" y1="9" x2="22" y2="49"/>
+                    <line x1="6"  y1="13" x2="19" y2="13"/>
+                    <line x1="6"  y1="17" x2="19" y2="17"/>
+                    <line x1="6"  y1="21" x2="17" y2="21"/>
+                    <line x1="6"  y1="27" x2="19" y2="27"/>
+                    <line x1="6"  y1="31" x2="19" y2="31"/>
+                    <line x1="25" y1="13" x2="38" y2="13"/>
+                    <line x1="25" y1="17" x2="38" y2="17"/>
+                    <line x1="25" y1="21" x2="38" y2="21"/>
+                    <line x1="25" y1="27" x2="36" y2="27"/>
+                    <line x1="25" y1="31" x2="38" y2="31"/>
+                  </svg>
+                </span>
+                <span class="format-meta">
+                  <span class="format-name">Indian</span>
+                  <span class="format-desc">Two-column dialogue layout</span>
+                </span>
+              </button>
+            </div>
+          {:else}
+            <div class="format-empty">
+              <p>Format applies to the screenplay section. Turn that on to choose Hollywood or Indian.</p>
             </div>
           {/if}
-        {/if}
+
+          <div class="options-block">
+            <span class="options-title">Options</span>
+
+            {#if includeScreenplay}
+              <label class="opt-row">
+                <span class="opt-label">
+                  <span class="opt-name">Page break per scene</span>
+                  <span class="opt-desc">Each scene starts on a new PDF page</span>
+                </span>
+                <button
+                  type="button"
+                  class="opt-toggle"
+                  role="switch"
+                  aria-label="Page break after each scene"
+                  aria-checked={pageBreakAfterScene}
+                  onclick={() => { pageBreakAfterScene = !pageBreakAfterScene; }}
+                ><span class="opt-thumb"></span></button>
+              </label>
+
+              <label class="opt-row">
+                <span class="opt-label">
+                  <span class="opt-name">Characters under heading</span>
+                  <span class="opt-desc">Auto-list speakers below each scene heading</span>
+                </span>
+                <button
+                  type="button"
+                  class="opt-toggle"
+                  role="switch"
+                  aria-label="Show characters under scene heading"
+                  aria-checked={charactersBelowHeading}
+                  onclick={() => { charactersBelowHeading = !charactersBelowHeading; }}
+                ><span class="opt-thumb"></span></button>
+              </label>
+            {/if}
+
+            <label class="opt-row">
+              <span class="opt-label">
+                <span class="opt-name">Page numbers</span>
+                <span class="opt-desc">Top-right corner of every body page</span>
+              </span>
+              <button
+                type="button"
+                class="opt-toggle"
+                role="switch"
+                aria-label="Include page numbers"
+                aria-checked={includePageNumbers}
+                onclick={() => { includePageNumbers = !includePageNumbers; }}
+              ><span class="opt-thumb"></span></button>
+            </label>
+
+            {#if sceneCount > 0 && (includeScreenplay || includeSceneCards) && !(isSeriesProject && exportScope === 'series')}
+              <label class="opt-row">
+                <span class="opt-label">
+                  <span class="opt-name">Scene range</span>
+                  <span class="opt-desc">Export only a slice of the script</span>
+                </span>
+                <button
+                  type="button"
+                  class="opt-toggle"
+                  role="switch"
+                  aria-label="Limit export to a scene range"
+                  aria-checked={sceneRangeEnabled}
+                  onclick={() => { sceneRangeEnabled = !sceneRangeEnabled; }}
+                ><span class="opt-thumb"></span></button>
+              </label>
+
+              {#if sceneRangeEnabled}
+                <div class="range-row">
+                  <span class="range-label">Scenes</span>
+                  <input
+                    type="number"
+                    min={firstSceneNumber}
+                    max={lastSceneNumber}
+                    bind:value={sceneRangeFrom}
+                    aria-label="From scene number"
+                  />
+                  <span class="range-sep">→</span>
+                  <input
+                    type="number"
+                    min={firstSceneNumber}
+                    max={lastSceneNumber}
+                    bind:value={sceneRangeTo}
+                    aria-label="To scene number"
+                  />
+                  <span class="range-hint">of {firstSceneNumber}–{lastSceneNumber}</span>
+                </div>
+              {/if}
+            {/if}
+          </div>
+        </section>
       </div>
 
       {#if errorMessage}
         <p class="error-message">{errorMessage}</p>
       {/if}
 
-      <div class="modal-footer">
+      <footer class="export-footer">
         <button class="btn-ghost" onclick={() => { open = false; }} disabled={anyExporting}>Cancel</button>
+        <div class="footer-spacer"></div>
         <button class="btn-secondary" onclick={handlePlaintextExport} disabled={anyExporting}>
-          {#if exportingPlaintext}<span class="spinner" aria-hidden="true"></span>Exporting{:else}Plain Text{/if}
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="6" y1="7" x2="18" y2="7"/>
+            <line x1="6" y1="11" x2="18" y2="11"/>
+            <line x1="6" y1="15" x2="14" y2="15"/>
+          </svg>
+          {#if exportingPlaintext}<span class="spinner" aria-hidden="true"></span>Exporting{:else}Plain text{/if}
         </button>
         <button class="btn-secondary" onclick={handleFountainExport} disabled={anyExporting}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 5 H19 L17 11 L19 17 H5 L7 11 Z"/>
+          </svg>
           {#if exportingFountain}<span class="spinner" aria-hidden="true"></span>Exporting{:else}Fountain{/if}
         </button>
         <button class="btn-primary" onclick={handleExport} disabled={anyExporting}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 4 V16"/>
+            <path d="M7 11 L12 16 L17 11"/>
+            <line x1="5" y1="20" x2="19" y2="20"/>
+          </svg>
           {#if exporting}<span class="spinner spinner-on-primary" aria-hidden="true"></span>Generating PDF{:else}Export PDF{/if}
         </button>
-      </div>
+      </footer>
     </div>
   </div>
 {/if}
@@ -779,17 +1031,25 @@
     z-index: var(--modal-z);
   }
 
-  .modal-card {
+  /* Wide squared layout that matches the "build something" feel of the
+     Export operation — sections on the left, format/options on the right,
+     export buttons in a sticky footer. Stable size regardless of which
+     sections are toggled on (#108 + sizing complaint). */
+  .export-card {
     position: relative;
     background: var(--surface-float);
     border: 1px solid var(--border-medium);
     border-radius: var(--modal-radius);
-    padding: var(--modal-padding);
-    width: var(--modal-w-base);
-    max-width: 90vw;
+    width: 880px;
+    max-width: 94vw;
+    height: 76vh;
+    max-height: 720px;
     box-shadow: var(--modal-shadow);
     animation: modal-in var(--modal-anim-duration) ease-out;
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: var(--ui-font);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
   .progress-bar {
@@ -802,6 +1062,7 @@
     border-top-left-radius: var(--modal-radius);
     border-top-right-radius: var(--modal-radius);
     background: var(--surface-hover);
+    z-index: 2;
   }
 
   .progress-bar-fill {
@@ -827,7 +1088,7 @@
     border-radius: 50%;
     animation: spinner-spin 0.7s linear infinite;
     vertical-align: -1px;
-    opacity: 0.8;
+    opacity: 0.85;
   }
 
   .spinner-on-primary {
@@ -844,56 +1105,43 @@
     to { opacity: 1; transform: scale(1); }
   }
 
-  .modal-header {
+  /* ─── Header strip ─── */
+  .export-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    margin-bottom: 20px;
+    gap: 16px;
+    padding: 22px 28px 18px;
+    border-bottom: 1px solid var(--border-subtle);
   }
 
-  .modal-header h2 {
-    margin: 0;
-    font-size: var(--modal-header-size);
-    color: var(--text-primary);
-    font-weight: var(--modal-header-weight);
-  }
-
-  /* Mirror MetadataModal's series-context chip so writers always see which
-     episode the export scope refers to when editing a series project. */
-  .series-context {
+  .header-text {
     display: flex;
-    align-items: baseline;
-    gap: 6px;
-    padding: 8px 10px;
-    margin: -8px 0 16px;
-    background: var(--surface-base);
-    border: 1px solid var(--border-subtle);
-    border-radius: 6px;
-    font-size: 11.5px;
-    color: var(--text-secondary);
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
   }
 
-  .series-context-label {
+  .header-eyebrow {
     font-size: 10px;
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
     color: var(--text-muted);
   }
 
-  .series-context-value {
+  .export-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
     color: var(--text-primary);
-    font-weight: 500;
-  }
-
-  .series-context-ep {
-    color: var(--text-muted);
+    line-height: 1.2;
   }
 
   .btn-close {
-    width: 28px;
-    height: 28px;
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -901,7 +1149,7 @@
     border-radius: 6px;
     background: transparent;
     color: var(--text-muted);
-    font-size: 18px;
+    font-size: 20px;
     cursor: pointer;
     transition: background 120ms ease, color 120ms ease;
   }
@@ -911,17 +1159,116 @@
     color: var(--text-primary);
   }
 
-  .section-label {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-muted);
+  /* ─── Series scope strip ─── */
+  .series-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 12px 28px;
+    background: var(--surface-base);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .series-strip-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    min-width: 0;
+  }
+
+  .series-strip-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 8px;
+    color: var(--text-muted);
+  }
+
+  .series-strip-value {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .series-strip-ep {
+    color: var(--text-muted);
+  }
+
+  /* Pill-style segmented control. Cleaner than radio rows for a binary
+     choice the writer flips a few times per export. */
+  .scope-segmented {
+    display: inline-flex;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: 7px;
+    padding: 2px;
+    flex-shrink: 0;
+  }
+
+  .scope-seg {
+    background: transparent;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 5px;
+    color: var(--text-muted);
+    font-family: var(--ui-font);
+    font-size: 11.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background var(--motion-fast, 100ms) ease,
+                color var(--motion-fast, 100ms) ease;
+  }
+
+  .scope-seg:hover { color: var(--text-secondary); }
+
+  .scope-seg.active {
+    background: var(--surface-float);
+    color: var(--text-primary);
+    box-shadow: 0 1px 2px var(--shadow-soft);
+  }
+
+  /* ─── Two-column body ─── */
+  .export-body {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .col-sections,
+  .col-options {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 22px 28px 24px;
+  }
+
+  .col-options {
+    background: var(--surface-base);
+    border-left: 1px solid var(--border-subtle);
+  }
+
+  .col-heading {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
     gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .col-heading h3 {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-muted);
   }
 
   .inline-link {
@@ -932,15 +1279,13 @@
     font-family: inherit;
     font-size: 11px;
     font-weight: 500;
-    letter-spacing: 0;
-    text-transform: none;
     color: var(--accent);
     cursor: pointer;
+    text-transform: none;
+    letter-spacing: 0;
   }
 
-  .inline-link:hover {
-    text-decoration: underline;
-  }
+  .inline-link:hover { text-decoration: underline; }
 
   .inline-link:disabled {
     color: var(--text-muted);
@@ -948,145 +1293,416 @@
     text-decoration: none;
   }
 
-  .checkbox-group,
-  .radio-group {
+  /* ─── Section tiles (replaces checkbox stack) ─── */
+  .section-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .section-tile {
+    display: grid;
+    grid-template-columns: 36px 1fr 16px;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 12px;
+    background: var(--surface-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-family: var(--ui-font);
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--motion-fast, 100ms) ease,
+                border-color var(--motion-fast, 100ms) ease,
+                color var(--motion-fast, 100ms) ease;
+  }
+
+  .section-tile:hover:not(:disabled) {
+    background: var(--surface-hover);
+    border-color: var(--border-medium);
+  }
+
+  .section-tile.on {
+    background: var(--accent-muted);
+    border-color: var(--accent);
+    color: var(--text-primary);
+  }
+
+  .section-tile.disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .tile-icon {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background: var(--surface-elevated);
+    color: var(--text-muted);
+    transition: background var(--motion-fast, 100ms) ease,
+                color var(--motion-fast, 100ms) ease;
+  }
+
+  .section-tile.on .tile-icon {
+    background: var(--accent);
+    color: var(--text-on-accent);
+  }
+
+  /* Screenplay tile gets a slightly warmer treatment so the eye lands on
+     the main content section first. */
+  .tile-icon-accent {
+    background: var(--accent-muted);
+    color: var(--accent);
+  }
+
+  .tile-body {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .tile-title {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.2;
+  }
+
+  .tile-hint {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Inline check that fills with accent when the tile is on. */
+  .tile-check {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border-medium);
+    background: transparent;
+    flex-shrink: 0;
+    position: relative;
+    transition: background var(--motion-fast, 100ms) ease,
+                border-color var(--motion-fast, 100ms) ease;
+  }
+
+  .section-tile.on .tile-check {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .section-tile.on .tile-check::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 5px;
+    width: 4px;
+    height: 8px;
+    border-right: 2px solid var(--text-on-accent);
+    border-bottom: 2px solid var(--text-on-accent);
+    transform: rotate(45deg);
+  }
+
+  /* ─── Format picker (right column top half) ─── */
+  .format-picker {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
     margin-bottom: 20px;
   }
 
-  .checkbox-row,
-  .radio-row {
+  .format-card {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    color: var(--text-primary);
+    gap: 10px;
+    padding: 14px 12px 12px;
+    background: var(--surface-float);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
     cursor: pointer;
-    padding: 4px 0;
+    color: var(--text-secondary);
+    transition: background var(--motion-fast, 100ms) ease,
+                border-color var(--motion-fast, 100ms) ease,
+                color var(--motion-fast, 100ms) ease;
   }
 
-  .unavailable-hint {
-    margin: -14px 0 18px;
+  .format-card:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+  }
+
+  .format-card.active {
+    background: var(--surface-float);
+    border-color: var(--accent);
+    color: var(--text-primary);
+    box-shadow: 0 0 0 2px var(--accent-muted) inset;
+  }
+
+  .format-art {
+    color: var(--text-muted);
+    transition: color var(--motion-fast, 100ms) ease;
+  }
+
+  .format-card.active .format-art {
+    color: var(--accent);
+  }
+
+  .format-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .format-name {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .format-desc {
+    font-size: 10.5px;
+    color: var(--text-muted);
+  }
+
+  .format-empty {
+    margin-bottom: 20px;
+    padding: 14px 14px;
+    background: var(--surface-float);
+    border: 1px dashed var(--border-medium);
+    border-radius: 8px;
     font-size: 11.5px;
     color: var(--text-muted);
-    line-height: 1.45;
+    line-height: 1.5;
   }
 
-  .checkbox-row input,
-  .radio-row input {
-    accent-color: var(--accent);
+  .format-empty p { margin: 0; }
+
+  /* ─── Options block ─── */
+  .options-block {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
 
+  .options-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 0 0 8px;
+  }
+
+  .opt-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 4px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .opt-row:last-of-type { border-bottom: none; }
+
+  .opt-label {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .opt-name {
+    font-size: 12px;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .opt-desc {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    line-height: 1.3;
+  }
+
+  /* iOS-style toggle. Compact (28×16) so the row reads as a setting rather
+     than a button cluster. */
+  .opt-toggle {
+    flex-shrink: 0;
+    width: 28px;
+    height: 16px;
+    border: none;
+    border-radius: 999px;
+    background: var(--border-medium);
+    padding: 0;
+    cursor: pointer;
+    position: relative;
+    transition: background var(--motion-fast, 100ms) ease;
+  }
+
+  .opt-toggle[aria-checked='true'] {
+    background: var(--accent);
+  }
+
+  .opt-thumb {
+    display: block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--surface-float);
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: transform var(--motion-fast, 100ms) ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  }
+
+  .opt-toggle[aria-checked='true'] .opt-thumb {
+    transform: translateX(12px);
+  }
+
+  /* ─── Scene range row ─── */
   .range-row {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-left: 22px;
-    padding: 2px 0 4px;
-    font-size: 12.5px;
+    padding: 4px 4px 8px;
+    font-size: 11.5px;
     color: var(--text-secondary);
   }
 
   .range-label {
-    font-size: 12px;
+    font-size: 10.5px;
     color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
-  .range-row input[type="number"] {
+  .range-row input[type='number'] {
     width: 56px;
-    padding: 3px 6px;
-    font-size: 12.5px;
+    padding: 4px 6px;
+    font-size: 12px;
     font-family: inherit;
     color: var(--text-primary);
-    background: var(--surface-base);
+    background: var(--surface-float);
     border: 1px solid var(--border-medium);
-    border-radius: 4px;
+    border-radius: 5px;
+    font-variant-numeric: tabular-nums;
   }
 
-  .range-row input[type="number"]:focus {
+  .range-row input[type='number']:focus {
     outline: none;
     border-color: var(--accent);
   }
 
   .range-sep {
-    font-size: 12px;
     color: var(--text-muted);
   }
 
   .range-hint {
-    font-size: 11px;
+    font-size: 10.5px;
     color: var(--text-muted);
     margin-left: 2px;
   }
 
+  /* ─── Footer ─── */
   .error-message {
-    font-size: 12px;
+    margin: 0 28px;
+    padding: 8px 12px;
+    font-size: 11.5px;
     color: var(--error);
-    margin: 0 0 12px;
-    padding: 8px;
     background: rgba(192, 87, 74, 0.1);
     border-radius: 6px;
   }
 
-  .modal-footer {
+  .export-footer {
     display: flex;
-    justify-content: flex-end;
+    align-items: center;
     gap: 8px;
+    padding: 14px 28px;
+    border-top: 1px solid var(--border-subtle);
+    background: var(--surface-float);
+  }
+
+  .footer-spacer {
+    flex: 1;
   }
 
   .btn-ghost {
-    height: 28px;
-    padding: 0 12px;
+    height: 32px;
+    padding: 0 14px;
     border-radius: 6px;
-    border: none;
+    border: 1px solid transparent;
     background: transparent;
     color: var(--text-secondary);
+    font-family: var(--ui-font);
     font-size: 12px;
-    font-family: system-ui, -apple-system, sans-serif;
     cursor: pointer;
-    transition: background 120ms ease, color 120ms ease;
+    transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
   }
 
-  .btn-ghost:hover {
+  .btn-ghost:hover:not(:disabled) {
     background: var(--surface-hover);
     color: var(--text-primary);
   }
 
   .btn-secondary {
-    height: 28px;
+    height: 32px;
     padding: 0 12px;
     border-radius: 6px;
     border: 1px solid var(--border-medium);
     background: transparent;
     color: var(--text-secondary);
+    font-family: var(--ui-font);
     font-size: 12px;
-    font-family: system-ui, -apple-system, sans-serif;
     cursor: pointer;
-    transition: background 120ms ease, color 120ms ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
   }
 
-  .btn-secondary:hover {
+  .btn-secondary:hover:not(:disabled) {
     background: var(--surface-hover);
     color: var(--text-primary);
+    border-color: var(--text-muted);
   }
 
   .btn-primary {
-    height: 28px;
-    padding: 0 12px;
+    height: 32px;
+    padding: 0 16px;
     border-radius: 6px;
-    border: none;
+    border: 1px solid var(--accent);
     background: var(--accent);
     color: var(--text-on-accent);
-    font-size: 12px;
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: var(--ui-font);
+    font-size: 12.5px;
+    font-weight: 600;
     cursor: pointer;
-    transition: background 120ms ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 120ms ease, border-color 120ms ease;
   }
 
-  .btn-primary:hover {
+  .btn-primary:hover:not(:disabled) {
     background: var(--accent-hover);
+    border-color: var(--accent-hover);
   }
 
+  .btn-primary:disabled,
+  .btn-secondary:disabled,
+  .btn-ghost:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 </style>

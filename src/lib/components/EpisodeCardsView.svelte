@@ -355,9 +355,14 @@
             <span class="ep-stat-label">pages</span>
           </span>
         </div>
-        <button class="ep-open" type="button" onclick={() => openEpisode(index)}>
-          Open scenes
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button
+          class="ep-open"
+          type="button"
+          onclick={() => openEpisode(index)}
+          aria-label="Open Episode {ep.number} scenes"
+          title="Open scenes"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 6 L15 12 L9 18"/>
           </svg>
         </button>
@@ -767,16 +772,20 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    padding: 10px 14px;
+    gap: 8px;
+    padding: 10px 12px;
     background: var(--surface-base);
     border-top: 1px solid var(--border-subtle);
+    min-width: 0;
   }
 
   .ep-stats {
+    flex: 1;
+    min-width: 0;
     display: flex;
     align-items: center;
-    gap: 12px;
+    flex-wrap: wrap;
+    gap: 6px 10px;
     font-size: 11px;
     color: var(--text-muted);
   }
@@ -857,26 +866,30 @@
     letter-spacing: 0.04em;
   }
 
+  /* Drill-in icon button — the whole card is already a click target
+     from #154; this anchored chevron is the visual cue, not a separate
+     CTA. Compact in width so it never crowds the stats row at narrow
+     card widths. */
   .ep-open {
+    flex-shrink: 0;
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 5px 10px;
-    border-radius: 5px;
-    border: 1px solid var(--accent);
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid transparent;
     background: var(--accent);
     color: var(--text-on-accent);
-    font-family: var(--ui-font);
-    font-size: 11.5px;
-    font-weight: 600;
     cursor: pointer;
     transition: background var(--motion-fast, 100ms) ease,
-                border-color var(--motion-fast, 100ms) ease;
+                border-color var(--motion-fast, 100ms) ease,
+                transform var(--motion-fast, 100ms) ease;
   }
 
   .ep-open:hover {
     background: var(--accent-hover);
-    border-color: var(--accent-hover);
+    transform: translateX(1px);
   }
 
   /* ─── Compact mode (#153) ───────────────────────────────────────────

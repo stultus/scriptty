@@ -893,7 +893,7 @@
     padding: 0 5px;
     border-radius: 4px;
     background: var(--surface-elevated);
-    color: var(--text-muted);
+    color: var(--text-secondary);
     font-family: var(--editor-font-en), var(--ui-font);
     font-size: 10px;
     font-weight: 700;

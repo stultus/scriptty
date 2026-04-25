@@ -897,15 +897,24 @@
       </div>
 
       {#if cardLevel === 'scenes'}
-        <div class="hero-toolbar">
-          <label class="toolbar-toggle" title="Compact view collapses each card to a single row — useful for at-a-glance episode planning">
+        <div class="hero-toolbar" role="group" aria-label="View options">
+          <label
+            class="toolbar-toggle"
+            class:on={sceneCompact}
+            title="Compact view collapses each card to a single row — useful for at-a-glance episode planning"
+          >
             <input type="checkbox" bind:checked={sceneCompact} />
-            <span>Compact</span>
+            <span class="toggle-mark" aria-hidden="true"></span>
+            <span class="toggle-text">Compact</span>
           </label>
-          <span class="toolbar-divider" aria-hidden="true"></span>
-          <label class="toolbar-toggle" title="Cluster cards by their Location group, then by Shoot date">
+          <label
+            class="toolbar-toggle"
+            class:on={groupByLocation}
+            title="Cluster cards by their Location group, then by Shoot date"
+          >
             <input type="checkbox" bind:checked={groupByLocation} />
-            <span>Group by location</span>
+            <span class="toggle-mark" aria-hidden="true"></span>
+            <span class="toggle-text">Group by location</span>
           </label>
         </div>
       {/if}
@@ -1386,44 +1395,108 @@
     font-weight: 700;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: var(--text-secondary);
   }
 
-  /* Toolbar — Compact + Group toggles in their own row, with a
-     hairline divider between them so they read as discrete options
-     in a typeset toolbar, not bunched into the count's whitespace. */
+  /* Toolbar — Compact + Group toggles in their own row. The toggles
+     are typeset pill controls (label + leading mark) — far more
+     considered than a native checkbox in this context. */
   .hero-toolbar {
     display: inline-flex;
     align-items: center;
-    gap: 12px;
+    gap: 6px;
     padding: 4px 0 0;
   }
 
-  .toolbar-divider {
-    width: 1px;
-    height: 12px;
-    background: var(--border-medium);
-  }
-
+  /* Pill toggle — typeset switch styled as a small badge. Off state
+     is an outlined pill with a hollow leading mark; on state fills
+     with accent-muted, the mark inverts to a filled accent dot, and
+     the label shifts to accent. Native checkbox is visually hidden
+     but still drives state + keyboard / screen-reader access. */
   .toolbar-toggle {
+    position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    cursor: pointer;
+    gap: 7px;
+    height: 26px;
+    padding: 0 11px 0 9px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 13px;
+    background: transparent;
     color: var(--text-secondary);
     user-select: none;
-    font-size: 11px;
+    cursor: pointer;
+    font-family: var(--ui-font);
+    font-size: 10.5px;
+    font-weight: 600;
     letter-spacing: 0.04em;
-    transition: color var(--motion-fast, 100ms) ease;
+    transition: color var(--motion-fast, 100ms) ease,
+                border-color var(--motion-fast, 100ms) ease,
+                background var(--motion-fast, 100ms) ease;
   }
 
   .toolbar-toggle:hover {
     color: var(--text-primary);
+    border-color: var(--border-medium);
   }
 
+  .toolbar-toggle.on {
+    color: var(--accent);
+    border-color: transparent;
+    background: var(--accent-muted);
+  }
+
+  .toolbar-toggle.on:hover {
+    background: var(--accent-muted);
+    filter: brightness(1.1);
+  }
+
+  /* Visually-hide the native checkbox but keep it in flow for keyboard
+     + screen-reader access. The label as a whole is the click target. */
   .toolbar-toggle input[type='checkbox'] {
-    accent-color: var(--accent);
-    cursor: pointer;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    border: 0;
+  }
+
+  /* Leading mark — hollow ring at rest, filled accent dot when on.
+     Tiny enough to read as a typographic mark, not a checkbox. */
+  .toggle-mark {
+    flex-shrink: 0;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    border: 1.5px solid var(--text-muted);
+    background: transparent;
+    transition: background var(--motion-fast, 100ms) ease,
+                border-color var(--motion-fast, 100ms) ease,
+                box-shadow var(--motion-fast, 100ms) ease;
+  }
+
+  .toolbar-toggle:hover .toggle-mark {
+    border-color: var(--text-secondary);
+  }
+
+  .toolbar-toggle.on .toggle-mark {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 2px var(--surface-base, var(--accent-muted));
+  }
+
+  /* Keyboard focus — visible ring on the whole pill since the input
+     itself is hidden. */
+  .toolbar-toggle:focus-within {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .toggle-text {
+    line-height: 1;
   }
 
   /* Episode-cards pane just provides the same scrollable container as the
@@ -1742,8 +1815,7 @@
     font-weight: 500;
     letter-spacing: 0.04em;
     text-transform: none;
-    color: var(--text-muted);
-    opacity: 0.7;
+    color: var(--text-secondary);
   }
 
   /* Slug — the scene heading. Courier, bold, set larger than before
@@ -1816,7 +1888,7 @@
     font-family: var(--editor-font-en), ui-monospace, monospace;
     font-size: 10px;
     font-weight: 700;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     letter-spacing: 0.05em;
   }
 
@@ -1880,7 +1952,7 @@
     font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.06em;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     font-variant-numeric: tabular-nums;
     text-transform: uppercase;
   }
@@ -1956,12 +2028,12 @@
     font-family: var(--ui-font);
     font-size: 10.5px;
     font-style: italic;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     letter-spacing: 0.01em;
   }
 
   .production-hint.muted {
-    opacity: 0.65;
+    color: var(--text-muted);
   }
 
   .production-hint span + span {
@@ -2029,9 +2101,9 @@
   }
 
   .prod-input::placeholder {
-    color: var(--text-muted);
+    color: var(--text-secondary);
     font-style: italic;
-    opacity: 0.7;
+    opacity: 0.65;
   }
 
 
@@ -2103,7 +2175,8 @@
   }
 
   .card-textarea::placeholder {
-    color: var(--text-muted);
+    color: var(--text-secondary);
+    opacity: 0.7;
   }
 
 

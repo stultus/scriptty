@@ -207,9 +207,14 @@
 
 <div class="episodes-pane-inner">
 <div class="episodes-toolbar">
-  <label class="density-toggle" title="Compact view collapses each card to a single row — useful for arc-planning a long series">
+  <label
+    class="density-toggle"
+    class:on={compact}
+    title="Compact view collapses each card to a single row — useful for arc-planning a long series"
+  >
     <input type="checkbox" bind:checked={compact} />
-    <span>Compact</span>
+    <span class="toggle-mark" aria-hidden="true"></span>
+    <span class="toggle-text">Compact</span>
   </label>
 </div>
 
@@ -406,18 +411,82 @@
     color: var(--text-muted);
   }
 
+  /* Pill toggle — same typeset style as the SceneCardsView hero
+     toggles. Off: outlined pill + hollow ring mark. On: accent-muted
+     pill + filled accent dot mark + accent label. */
   .density-toggle {
+    position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    cursor: pointer;
+    gap: 7px;
+    height: 26px;
+    padding: 0 11px 0 9px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 13px;
+    background: transparent;
     color: var(--text-secondary);
     user-select: none;
+    cursor: pointer;
+    font-family: var(--ui-font);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    transition: color var(--motion-fast, 100ms) ease,
+                border-color var(--motion-fast, 100ms) ease,
+                background var(--motion-fast, 100ms) ease;
+  }
+
+  .density-toggle:hover {
+    color: var(--text-primary);
+    border-color: var(--border-medium);
+  }
+
+  .density-toggle.on {
+    color: var(--accent);
+    border-color: transparent;
+    background: var(--accent-muted);
   }
 
   .density-toggle input[type='checkbox'] {
-    accent-color: var(--accent);
-    cursor: pointer;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    border: 0;
+  }
+
+  .density-toggle .toggle-mark {
+    flex-shrink: 0;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    border: 1.5px solid var(--text-muted);
+    background: transparent;
+    transition: background var(--motion-fast, 100ms) ease,
+                border-color var(--motion-fast, 100ms) ease,
+                box-shadow var(--motion-fast, 100ms) ease;
+  }
+
+  .density-toggle:hover .toggle-mark {
+    border-color: var(--text-secondary);
+  }
+
+  .density-toggle.on .toggle-mark {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 2px var(--surface-base);
+  }
+
+  .density-toggle:focus-within {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .density-toggle .toggle-text {
+    line-height: 1;
   }
 
   .episodes-grid {
@@ -741,7 +810,7 @@
 
   .ep-peek-num {
     grid-column: 1;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     font-size: 9.5px;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
@@ -763,7 +832,7 @@
     font-family: var(--ui-font);
     font-size: 10.5px;
     font-style: italic;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     letter-spacing: 0.01em;
   }
 
@@ -787,7 +856,7 @@
     flex-wrap: wrap;
     gap: 6px 10px;
     font-size: 11px;
-    color: var(--text-muted);
+    color: var(--text-secondary);
   }
 
   /* Status pill — small clickable lifecycle marker (#141). Click cycles

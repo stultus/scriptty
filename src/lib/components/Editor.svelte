@@ -9,6 +9,7 @@
   import { screenplaySchema } from '$lib/editor/schema';
   import { screenplayKeymap } from '$lib/editor/keymap';
   import { autoUppercasePlugin } from '$lib/editor/autoUppercase';
+  import { smartQuotesPlugin } from '$lib/editor/smartQuotes';
   import { characterAutocompletePlugin, autocompleteKey } from '$lib/editor/characterAutocomplete';
   import { characterListPlugin, characterListKey } from '$lib/editor/characterList';
   import { findReplacePlugin } from '$lib/editor/findReplace';
@@ -555,6 +556,7 @@
         keymap(baseKeymap),
         history(),
         autoUppercasePlugin,
+        smartQuotesPlugin,
         findReplacePlugin,
         annotationSpacerPlugin,
         characterListPlugin,

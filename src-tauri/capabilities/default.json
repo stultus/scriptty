@@ -17,7 +17,15 @@
     "fs:allow-write-text-file",
     {
       "identifier": "opener:allow-open-url",
-      "allow": [{ "url": "https://*" }, { "url": "http://*" }]
+      "allow": [
+        { "url": "https://stultus.in" },
+        { "url": "https://stultus.in/*" },
+        { "url": "https://hiran.in" },
+        { "url": "https://hiran.in/*" },
+        { "url": "https://github.com/stultus/scriptty" },
+        { "url": "https://github.com/stultus/scriptty/*" },
+        { "url": "mailto:*" }
+      ]
     },
     "deep-link:default"
   ]

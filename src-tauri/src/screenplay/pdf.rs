@@ -2067,23 +2067,28 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
 
     markup.push_str("\n#v(1.4cm)\n\n");
 
-    // Cards rendered into a two-column grid so the printed
-    // breakdown reads as a production "tear sheet" — multiple cards
-    // per page rather than one card per page (the previous treatment
-    // was needlessly tall). The grid itself is breakable; each card
-    // block is breakable: false so a single card never splits across
-    // pages.
+    // Cards rendered into a two-column FLOW (Typst `#columns`) so
+    // each card hugs its own content height. The previous `#grid`
+    // with `(1fr, 1fr)` forced both cards in a row to match the
+    // taller one — a 0.1-page card paired with a long card became
+    // a tall block of empty space. Worse: an odd final card sat
+    // alone in a row with the right cell blank for the rest of
+    // the page.
+    //
+    // `#columns(2)` packs cards top-down in the left column, spills
+    // into the right column, and balances at page boundaries —
+    // exactly the magazine "tear sheet" densification we want.
+    // Each card is `breakable: false` so a single card never splits
+    // across columns or pages.
     //
     // cards_data is a JSON array of:
     // [{ scene_number, heading, location, time, characters,
     //    page_estimate, description, shoot_notes }]
     if let Some(cards) = cards_data.as_array() {
         if !cards.is_empty() {
-            markup.push_str(
-                "#grid(\n  columns: (1fr, 1fr),\n  column-gutter: 10pt,\n  row-gutter: 10pt,\n",
-            );
+            markup.push_str("#columns(2, gutter: 10pt)[\n");
 
-            for card in cards {
+            for (card_idx, card) in cards.iter().enumerate() {
                 let scene_num = card.get("scene_number").and_then(|v| v.as_u64()).unwrap_or(0);
                 let heading = card.get("heading").and_then(|v| v.as_str()).unwrap_or("");
                 let characters = card.get("characters").and_then(|v| v.as_str()).unwrap_or("");
@@ -2115,16 +2120,21 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
                 };
 
                 // Card body. Two-column inner grid: hero number
-                // gutter on the left (compacted to 13mm so two cards
-                // breathe side-by-side on a 14.7cm text area), body
-                // on the right.
+                // gutter on the left (compacted to 13mm so two
+                // cards breathe side-by-side on a 14.7cm text
+                // area), body on the right. The hero number now
+                // anchors at top (was horizon) so it lines up with
+                // the eyebrow on every card — without the rigid
+                // outer grid forcing equal heights, horizon
+                // centring would leave the number floating in
+                // empty space on tall cards.
                 markup.push_str(&format!(
-                    r#"  block(stroke: 0.5pt + luma(180), radius: 4pt, inset: 0pt, width: 100%, breakable: false)[
+                    r#"  #block(stroke: 0.5pt + luma(180), radius: 4pt, inset: 0pt, width: 100%, breakable: false)[
     #grid(
       columns: (13mm, 0.5pt, 1fr),
       rows: auto,
-      align: (center + horizon, center + horizon, left + top),
-      pad(top: 9pt, bottom: 9pt)[#text(font: "Courier Prime", size: 18pt, weight: "bold", tracking: 0.04em, fill: {})[{:02}]],
+      align: (center + top, center + horizon, left + top),
+      pad(top: 11pt, bottom: 9pt)[#text(font: "Courier Prime", size: 18pt, weight: "bold", tracking: 0.04em, fill: {})[{:02}]],
       rect(width: 0.5pt, height: 100%, fill: luma(215), stroke: none),
       pad(top: 9pt, bottom: 10pt, left: 11pt, right: 11pt)[
 "#,
@@ -2179,12 +2189,17 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
                     ));
                 }
 
-                // Close the inner grid + block, then comma for the
-                // outer grid's argument list.
-                markup.push_str("      ]\n    )\n  ],\n");
+                // Close the inner grid + block. Cards are
+                // separated by a small vertical gap; the last card
+                // gets no trailing space so the columns balance
+                // cleanly at the foot.
+                markup.push_str("      ]\n    )\n  ]\n");
+                if card_idx + 1 < cards.len() {
+                    markup.push_str("  #v(10pt)\n");
+                }
             }
 
-            markup.push_str(")\n\n");
+            markup.push_str("]\n\n");
         }
     }
 

@@ -136,6 +136,18 @@
   <div class="story-editor">
     <div class="story-editor-inner">
     <div class="page" style="--editor-font-ml: '{fontFamily}'">
+      <!-- Editorial masthead — section-page treatment for Story Mode.
+           Matches the vocabulary used in the rest of the app: tracked-
+           caps eyebrow + Courier title. Title is the active section
+           (Idea / Synopsis / Treatment / Narrative) so the writer
+           always sees which prose surface they're on. -->
+      <header class="story-masthead">
+        <div class="mh-eyebrow" aria-hidden="true">
+          <span class="mh-rule"></span>
+          <span>The Story</span>
+        </div>
+        <h1 class="mh-title story-title">{tabs.find((t) => t.id === activeTab)?.label ?? 'Story'}</h1>
+      </header>
       <div class="tab-bar" role="tablist" aria-label="Story sections">
         {#each tabs as tab}
           <button
@@ -234,12 +246,34 @@
     box-sizing: border-box;
   }
 
+  /* Editorial masthead at the top of the Story page. Centered
+     frontispiece block — eyebrow above the section title — followed
+     by the existing tab bar acting as the section navigator. */
+  .story-masthead {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 22px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border-subtle);
+    text-align: center;
+    color: var(--text-on-page);
+  }
+
+  .story-title {
+    margin: 0;
+    font-size: 30px;
+    line-height: 1;
+    color: var(--text-on-page);
+  }
+
   .tab-bar {
     display: flex;
     gap: 4px;
-    border-bottom: 1px solid var(--border-subtle);
     margin: 0 0 24px;
     padding-bottom: 0;
+    justify-content: center;
   }
 
   /* Tab labels act as the title-page-like heading of Story view — Courier

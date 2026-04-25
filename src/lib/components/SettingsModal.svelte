@@ -56,7 +56,13 @@
   <div class="modal-backdrop" onclick={handleBackdropClick} onkeydown={handleKeydown} role="dialog" aria-modal="true" tabindex="-1">
     <div class="modal-card" use:focusTrap>
       <div class="modal-header">
-        <h2>Settings</h2>
+        <div class="modal-header-text">
+          <div class="mh-eyebrow" aria-hidden="true">
+            <span class="mh-rule"></span>
+            <span>Preferences</span>
+          </div>
+          <h2 class="mh-title settings-title">Settings</h2>
+        </div>
         <button class="btn-close" onclick={() => { open = false; }} aria-label="Close settings">&times;</button>
       </div>
 
@@ -349,11 +355,25 @@
 
   .modal-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    margin: -2px -4px 10px -4px;
-    padding: 0 4px 10px 4px;
+    gap: 12px;
+    margin: -2px -4px 12px -4px;
+    padding: 0 4px 12px 4px;
     border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .modal-header-text {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .settings-title {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1;
   }
 
   .modal-header h2 {

@@ -672,8 +672,11 @@
       <section class="stats-pane">
         <header class="pane-header">
           <div class="pane-title-block">
-            <span class="pane-eyebrow">{activeTabLabel.eyebrow}</span>
-            <h3 class="pane-title">{activeTabLabel.title}</h3>
+            <div class="mh-eyebrow" aria-hidden="true">
+              <span class="mh-rule"></span>
+              <span>{activeTabLabel.eyebrow}</span>
+            </div>
+            <h3 class="mh-title pane-title">{activeTabLabel.title}</h3>
           </div>
           <div class="pane-actions">
             {#if canExportCsv}
@@ -1140,24 +1143,14 @@
   .pane-title-block {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
     min-width: 0;
-  }
-
-  .pane-eyebrow {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--text-muted);
   }
 
   .pane-title {
     margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--text-primary);
-    line-height: 1.2;
+    font-size: 22px;
+    line-height: 1;
   }
 
   .pane-actions {

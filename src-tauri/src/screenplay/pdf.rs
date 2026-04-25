@@ -1792,13 +1792,33 @@ pub fn generate_prose_section_markup(section_name: &str, body: &str, font_name: 
         numbering_opts, font_name
     ));
 
-    // Project title as the main heading (large, bold)
+    // Editorial masthead — same vocabulary as the SceneCardsView
+    // hero, the WelcomeScreen, AboutModal, and the title page (#176).
+    // Eyebrow with flanking hairlines names the section; the project
+    // title sits below as the page identity; asterism divider
+    // separates the title block from the credits.
+    markup.push_str(&format!(
+        r#"#par(first-line-indent: 0cm)[
+  #align(center)[
+    #v(2cm)
+    #box(width: 18mm, baseline: -3pt)[#line(length: 100%, stroke: 0.5pt + luma(150))]
+    #h(0.7em)
+    #text(size: 9pt, weight: "bold", tracking: 0.22em, fill: luma(120))[{}]
+    #h(0.7em)
+    #box(width: 18mm, baseline: -3pt)[#line(length: 100%, stroke: 0.5pt + luma(150))]
+  ]
+]
+"#,
+        escaped_section.to_uppercase()
+    ));
+
+    // Project title — bumped + tracked to match the title page.
     if !title.is_empty() {
         markup.push_str(&format!(
             r#"#par(first-line-indent: 0cm)[
   #align(center)[
-    #v(2cm)
-    #text(size: 20pt, weight: "bold")[{}]
+    #v(0.9cm)
+    #text(size: 26pt, weight: "bold", tracking: 0.04em)[{}]
   ]
 ]
 "#,
@@ -1806,37 +1826,43 @@ pub fn generate_prose_section_markup(section_name: &str, body: &str, font_name: 
         ));
     }
 
-    // Section name as a subtitle (smaller, tracked, muted)
-    markup.push_str(&format!(
-        r#"#par(first-line-indent: 0cm)[
-  #align(center)[
-    {}#text(size: 12pt, tracking: 0.15em, fill: luma(100))[{}]
-  ]
-]
-"#,
-        // Add spacing: more if title is present, less if it's the first element
-        if title.is_empty() { "#v(2cm)\n    " } else { "#v(0.6cm)\n    " },
-        escaped_section.to_uppercase()
-    ));
-
-    // Credit lines below the section name — compact single-line format.
-    // Label is italic and muted, name is normal weight for visual hierarchy.
+    // Credit lines below the title — small-caps tracked labels +
+    // larger name beneath, with an asterism between the title block
+    // and the credits when both are present.
     let credits = format_credit_lines(author, director);
-    for (label, name) in &credits {
-        markup.push_str(&format!(
+    if !credits.is_empty() {
+        // Asterism divider — only when credits follow.
+        markup.push_str(
             r#"#par(first-line-indent: 0cm)[
   #align(center)[
-    #v(0.3cm)
-    #text(size: 11pt)[#text(fill: luma(120))[#emph[{}]] {}]
+    #v(0.9cm)
+    #text(size: 14pt, fill: luma(170), tracking: 0.4em)[· · ·]
   ]
 ]
 "#,
-            escape_typst(label),
-            escape_typst(name)
-        ));
+        );
+        for (label, name) in &credits {
+            markup.push_str(&format!(
+                r#"#par(first-line-indent: 0cm)[
+  #align(center)[
+    #v(0.7cm)
+    #text(size: 9pt, weight: "bold", tracking: 0.18em, fill: luma(125))[{}]
+  ]
+]
+#par(first-line-indent: 0cm)[
+  #align(center)[
+    #v(0.3cm)
+    #text(size: 14pt)[{}]
+  ]
+]
+"#,
+                escape_typst(&label.to_uppercase()),
+                escape_typst(name)
+            ));
+        }
     }
 
-    markup.push_str("\n#v(1.5cm)\n\n");
+    markup.push_str("\n#v(1.6cm)\n\n");
 
     // Body text — split by newlines to preserve paragraph breaks.
     // Each non-empty line becomes a Typst paragraph. Empty lines add spacing.

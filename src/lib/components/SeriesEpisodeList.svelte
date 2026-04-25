@@ -145,26 +145,50 @@
 </script>
 
 <div class="series-panel">
+  <!-- Series header — matches the eyebrow + title + count pattern used
+       by the Statistics / Export / Scene Navigator headers (#146). The
+       sticky positioning keeps the panel self-identifying as the
+       episode list scrolls. -->
   <header class="series-header">
-    {#if editingSeries}
-      <!-- svelte-ignore a11y_autofocus -->
-      <input
-        class="series-title-input"
-        bind:value={seriesDraft}
-        onblur={commitSeriesRename}
-        onkeydown={handleSeriesKeydown}
-        autofocus
-      />
-    {:else}
-      <button
-        class="series-title"
-        onclick={beginSeriesRename}
-        title="Rename series"
-        aria-label="Rename series"
-      >{seriesTitle || 'Untitled Series'}</button>
-    {/if}
+    <div class="series-header-text">
+      <span class="series-eyebrow">Series</span>
+      {#if editingSeries}
+        <!-- svelte-ignore a11y_autofocus -->
+        <input
+          class="series-title-input"
+          bind:value={seriesDraft}
+          onblur={commitSeriesRename}
+          onkeydown={handleSeriesKeydown}
+          autofocus
+        />
+      {:else}
+        <button
+          class="series-title"
+          onclick={beginSeriesRename}
+          title="Click to rename series"
+          aria-label="Rename series"
+        >
+          <span class="series-title-text">{seriesTitle || 'Untitled Series'}</span>
+          <svg
+            class="series-rename-glyph"
+            width="11"
+            height="11"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 2 L14 4 L5 13 L2 14 L3 11 Z"/>
+          </svg>
+        </button>
+      {/if}
+      <span class="series-count">{episodes.length} {episodes.length === 1 ? 'episode' : 'episodes'}</span>
+    </div>
     <button class="icon-btn" onclick={addEpisode} title="Add episode" aria-label="Add episode">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <line x1="12" y1="5" x2="12" y2="19"></line>
         <line x1="5" y1="12" x2="19" y2="12"></line>
       </svg>
@@ -273,71 +297,133 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: var(--ui-font);
   }
 
+  /* Sticky header — same pattern as SceneNavigator's nav-header
+     (eyebrow + identity + count + add button), so the sidebar's two
+     panel chromes (this and the SceneNavigator's nested one) speak
+     the same language. (#146) */
   .series-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
     display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 10px 8px;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 14px 12px 12px;
+    background: var(--surface-base);
     border-bottom: 1px solid var(--border-subtle);
   }
 
-  .series-title {
+  .series-header-text {
     flex: 1;
     min-width: 0;
-    padding: 4px 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .series-eyebrow {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* Title is interactive — click to rename. Hover reveals a small
+     pencil glyph so the rename affordance is discoverable. */
+  .series-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    padding: 2px 6px 2px 4px;
+    margin-left: -4px;
     background: transparent;
     border: 1px solid transparent;
-    border-radius: 4px;
-    font-size: 12.5px;
-    font-weight: 600;
+    border-radius: 5px;
+    font-size: 13px;
+    font-weight: 700;
     color: var(--text-primary);
     font-family: inherit;
     text-align: left;
-    cursor: text;
+    cursor: pointer;
+    transition: background 120ms ease;
+  }
+
+  .series-title-text {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    letter-spacing: 0.01em;
+  }
+
+  .series-rename-glyph {
+    color: var(--text-muted);
+    opacity: 0;
+    transition: opacity 120ms ease;
+    flex-shrink: 0;
   }
 
   .series-title:hover {
     background: var(--surface-hover);
   }
 
+  .series-title:hover .series-rename-glyph {
+    opacity: 1;
+  }
+
   .series-title-input {
-    flex: 1;
-    min-width: 0;
-    padding: 4px 6px;
-    height: 26px;
-    background: var(--surface-base);
+    width: 100%;
+    padding: 2px 6px;
+    height: 24px;
+    background: var(--surface-float);
     border: 1px solid var(--accent);
-    border-radius: 4px;
-    font-size: 12.5px;
-    font-weight: 600;
+    border-radius: 5px;
+    font-size: 13px;
+    font-weight: 700;
     color: var(--text-primary);
     font-family: inherit;
     outline: none;
   }
 
+  /* Episode count pill — same shape and tone as SceneNavigator's
+     scenes count and the Statistics rail counts. */
+  .series-count {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    height: 18px;
+    padding: 0 8px;
+    border-radius: 9px;
+    background: var(--surface-elevated);
+    color: var(--text-muted);
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+  }
+
   .icon-btn {
-    display: flex;
+    flex-shrink: 0;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
+    margin-top: 14px;
     background: transparent;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     color: var(--text-muted);
     cursor: pointer;
     transition: background 120ms ease, color 120ms ease;
   }
 
   .icon-btn:hover {
-    background: var(--surface-hover);
-    color: var(--text-primary);
+    background: var(--accent-muted);
+    color: var(--accent);
   }
 
   .episode-list {

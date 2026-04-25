@@ -92,6 +92,11 @@
     cardLevel = 'episodes';
   }
 
+  // Hero context flags + count, derived once so the template stays
+  // declarative.
+  let heroIsEpisodesLevel = $derived(documentStore.isSeries && cardLevel === 'episodes');
+  let heroIsSeriesScenes = $derived(documentStore.isSeries && cardLevel === 'scenes');
+
   /** Series-wide totals for the Episode-level hero (#140). Producers
    *  scanning the series want scope at a glance — total scenes, total
    *  pages — alongside the episode count. Cheap derived: walks every
@@ -340,6 +345,19 @@
     pushCurrentScene();
     return result;
   }
+
+  // Count + noun shown in the masthead right column. Reads from cards
+  // when at scenes level, episodes when at episodes level.
+  let heroCountValue = $derived(
+    heroIsEpisodesLevel
+      ? (documentStore.document?.series?.episodes?.length ?? 0)
+      : cards.length,
+  );
+  let heroCountNoun = $derived(
+    heroIsEpisodesLevel
+      ? heroCountValue === 1 ? 'episode' : 'episodes'
+      : heroCountValue === 1 ? 'scene' : 'scenes',
+  );
 
   /** Defaults for a freshly-created SceneCard — keeps the create paths
    *  in sync as the schema grows (#124 added two new optional fields). */
@@ -819,60 +837,77 @@
        For series projects in the Scenes level, a breadcrumb above the
        title hands the writer back to Episodes — it's a drill-down
        hierarchy, not a parallel-view toggle. -->
+  <!-- Hero — editorial masthead. Eyebrow context (FILM / SERIES / ←
+       EPISODES), big title, Manjari italic project subtitle, then
+       right cluster with the count as a big stat and the view
+       toggles in a typeset toolbar row. Ornamented bottom rule. -->
   <header class="cards-hero">
-    <div class="hero-text">
-      {#if documentStore.isSeries && cardLevel === 'episodes'}
-        <h1 class="hero-level">Episodes</h1>
-        <p class="hero-subtitle">
-          {documentStore.document?.series?.title || 'Untitled Series'}
+    <div class="hero-left">
+      <div class="hero-eyebrow">
+        {#if heroIsSeriesScenes}
+          <button
+            type="button"
+            class="hero-back"
+            onclick={backToEpisodes}
+            aria-label="Back to episodes"
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18 L9 12 L15 6"/></svg>
+            <span>Episodes</span>
+          </button>
+          <span class="eyebrow-sep" aria-hidden="true">·</span>
+          <span class="eyebrow-context">Episode {String(documentStore.activeEpisode?.number ?? 1).padStart(2, '0')}</span>
+        {:else if heroIsEpisodesLevel}
+          <span class="eyebrow-rule" aria-hidden="true"></span>
+          <span class="eyebrow-context">Series</span>
+          <span class="eyebrow-rule" aria-hidden="true"></span>
+        {:else}
+          <span class="eyebrow-rule" aria-hidden="true"></span>
+          <span class="eyebrow-context">Film</span>
+          <span class="eyebrow-rule" aria-hidden="true"></span>
+        {/if}
+      </div>
+
+      <h1 class="hero-title">
+        {#if heroIsEpisodesLevel}Episodes{:else}Scenes{/if}
+      </h1>
+
+      <p class="hero-subtitle">
+        {#if heroIsEpisodesLevel}
+          <span class="subtitle-name">{documentStore.document?.series?.title || 'Untitled Series'}</span>
           {#if seriesTotals}
-            <span class="hero-totals" aria-label="Series totals">
-              <span class="hero-totals-sep">·</span>
+            <span class="subtitle-meta">
+              <span class="meta-sep" aria-hidden="true">·</span>
               <strong>{seriesTotals.scenes}</strong> {seriesTotals.scenes === 1 ? 'scene' : 'scenes'}
-              <span class="hero-totals-sep">·</span>
+              <span class="meta-sep" aria-hidden="true">·</span>
               <strong>~{seriesTotals.pages}</strong> pages
             </span>
           {/if}
-        </p>
-      {:else if documentStore.isSeries && cardLevel === 'scenes'}
-        <button
-          type="button"
-          class="hero-crumb"
-          onclick={backToEpisodes}
-          aria-label="Back to episodes"
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18 L9 12 L15 6"/></svg>
-          <span>Episodes</span>
-        </button>
-        <h1 class="hero-level">Scenes</h1>
-        <p class="hero-subtitle">
-          <span class="hero-ep-badge">{String(documentStore.activeEpisode?.number ?? 1).padStart(2, '0')}</span>
-          {documentStore.activeEpisode?.title?.trim() || 'Untitled episode'}
-        </p>
-      {:else}
-        <h1 class="hero-level">Scenes</h1>
-        <p class="hero-subtitle">{documentStore.activeMeta?.title?.trim() || 'Untitled screenplay'}</p>
-      {/if}
+        {:else if heroIsSeriesScenes}
+          <span class="subtitle-name">{documentStore.activeEpisode?.title?.trim() || 'Untitled episode'}</span>
+        {:else}
+          <span class="subtitle-name">{documentStore.activeMeta?.title?.trim() || 'Untitled screenplay'}</span>
+        {/if}
+      </p>
     </div>
 
-    <div class="hero-actions">
-      <span class="hero-count">
-        {#if documentStore.isSeries && cardLevel === 'episodes'}
-          {(documentStore.document?.series?.episodes?.length ?? 0)} {(documentStore.document?.series?.episodes?.length ?? 0) === 1 ? 'episode' : 'episodes'}
-        {:else}
-          {cards.length} {cards.length === 1 ? 'scene' : 'scenes'}
-        {/if}
-      </span>
+    <div class="hero-right">
+      <div class="hero-stat">
+        <strong class="stat-value">{heroCountValue}</strong>
+        <span class="stat-label">{heroCountNoun}</span>
+      </div>
 
       {#if cardLevel === 'scenes'}
-        <label class="toolbar-toggle" title="Compact view collapses each card to a single row — useful for at-a-glance episode planning">
-          <input type="checkbox" bind:checked={sceneCompact} />
-          <span>Compact</span>
-        </label>
-        <label class="toolbar-toggle" title="Cluster cards by their Location group, then by Shoot date">
-          <input type="checkbox" bind:checked={groupByLocation} />
-          <span>Group by location</span>
-        </label>
+        <div class="hero-toolbar">
+          <label class="toolbar-toggle" title="Compact view collapses each card to a single row — useful for at-a-glance episode planning">
+            <input type="checkbox" bind:checked={sceneCompact} />
+            <span>Compact</span>
+          </label>
+          <span class="toolbar-divider" aria-hidden="true"></span>
+          <label class="toolbar-toggle" title="Cluster cards by their Location group, then by Shoot date">
+            <input type="checkbox" bind:checked={groupByLocation} />
+            <span>Group by location</span>
+          </label>
+        </div>
       {/if}
     </div>
   </header>
@@ -1137,129 +1172,237 @@
      impossible to miss. Subtitle gives context (series name or active
      episode). The right-side cluster carries the level switcher,
      count, and per-level toggles. */
+  /* ─── Hero — editorial masthead ─────────────────────────────────────
+     Section title-page treatment, like a page from a typeset
+     shooting script. Two columns: left holds eyebrow + title +
+     subtitle; right holds a big stat number + view toolbar. The
+     bottom border is broken with a small ornament so the divider
+     reads as a typeset rule rather than a plain hairline. */
   .cards-hero {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 18px;
-    margin-bottom: 22px;
-    padding: 6px 4px 14px;
-    border-bottom: 1px solid var(--border-subtle);
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 32px;
+    margin-bottom: 28px;
+    padding: 4px 4px 22px;
     font-family: var(--ui-font);
   }
 
-  .hero-text {
+  .cards-hero::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent 0,
+      var(--border-subtle) 8%,
+      var(--border-subtle) 48%,
+      transparent 49.5%,
+      transparent 50.5%,
+      var(--border-subtle) 52%,
+      var(--border-subtle) 92%,
+      transparent 100%);
+  }
+
+  .cards-hero::before {
+    content: '·';
+    position: absolute;
+    left: 50%;
+    bottom: -7px;
+    transform: translateX(-50%);
+    width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1;
+    background: var(--page-base, var(--surface-base));
+  }
+
+  .hero-left {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 6px;
     min-width: 0;
   }
 
-  .hero-level {
-    margin: 0;
-    font-size: 22px;
+  /* Eyebrow row — context indicator above the title. Shows
+     "— FILM —" / "— SERIES —" with hairline rules flanking the word
+     so it reads as a typeset section header. For the scenes-level
+     view inside a series, the rules are replaced by a back-button
+     breadcrumb + episode badge. */
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: 14px;
+    font-family: var(--ui-font);
+    font-size: 9.5px;
     font-weight: 700;
-    color: var(--text-primary);
-    letter-spacing: 0.04em;
+    letter-spacing: 0.22em;
     text-transform: uppercase;
-    line-height: 1.1;
-  }
-
-  .hero-subtitle {
-    margin: 0;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12.5px;
     color: var(--text-muted);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 60vw;
   }
 
-  /* Series totals next to the series title — scope at a glance for
-     producers scanning the arc (#140). */
-  .hero-totals {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 6px;
-    color: var(--text-muted);
-    font-size: 11.5px;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .hero-totals strong {
-    color: var(--text-secondary);
-    font-weight: 600;
-  }
-
-  .hero-totals-sep {
-    color: var(--text-muted);
-    opacity: 0.45;
-  }
-
-  /* Episode badge inside the subtitle — same chip pattern as everywhere
-     else (#145, #161). Compact since it sits next to the title. */
-  .hero-ep-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 26px;
-    height: 18px;
-    padding: 0 6px;
-    border-radius: 4px;
-    background: var(--accent-muted);
-    color: var(--accent);
-    font-family: var(--editor-font-en), var(--ui-font);
-    font-size: 10px;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.04em;
-  }
-
-  .hero-actions {
-    display: inline-flex;
-    align-items: center;
-    gap: 14px;
+  .eyebrow-context {
     flex-shrink: 0;
+    color: var(--text-secondary);
   }
 
-  /* Breadcrumb back-link — series-only, shown above the "Scenes" hero
-     title when drilled into an episode. The level relationship is a
-     drill-down, not a parallel toggle, so the breadcrumb form
-     (← Episodes) reads correctly: it points back up the hierarchy. */
-  .hero-crumb {
-    align-self: flex-start;
+  .eyebrow-rule {
+    display: inline-block;
+    width: 28px;
+    height: 1px;
+    background: var(--border-medium);
+  }
+
+  .eyebrow-sep {
+    color: var(--border-medium);
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+
+  .hero-back {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    margin-bottom: 6px;
-    padding: 3px 8px 3px 5px;
+    gap: 5px;
+    padding: 2px 6px 2px 4px;
+    margin-left: -4px;
     border: none;
     background: transparent;
     color: var(--text-muted);
-    font-family: var(--ui-font);
-    font-size: 10.5px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    border-radius: 5px;
+    font: inherit;
+    text-transform: inherit;
+    letter-spacing: inherit;
+    border-radius: 4px;
     cursor: pointer;
     transition: background var(--motion-fast, 100ms) ease,
                 color var(--motion-fast, 100ms) ease;
   }
 
-  .hero-crumb:hover {
+  .hero-back:hover {
     background: var(--surface-hover);
     color: var(--accent);
   }
 
-  .hero-count {
-    font-size: 11.5px;
+  /* Title — confident, larger weight, slightly tighter letter
+     spacing than the eyebrow. The dominant typographic mark on the
+     page. */
+  .hero-title {
+    margin: 0;
+    font-family: var(--ui-font);
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+  }
+
+  /* Subtitle — Manjari italic for the project / episode title so
+     the bilingual identity comes through as more than a caption.
+     Series totals get a subdued numeric register beside it. */
+  .hero-subtitle {
+    margin: 0;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    font-family: 'Manjari', var(--ui-font);
+    font-size: 14px;
+    font-style: italic;
+    line-height: 1.3;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 60vw;
+    letter-spacing: 0.005em;
+  }
+
+  .subtitle-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  .subtitle-meta {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    font-family: var(--ui-font);
+    font-style: normal;
+    font-size: 11px;
     color: var(--text-muted);
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.02em;
+  }
+
+  .subtitle-meta strong {
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  .meta-sep {
+    color: var(--border-medium);
+  }
+
+  /* Right column — stacked: big stat over toolbar. */
+  .hero-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  /* The count rendered as a typeset stat: large Courier numeral, tiny
+     tracked label below. Editorial sidebar number, not a chip. */
+  .hero-stat {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    font-family: var(--editor-font-en), ui-monospace, monospace;
+  }
+
+  .stat-value {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  .stat-label {
+    font-family: var(--ui-font);
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* Toolbar — Compact + Group toggles in their own row, with a
+     hairline divider between them so they read as discrete options
+     in a typeset toolbar, not bunched into the count's whitespace. */
+  .hero-toolbar {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 0 0;
+  }
+
+  .toolbar-divider {
+    width: 1px;
+    height: 12px;
+    background: var(--border-medium);
   }
 
   .toolbar-toggle {
@@ -1269,6 +1412,13 @@
     cursor: pointer;
     color: var(--text-secondary);
     user-select: none;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    transition: color var(--motion-fast, 100ms) ease;
+  }
+
+  .toolbar-toggle:hover {
+    color: var(--text-primary);
   }
 
   .toolbar-toggle input[type='checkbox'] {
@@ -1367,10 +1517,16 @@
                 transform 200ms ease;
   }
 
+  /* Hover lift via shadow only — NOT transform. A transform property
+     creates a stacking context, which traps `position: fixed`
+     descendants (the DatePicker popover uses fixed positioning to
+     escape the card's overflow:hidden). With a transform here, the
+     popover would compute viewport coords but render relative to the
+     card — invisibly off-screen — even though the click + Enter still
+     selected a date. */
   .card:hover {
     border-color: var(--border-medium);
     box-shadow: 0 6px 18px var(--shadow-soft, rgba(0, 0, 0, 0.05));
-    transform: translateY(-1px);
   }
 
   .card.dragging {

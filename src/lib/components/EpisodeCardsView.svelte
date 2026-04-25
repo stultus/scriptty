@@ -36,6 +36,22 @@
 
   let { onOpenEpisode }: { onOpenEpisode: (index: number) => void } = $props();
 
+  // ─── Compact mode (#153) ────────────────────────────────────────────
+  // Toggleable density preference. Default (roomy) is the writer's
+  // reading view; compact is the at-a-glance arc-planning view that
+  // collapses each card to a single row so a 12-episode series fits
+  // in one viewport. Persisted to localStorage so the writer's choice
+  // sticks across sessions.
+  const COMPACT_KEY = 'scriptty-episodes-compact';
+  let compact = $state(false);
+  if (typeof localStorage !== 'undefined') {
+    compact = localStorage.getItem(COMPACT_KEY) === '1';
+  }
+  $effect(() => {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem(COMPACT_KEY, compact ? '1' : '0');
+  });
+
   /** Live snapshot of the series episodes — reactive via documentStore.
    *  Empty array for non-series (the parent guards against rendering us
    *  in that case, but we double-check to be defensive). */
@@ -189,7 +205,15 @@
   }
 </script>
 
-<div class="episodes-grid" bind:this={gridEl}>
+<div class="episodes-pane-inner">
+<div class="episodes-toolbar">
+  <label class="density-toggle" title="Compact view collapses each card to a single row — useful for arc-planning a long series">
+    <input type="checkbox" bind:checked={compact} />
+    <span>Compact</span>
+  </label>
+</div>
+
+<div class="episodes-grid" class:compact bind:this={gridEl}>
   {#each episodes as ep, index (ep.id)}
     {@const sceneCount = sceneCountFor(ep)}
     {@const pages = pageEstimateFor(ep)}
@@ -354,13 +378,63 @@
     <span class="ep-add-hint">Append to the series</span>
   </button>
 </div>
+</div>
 
 <style>
+  .episodes-pane-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Toolbar with Compact toggle (#153). Right-aligned so it doesn't
+     compete with the SceneCardsView hero header above; the toggle is
+     the only control here today. */
+  .episodes-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 0 4px;
+    font-family: var(--ui-font);
+    font-size: 11.5px;
+    color: var(--text-muted);
+  }
+
+  .density-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    user-select: none;
+  }
+
+  .density-toggle input[type='checkbox'] {
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
   .episodes-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    /* Roomy default fits 4 cards on a 1500px window (was 3 with 320px
+       min). Compact mode bumps it to a much wider column flow that
+       prefers a single column when the rail's narrow but folds to two
+       wide stripes once the workspace can fit it. (#153) */
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 16px;
     align-items: stretch;
+  }
+
+  .episodes-grid.compact {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  @media (min-width: 1200px) {
+    .episodes-grid.compact {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
 
   .ep-card {
@@ -371,7 +445,7 @@
     border-radius: 10px;
     box-shadow: 0 1px 2px var(--shadow-soft);
     overflow: hidden;
-    min-height: 240px;
+    min-height: 180px;
     /* Cursor on the body signals "click to drill in" (#154); editable
        controls inside the card override back to default via specific
        selectors below so they read as "type here, not navigate." */
@@ -805,6 +879,76 @@
     border-color: var(--accent-hover);
   }
 
+  /* ─── Compact mode (#153) ───────────────────────────────────────────
+     Collapses each card to a single row: badge · title · logline
+     snippet · scene count · open arrow. Hides the body (textarea +
+     scene peek) and the per-card status pill keeps its place inline.
+     A 12-episode series fits in one viewport. */
+  .episodes-grid.compact .ep-card {
+    min-height: 0;
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .episodes-grid.compact .ep-header {
+    flex-shrink: 0;
+    width: auto;
+    min-width: 220px;
+    max-width: 38%;
+    padding: 8px 12px;
+    border-bottom: none;
+    border-right: 1px solid var(--border-subtle);
+    background: var(--surface-base);
+  }
+
+  .episodes-grid.compact .ep-body {
+    padding: 8px 12px;
+    gap: 4px;
+    min-height: 0;
+  }
+
+  .episodes-grid.compact .ep-field-label,
+  .episodes-grid.compact .ep-peek {
+    display: none;
+  }
+
+  .episodes-grid.compact .ep-textarea {
+    /* Replace the multi-line textarea with a single-line truncated
+       preview; the writer can still drill in to edit the full logline.
+       Read-only inline edit isn't worth the complexity for compact. */
+    min-height: 0;
+    max-height: 22px;
+    padding: 2px 6px;
+    border: 1px solid transparent;
+    background: transparent;
+    overflow: hidden;
+    resize: none;
+    font-style: italic;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .episodes-grid.compact .ep-textarea:focus {
+    background: var(--surface-base);
+    border-color: var(--border-subtle);
+  }
+
+  .episodes-grid.compact .ep-footer {
+    flex-shrink: 0;
+    background: transparent;
+    border-top: none;
+    border-left: 1px solid var(--border-subtle);
+    padding: 8px 12px;
+    gap: 10px;
+  }
+
+  /* In compact mode the actions appear inside the header; keep them
+     visible at full opacity since the row is shorter and there's
+     less space to fade them. */
+  .episodes-grid.compact .ep-actions {
+    opacity: 1;
+  }
+
   /* ─── Add-episode placeholder ─── */
   .ep-add-card {
     display: flex;
@@ -812,7 +956,7 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    min-height: 240px;
+    min-height: 180px;
     background: transparent;
     border: 2px dashed var(--border-medium);
     border-radius: 10px;
@@ -822,6 +966,23 @@
     transition: background var(--motion-fast, 100ms) ease,
                 border-color var(--motion-fast, 100ms) ease,
                 color var(--motion-fast, 100ms) ease;
+  }
+
+  .episodes-grid.compact .ep-add-card {
+    flex-direction: row;
+    min-height: 48px;
+    gap: 10px;
+    padding: 8px 14px;
+    border-width: 1px;
+  }
+
+  .episodes-grid.compact .ep-add-card svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .episodes-grid.compact .ep-add-hint {
+    display: none;
   }
 
   .ep-add-card:hover {

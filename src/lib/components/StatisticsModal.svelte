@@ -52,6 +52,18 @@
   type Tab = 'overview' | 'characters' | 'locations' | 'schedule';
   let activeTab = $state<Tab>('overview');
 
+  /** Label pair surfaced in the right pane's header — eyebrow gives the
+   *  category, title gives the human-readable name. Keeps the right-pane
+   *  geometry stable while signalling which view is active. */
+  let activeTabLabel = $derived.by<{ eyebrow: string; title: string }>(() => {
+    switch (activeTab) {
+      case 'overview':   return { eyebrow: 'At a glance', title: 'Overview' };
+      case 'characters': return { eyebrow: 'Cast report', title: 'Characters by dialogue' };
+      case 'locations':  return { eyebrow: 'Production prep', title: 'Locations' };
+      case 'schedule':   return { eyebrow: 'Production prep', title: 'Shoot schedule' };
+    }
+  });
+
   let stats = $state<Stats>(untrack(() => computeStats()));
 
   // Recompute stats only when the modal opens — not on every keystroke while
@@ -318,171 +330,260 @@
 {#if open}
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div class="modal-backdrop" onclick={handleBackdropClick} onkeydown={handleKeydown} role="dialog" aria-modal="true" tabindex="-1">
-    <div class="modal-card" use:focusTrap>
-      <div class="modal-header">
-        <h2>Script Statistics</h2>
-        <div class="header-actions">
-          <button class="btn-ghost" onclick={refresh}>Refresh</button>
-          <button class="btn-close" onclick={() => { open = false; }}>&times;</button>
+    <div class="modal-card stats-card" use:focusTrap>
+      <!-- Left rail: vertical tab nav. Fixed width keeps the right pane's
+           geometry stable across tab switches (no jumpy resize when going
+           from 5 stats to a 100-row table). Each item shows an inline
+           icon + label + count badge so the eye scans the rail like a
+           table-of-contents. -->
+      <aside class="stats-rail">
+        <div class="rail-header">
+          <h2>Statistics</h2>
         </div>
-      </div>
-
-      <!-- Tab strip: Overview is the default view; the other three tabs are
-           production-prep reports added in #119. They all read the same
-           snapshot computed at modal open, so switching is instant. -->
-      <div class="tabs" role="tablist" aria-label="Statistics views">
-        <button
-          class="tab"
-          class:active={activeTab === 'overview'}
-          role="tab"
-          aria-selected={activeTab === 'overview'}
-          onclick={() => { activeTab = 'overview'; }}
-        >Overview</button>
-        <button
-          class="tab"
-          class:active={activeTab === 'characters'}
-          role="tab"
-          aria-selected={activeTab === 'characters'}
-          onclick={() => { activeTab = 'characters'; }}
-        >Characters <span class="tab-count">{stats.characters.length}</span></button>
-        <button
-          class="tab"
-          class:active={activeTab === 'locations'}
-          role="tab"
-          aria-selected={activeTab === 'locations'}
-          onclick={() => { activeTab = 'locations'; }}
-        >Locations <span class="tab-count">{stats.locations.length}</span></button>
-        <button
-          class="tab"
-          class:active={activeTab === 'schedule'}
-          role="tab"
-          aria-selected={activeTab === 'schedule'}
-          onclick={() => { activeTab = 'schedule'; }}
-        >Schedule <span class="tab-count">{stats.schedule.length}</span></button>
-      </div>
-
-      {#if activeTab === 'overview'}
-        <div class="stats-grid">
-          <div class="stat-item">
-            <span class="stat-value">{stats.pageCount}</span>
-            <span class="stat-label">Pages</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-value">{stats.sceneCount}</span>
-            <span class="stat-label">Scenes</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-value">{stats.wordCount.toLocaleString()}</span>
-            <span class="stat-label">Words</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-value">{stats.dialogueLineCount}</span>
-            <span class="stat-label">Dialogue blocks</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-value">~{stats.screenTimeMinutes} min</span>
-            <span class="stat-label">Est. screen time</span>
-          </div>
+        <div class="rail-nav" role="tablist" aria-label="Statistics views">
+          <button
+            class="rail-item"
+            class:active={activeTab === 'overview'}
+            role="tab"
+            aria-selected={activeTab === 'overview'}
+            onclick={() => { activeTab = 'overview'; }}
+          >
+            <svg class="rail-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 18 L8 13 L12 16 L21 6"/>
+              <path d="M21 12 V6 H15"/>
+            </svg>
+            <span class="rail-label">Overview</span>
+          </button>
+          <button
+            class="rail-item"
+            class:active={activeTab === 'characters'}
+            role="tab"
+            aria-selected={activeTab === 'characters'}
+            onclick={() => { activeTab = 'characters'; }}
+          >
+            <svg class="rail-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="9" cy="8" r="3.2"/>
+              <path d="M2 20 c1.5 -3.5 5 -5 7 -5 s5.5 1.5 7 5"/>
+              <circle cx="17" cy="9" r="2.4"/>
+            </svg>
+            <span class="rail-label">Characters</span>
+            <span class="rail-count">{stats.characters.length}</span>
+          </button>
+          <button
+            class="rail-item"
+            class:active={activeTab === 'locations'}
+            role="tab"
+            aria-selected={activeTab === 'locations'}
+            onclick={() => { activeTab = 'locations'; }}
+          >
+            <svg class="rail-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22 c-5 -7 -7 -10 -7 -13 a7 7 0 0 1 14 0 c0 3 -2 6 -7 13 z"/>
+              <circle cx="12" cy="9" r="2.4"/>
+            </svg>
+            <span class="rail-label">Locations</span>
+            <span class="rail-count">{stats.locations.length}</span>
+          </button>
+          <button
+            class="rail-item"
+            class:active={activeTab === 'schedule'}
+            role="tab"
+            aria-selected={activeTab === 'schedule'}
+            onclick={() => { activeTab = 'schedule'; }}
+          >
+            <svg class="rail-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="5" width="18" height="16" rx="2"/>
+              <path d="M3 10 H21"/>
+              <path d="M8 3 V7 M16 3 V7"/>
+            </svg>
+            <span class="rail-label">Schedule</span>
+            <span class="rail-count">{stats.schedule.length}</span>
+          </button>
         </div>
-
-        <div class="scene-breakdown">
-          <div class="section-label">Scene breakdown</div>
-          <div class="breakdown-row">
-            <span class="breakdown-pair"><strong>{stats.intCount}</strong> Interior</span>
-            <span class="breakdown-pair"><strong>{stats.extCount}</strong> Exterior</span>
-            <span class="breakdown-pair"><strong>{stats.dayCount}</strong> Day</span>
-            <span class="breakdown-pair"><strong>{stats.nightCount}</strong> Night</span>
-          </div>
+        <div class="rail-footer">
+          <button class="rail-action" onclick={refresh} title="Re-snapshot the document">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12 a9 9 0 1 1 -2.6 -6.4"/>
+              <path d="M21 4 V10 H15"/>
+            </svg>
+            <span>Refresh</span>
+          </button>
         </div>
-      {:else if activeTab === 'characters'}
-        {#if stats.characters.length > 0}
-          <div class="char-table-wrap">
-            <table class="char-table">
-              <thead>
-                <tr>
-                  <th class="col-name">Character</th>
-                  <th class="col-num">Scenes</th>
-                  <th class="col-num">Dialogue</th>
-                  <th class="col-num">%</th>
-                </tr>
-              </thead>
-              <tbody>
-                {#each stats.characters as char}
-                  <tr>
-                    <td class="col-name">{char.name}</td>
-                    <td class="col-num">{char.scenes}</td>
-                    <td class="col-num">{char.dialogueBlocks}</td>
-                    <td class="col-num">{char.percentage}%</td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
+      </aside>
+
+      <!-- Right pane: stable shell, scrollable content. The pane takes the
+           full remaining width and never shrinks/grows when switching tabs
+           — fixes the jumpy resize the original design had (#108 sizing). -->
+      <section class="stats-pane">
+        <header class="pane-header">
+          <div class="pane-title-block">
+            <span class="pane-eyebrow">{activeTabLabel.eyebrow}</span>
+            <h3 class="pane-title">{activeTabLabel.title}</h3>
           </div>
-        {:else}
-          <div class="empty-tab">No characters yet — add a Character element to populate this report.</div>
-        {/if}
-      {:else if activeTab === 'locations'}
-        {#if stats.locations.length > 0}
-          <div class="char-table-wrap">
-            <table class="char-table">
-              <thead>
-                <tr>
-                  <th class="col-name">Location</th>
-                  <th class="col-num">Scenes</th>
-                  <th class="col-meta">Setting</th>
-                </tr>
-              </thead>
-              <tbody>
-                {#each stats.locations as loc}
-                  <tr>
-                    <td class="col-name">{loc.name}</td>
-                    <td class="col-num">{loc.scenes}</td>
-                    <td class="col-meta">{loc.setting}</td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
-          </div>
-        {:else}
-          <div class="empty-tab">No locations parsed — write scene headings like <em>INT. KITCHEN — DAY</em> to populate this report.</div>
-        {/if}
-      {:else}
-        <!-- Schedule tab: scenes in document order with setting / time /
-             character count. The producer can scan top-to-bottom for the
-             shoot sequence the writer intended. -->
-        {#if stats.schedule.length > 0}
-          <div class="char-table-wrap">
-            <table class="char-table schedule-table">
-              <thead>
-                <tr>
-                  <th class="col-num">#</th>
-                  <th class="col-meta">Setting</th>
-                  <th class="col-name">Location</th>
-                  <th class="col-meta">Time</th>
-                  <th class="col-num">Cast</th>
-                  <th class="col-meta">Group</th>
-                  <th class="col-meta">Day</th>
-                </tr>
-              </thead>
-              <tbody>
-                {#each stats.schedule as row}
-                  <tr>
-                    <td class="col-num">{row.sceneNumber}</td>
-                    <td class="col-meta">{row.setting || '—'}</td>
-                    <td class="col-name">{row.location || '(empty)'}</td>
-                    <td class="col-meta">{row.time || '—'}</td>
-                    <td class="col-num">{row.characterCount}</td>
-                    <td class="col-meta">{row.locationGroup || '—'}</td>
-                    <td class="col-meta">{row.scheduledDate || '—'}</td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
-          </div>
-        {:else}
-          <div class="empty-tab">No scenes yet.</div>
-        {/if}
-      {/if}
+          <button class="btn-close" onclick={() => { open = false; }} aria-label="Close statistics">&times;</button>
+        </header>
+
+        <div class="pane-content">
+          {#if activeTab === 'overview'}
+            {@const totalSetting = stats.intCount + stats.extCount || 1}
+            {@const totalTime = stats.dayCount + stats.nightCount || 1}
+            <!-- Five hero stats up top — bigger than the original 480px modal
+                 could afford. Three columns let the larger numbers breathe. -->
+            <div class="hero-grid">
+              <div class="hero-stat">
+                <span class="hero-value">{stats.pageCount}</span>
+                <span class="hero-label">Pages</span>
+              </div>
+              <div class="hero-stat">
+                <span class="hero-value">{stats.sceneCount}</span>
+                <span class="hero-label">Scenes</span>
+              </div>
+              <div class="hero-stat">
+                <span class="hero-value">{stats.wordCount.toLocaleString()}</span>
+                <span class="hero-label">Words</span>
+              </div>
+              <div class="hero-stat">
+                <span class="hero-value">{stats.dialogueLineCount}</span>
+                <span class="hero-label">Dialogue blocks</span>
+              </div>
+              <div class="hero-stat">
+                <span class="hero-value">~{stats.screenTimeMinutes}<span class="hero-unit">min</span></span>
+                <span class="hero-label">Estimated screen time</span>
+              </div>
+            </div>
+
+            <div class="breakdown-block">
+              <div class="block-heading">
+                <span class="block-rule"></span>
+                <span class="block-title">Scene breakdown</span>
+                <span class="block-rule"></span>
+              </div>
+              <div class="breakdown-bars">
+                <div class="bar-pair">
+                  <div class="bar-row">
+                    <span class="bar-label">Interior</span>
+                    <span class="bar-track"><span class="bar-fill" style="width: {(stats.intCount / totalSetting) * 100}%"></span></span>
+                    <span class="bar-value">{stats.intCount}</span>
+                  </div>
+                  <div class="bar-row">
+                    <span class="bar-label">Exterior</span>
+                    <span class="bar-track"><span class="bar-fill alt" style="width: {(stats.extCount / totalSetting) * 100}%"></span></span>
+                    <span class="bar-value">{stats.extCount}</span>
+                  </div>
+                </div>
+                <div class="bar-pair">
+                  <div class="bar-row">
+                    <span class="bar-label">Day</span>
+                    <span class="bar-track"><span class="bar-fill warm" style="width: {(stats.dayCount / totalTime) * 100}%"></span></span>
+                    <span class="bar-value">{stats.dayCount}</span>
+                  </div>
+                  <div class="bar-row">
+                    <span class="bar-label">Night</span>
+                    <span class="bar-track"><span class="bar-fill cool" style="width: {(stats.nightCount / totalTime) * 100}%"></span></span>
+                    <span class="bar-value">{stats.nightCount}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {:else if activeTab === 'characters'}
+            {#if stats.characters.length > 0}
+              <div class="data-table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th class="col-name">Character</th>
+                      <th class="col-num">Scenes</th>
+                      <th class="col-num">Dialogue</th>
+                      <th class="col-bar">Share</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {#each stats.characters as char, i}
+                      <tr>
+                        <td class="col-name"><span class="rank">{i + 1}</span>{char.name}</td>
+                        <td class="col-num">{char.scenes}</td>
+                        <td class="col-num">{char.dialogueBlocks}</td>
+                        <td class="col-bar">
+                          <span class="inline-bar"><span class="inline-bar-fill" style="width: {char.percentage}%"></span></span>
+                          <span class="inline-bar-value">{char.percentage}%</span>
+                        </td>
+                      </tr>
+                    {/each}
+                  </tbody>
+                </table>
+              </div>
+            {:else}
+              <div class="empty-pane">
+                <span class="empty-glyph">∅</span>
+                <p>No characters yet — add a Character element to populate this report.</p>
+              </div>
+            {/if}
+          {:else if activeTab === 'locations'}
+            {#if stats.locations.length > 0}
+              <div class="data-table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th class="col-name">Location</th>
+                      <th class="col-num">Scenes</th>
+                      <th class="col-meta">Setting</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {#each stats.locations as loc, i}
+                      <tr>
+                        <td class="col-name"><span class="rank">{i + 1}</span>{loc.name}</td>
+                        <td class="col-num">{loc.scenes}</td>
+                        <td class="col-meta"><span class="setting-pill setting-{loc.setting.toLowerCase()}">{loc.setting}</span></td>
+                      </tr>
+                    {/each}
+                  </tbody>
+                </table>
+              </div>
+            {:else}
+              <div class="empty-pane">
+                <span class="empty-glyph">∅</span>
+                <p>No locations parsed — write scene headings like <em>INT. KITCHEN — DAY</em> to populate this report.</p>
+              </div>
+            {/if}
+          {:else}
+            {#if stats.schedule.length > 0}
+              <div class="data-table-wrap">
+                <table class="data-table schedule-table">
+                  <thead>
+                    <tr>
+                      <th class="col-snum">#</th>
+                      <th class="col-meta">Setting</th>
+                      <th class="col-name">Location</th>
+                      <th class="col-meta">Time</th>
+                      <th class="col-num">Cast</th>
+                      <th class="col-meta">Group</th>
+                      <th class="col-meta">Day</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {#each stats.schedule as row}
+                      <tr>
+                        <td class="col-snum">{row.sceneNumber}</td>
+                        <td class="col-meta">{row.setting || '—'}</td>
+                        <td class="col-name">{row.location || '(empty)'}</td>
+                        <td class="col-meta">{row.time || '—'}</td>
+                        <td class="col-num">{row.characterCount}</td>
+                        <td class="col-meta">{row.locationGroup || '—'}</td>
+                        <td class="col-meta">{row.scheduledDate || '—'}</td>
+                      </tr>
+                    {/each}
+                  </tbody>
+                </table>
+              </div>
+            {:else}
+              <div class="empty-pane">
+                <span class="empty-glyph">∅</span>
+                <p>No scenes yet.</p>
+              </div>
+            {/if}
+          {/if}
+        </div>
+      </section>
     </div>
   </div>
 {/if}
@@ -499,18 +600,22 @@
     z-index: var(--modal-z);
   }
 
-  .modal-card {
+  /* Stable wide geometry — same size regardless of which tab is active.
+     Modeled on HelpModal so the two reference modals feel of-a-piece. */
+  .stats-card {
     background: var(--surface-float);
     border: 1px solid var(--border-medium);
     border-radius: var(--modal-radius);
-    padding: var(--modal-padding);
-    width: var(--modal-w-base);
-    max-width: 90vw;
-    max-height: 80vh;
-    overflow-y: auto;
+    width: var(--modal-w-lg);
+    max-width: 92vw;
+    height: 78vh;
+    max-height: 760px;
     box-shadow: var(--modal-shadow);
     animation: modal-in var(--modal-anim-duration) ease-out;
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: var(--ui-font);
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    overflow: hidden;
   }
 
   @keyframes modal-in {
@@ -518,47 +623,170 @@
     to { opacity: 1; transform: scale(1); }
   }
 
-  .modal-header {
+  /* ─── Left rail ─── */
+  .stats-rail {
+    background: var(--surface-base);
+    border-right: 1px solid var(--border-subtle);
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
+    flex-direction: column;
+    padding: 22px 14px 14px;
   }
 
-  .modal-header h2 {
+  .rail-header {
+    padding: 0 6px 18px;
+  }
+
+  .rail-header h2 {
     margin: 0;
-    font-size: var(--modal-header-size);
-    color: var(--text-primary);
-    font-weight: var(--modal-header-weight);
-  }
-
-  .header-actions {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .btn-ghost {
-    height: 28px;
-    padding: 0 10px;
-    border-radius: 6px;
-    border: none;
-    background: transparent;
-    color: var(--text-secondary);
     font-size: 11px;
-    font-family: system-ui, -apple-system, sans-serif;
-    cursor: pointer;
-    transition: background 120ms ease, color 120ms ease;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-muted);
   }
 
-  .btn-ghost:hover {
+  .rail-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+  }
+
+  .rail-item {
+    display: grid;
+    grid-template-columns: 18px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-family: var(--ui-font);
+    font-size: 12.5px;
+    cursor: pointer;
+    text-align: left;
+    transition: background var(--motion-fast, 100ms) ease,
+                color var(--motion-fast, 100ms) ease;
+  }
+
+  .rail-item:hover {
     background: var(--surface-hover);
     color: var(--text-primary);
   }
 
+  .rail-item.active {
+    background: var(--accent-muted);
+    color: var(--accent);
+    /* Soft accent left bar — nearly the only color in the rail, draws
+       the eye to the active section without shouting. */
+    box-shadow: inset 2px 0 0 var(--accent);
+  }
+
+  .rail-icon {
+    color: currentColor;
+    flex-shrink: 0;
+  }
+
+  .rail-label {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .rail-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: 9px;
+    background: var(--surface-elevated);
+    color: var(--text-muted);
+    font-size: 10.5px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
+
+  .rail-item.active .rail-count {
+    background: var(--accent);
+    color: var(--text-on-accent);
+  }
+
+  .rail-footer {
+    padding-top: 12px;
+    border-top: 1px solid var(--border-subtle);
+    margin-top: 12px;
+  }
+
+  .rail-action {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-family: var(--ui-font);
+    font-size: 11.5px;
+    cursor: pointer;
+    transition: background var(--motion-fast, 100ms) ease,
+                color var(--motion-fast, 100ms) ease;
+  }
+
+  .rail-action:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+  }
+
+  /* ─── Right pane ─── */
+  .stats-pane {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--surface-float);
+  }
+
+  .pane-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 22px 28px 18px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .pane-title-block {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .pane-eyebrow {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .pane-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.2;
+  }
+
   .btn-close {
-    width: 28px;
-    height: 28px;
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -566,7 +794,7 @@
     border-radius: 6px;
     background: transparent;
     color: var(--text-muted);
-    font-size: 18px;
+    font-size: 20px;
     cursor: pointer;
     transition: background 120ms ease, color 120ms ease;
   }
@@ -576,111 +804,208 @@
     color: var(--text-primary);
   }
 
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
+  .pane-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 24px 28px 28px;
   }
 
-  .stat-item {
+  /* ─── Overview hero stats ─── */
+  .hero-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 32px;
+  }
+
+  .hero-stat {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: 12px 8px;
+    gap: 6px;
+    padding: 18px 18px 16px;
     background: var(--surface-base);
-    border-radius: 8px;
     border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
   }
 
-  .stat-value {
-    font-size: 20px;
+  /* Quiet diagonal stripe in the hero stat — adds a touch of texture
+     without competing with the numbers. Uses page-grain tokens so the
+     theme drives the visual weight. */
+  .hero-stat::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, transparent 50%, var(--accent-muted) 50%);
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .hero-value {
+    font-family: var(--editor-font-en), var(--ui-font);
+    font-size: 30px;
     font-weight: 700;
     color: var(--text-primary);
-    line-height: 1.2;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
   }
 
-  .stat-label {
-    font-size: 10px;
+  .hero-unit {
+    margin-left: 6px;
+    font-size: 14px;
+    font-weight: 500;
     color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-top: 4px;
+    letter-spacing: 0;
   }
 
-  .scene-breakdown {
-    margin-bottom: 20px;
-  }
-
-  .section-label {
-    font-size: 11px;
+  .hero-label {
+    font-size: 10.5px;
     font-weight: 600;
-    color: var(--text-muted);
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 8px;
+    color: var(--text-muted);
   }
 
-  .breakdown-row {
+  /* ─── Block heading (centered with rule) ─── */
+  .block-heading {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .block-rule {
+    height: 1px;
+    background: var(--border-subtle);
+  }
+
+  .block-title {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* ─── Breakdown bars ─── */
+  .breakdown-bars {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+  }
+
+  .bar-pair {
     display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 10px;
   }
 
-  .breakdown-pair {
-    font-size: 13px;
+  .bar-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 36px;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .bar-label {
+    font-size: 11px;
     color: var(--text-secondary);
   }
 
-  .breakdown-pair strong {
+  .bar-track {
+    position: relative;
+    height: 8px;
+    background: var(--surface-base);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+    border-radius: 4px;
+    transition: width 200ms ease;
+  }
+
+  .bar-fill.alt    { background: var(--accent-hover, var(--accent)); opacity: 0.75; }
+  .bar-fill.warm   { background: var(--accent-warm, #d6a14a); }
+  .bar-fill.cool   { background: var(--text-secondary); opacity: 0.75; }
+
+  .bar-value {
+    font-size: 12px;
+    text-align: right;
     color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
     font-weight: 600;
   }
 
-  .char-table-wrap {
-    max-height: 240px;
-    overflow-y: auto;
+  /* ─── Data tables ─── */
+  .data-table-wrap {
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    overflow: hidden;
   }
 
-  .char-table {
+  .data-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 12px;
+    font-size: 12.5px;
   }
 
-  .char-table thead {
-    position: sticky;
-    top: 0;
-    background: var(--surface-float);
+  .data-table thead {
+    background: var(--surface-base);
   }
 
-  .char-table th {
+  .data-table th {
     font-size: 10px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    padding: 6px 8px;
+    letter-spacing: 0.08em;
+    padding: 10px 12px;
     border-bottom: 1px solid var(--border-subtle);
     text-align: left;
+    position: sticky;
+    top: 0;
+    background: var(--surface-base);
+    z-index: 1;
   }
 
-  .char-table td {
-    padding: 5px 8px;
+  .data-table td {
+    padding: 9px 12px;
     color: var(--text-secondary);
     border-bottom: 1px solid var(--border-subtle);
+    vertical-align: middle;
   }
 
-  .char-table tr:hover td {
+  .data-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .data-table tbody tr:hover td {
     background: var(--surface-hover);
   }
 
   .col-num {
     text-align: right;
+    font-variant-numeric: tabular-nums;
+    width: 80px;
   }
 
-  .col-num:is(th) {
+  .col-snum {
     text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+    font-size: 11.5px;
+    width: 56px;
   }
 
   .col-name {
@@ -691,78 +1016,114 @@
   .col-meta {
     color: var(--text-secondary);
     font-size: 11.5px;
-    text-align: left;
   }
 
-  /* ─── Tab strip (#119) ─── */
-  .tabs {
-    display: flex;
-    gap: 2px;
-    margin: 0 0 16px;
-    border-bottom: 1px solid var(--border-subtle);
+  .col-bar {
+    width: 36%;
   }
 
-  .tab {
-    padding: 8px 12px;
-    background: transparent;
-    border: none;
-    border-bottom: 2px solid transparent;
+  /* Subtle leading rank number on character / location rows so the eye
+     can scan ordering without losing the alphabet. */
+  .rank {
+    display: inline-block;
+    width: 28px;
+    margin-right: 8px;
     color: var(--text-muted);
-    font-family: var(--ui-font);
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    margin-bottom: -1px;
+    font-size: 10.5px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+  }
+
+  /* Inline percentage bar — visual sibling of the breakdown bars on the
+     overview tab so the two views read as the same system. */
+  .inline-bar {
+    display: inline-block;
+    width: calc(100% - 44px);
+    height: 6px;
+    background: var(--surface-base);
+    border-radius: 3px;
+    overflow: hidden;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+
+  .inline-bar-fill {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+  }
+
+  .inline-bar-value {
+    display: inline-block;
+    width: 36px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+    font-size: 11.5px;
+    vertical-align: middle;
+  }
+
+  /* Pill marker for INT./EXT./Both on the locations table — replaces the
+     plain text "Interior"/"Exterior" labels with something scannable. */
+  .setting-pill {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    transition: color var(--motion-fast, 100ms) ease, border-color var(--motion-fast, 100ms) ease;
-  }
-
-  .tab:hover {
+    height: 18px;
+    padding: 0 8px;
+    border-radius: 9px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: var(--surface-base);
     color: var(--text-secondary);
   }
 
-  .tab.active {
-    color: var(--accent);
-    border-bottom-color: var(--accent);
-  }
-
-  .tab-count {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 18px;
-    height: 16px;
-    padding: 0 5px;
-    border-radius: 8px;
-    background: var(--surface-base);
-    color: var(--text-muted);
-    font-size: 10px;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .tab.active .tab-count {
+  .setting-pill.setting-interior {
     background: var(--accent-muted);
     color: var(--accent);
   }
 
-  .empty-tab {
-    padding: 28px 12px;
-    text-align: center;
+  .setting-pill.setting-exterior {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+  }
+
+  .setting-pill.setting-both {
+    background: var(--accent);
+    color: var(--text-on-accent);
+  }
+
+  /* Empty state — composed, calm, never apologetic. */
+  .empty-pane {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 280px;
     color: var(--text-muted);
+    text-align: center;
+    gap: 14px;
+  }
+
+  .empty-glyph {
+    font-size: 40px;
+    line-height: 1;
+    color: var(--border-medium);
+  }
+
+  .empty-pane p {
+    margin: 0;
+    max-width: 360px;
     font-size: 12.5px;
     line-height: 1.5;
   }
 
-  .empty-tab em {
+  .empty-pane em {
     font-family: var(--editor-font-en);
     font-style: normal;
     color: var(--text-secondary);
-  }
-
-  /* Schedule's first column is the scene number, narrower than other tables. */
-  .schedule-table .col-num:first-child {
-    width: 48px;
   }
 </style>

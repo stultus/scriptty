@@ -1819,7 +1819,7 @@ pub fn generate_prose_section_markup(section_name: &str, body: &str, font_name: 
     //   WRITTEN BY             <- small-caps tracked credit label
     //   Hrishikesh B.          <- credit name, larger
     markup.push_str(
-        r#"#par(first-line-indent: 0cm)[
+        r#"#block(width: 100%)[
   #align(center)[
     #v(2cm)
     #box(width: 22mm, baseline: -3pt)[#line(length: 100%, stroke: 0.5pt + luma(150))]
@@ -1835,7 +1835,7 @@ pub fn generate_prose_section_markup(section_name: &str, body: &str, font_name: 
     // Section name as the dominant title — Courier Prime, tracked,
     // matches the StoryMode in-app title typography (.story-title).
     markup.push_str(&format!(
-        r#"#par(first-line-indent: 0cm)[
+        r#"#block(width: 100%)[
   #align(center)[
     #v(0.6cm)
     #text(font: "Courier Prime", size: 30pt, weight: "bold", tracking: 0.06em)[{}]
@@ -1848,7 +1848,7 @@ pub fn generate_prose_section_markup(section_name: &str, body: &str, font_name: 
     // Project title as italic subtitle beneath the section name.
     if !title.is_empty() {
         markup.push_str(&format!(
-            r#"#par(first-line-indent: 0cm)[
+            r#"#block(width: 100%)[
   #align(center)[
     #v(0.45cm)
     #text(size: 13pt, style: "italic", fill: luma(90))[{}]
@@ -1866,7 +1866,7 @@ pub fn generate_prose_section_markup(section_name: &str, body: &str, font_name: 
     if !credits.is_empty() {
         // Asterism divider — only when credits follow.
         markup.push_str(
-            r#"#par(first-line-indent: 0cm)[
+            r#"#block(width: 100%)[
   #align(center)[
     #v(0.9cm)
     #text(size: 14pt, fill: luma(170), tracking: 0.4em)[· · ·]
@@ -1876,13 +1876,13 @@ pub fn generate_prose_section_markup(section_name: &str, body: &str, font_name: 
         );
         for (label, name) in &credits {
             markup.push_str(&format!(
-                r#"#par(first-line-indent: 0cm)[
+                r#"#block(width: 100%)[
   #align(center)[
     #v(0.7cm)
     #text(size: 9pt, weight: "bold", tracking: 0.18em, fill: luma(125))[{}]
   ]
 ]
-#par(first-line-indent: 0cm)[
+#block(width: 100%)[
   #align(center)[
     #v(0.3cm)
     #text(size: 14pt)[{}]
@@ -1967,7 +1967,7 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
     // subtitle carries the project identity, asterism divider before
     // credits.
     markup.push_str(
-        r#"#par(first-line-indent: 0cm)[
+        r#"#block(width: 100%)[
   #align(center)[
     #v(1cm)
     #box(width: 22mm, baseline: -3pt)[#line(length: 100%, stroke: 0.5pt + luma(150))]
@@ -1977,7 +1977,7 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
     #box(width: 22mm, baseline: -3pt)[#line(length: 100%, stroke: 0.5pt + luma(150))]
   ]
 ]
-#par(first-line-indent: 0cm)[
+#block(width: 100%)[
   #align(center)[
     #v(0.6cm)
     #text(font: "Courier Prime", size: 30pt, weight: "bold", tracking: 0.06em)[SCENE BREAKDOWN]
@@ -1988,7 +1988,7 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
 
     if !meta.title.trim().is_empty() {
         markup.push_str(&format!(
-            r#"#par(first-line-indent: 0cm)[
+            r#"#block(width: 100%)[
   #align(center)[
     #v(0.45cm)
     #text(size: 13pt, style: "italic", fill: luma(90))[{}]
@@ -2002,7 +2002,7 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
     let credits = format_credit_lines(&meta.author, &meta.director);
     if !credits.is_empty() {
         markup.push_str(
-            r#"#par(first-line-indent: 0cm)[
+            r#"#block(width: 100%)[
   #align(center)[
     #v(0.9cm)
     #text(size: 14pt, fill: luma(170), tracking: 0.4em)[· · ·]
@@ -2012,13 +2012,13 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
         );
         for (label, name) in &credits {
             markup.push_str(&format!(
-                r#"#par(first-line-indent: 0cm)[
+                r#"#block(width: 100%)[
   #align(center)[
     #v(0.6cm)
     #text(size: 9pt, weight: "bold", tracking: 0.18em, fill: luma(125))[{}]
   ]
 ]
-#par(first-line-indent: 0cm)[
+#block(width: 100%)[
   #align(center)[
     #v(0.25cm)
     #text(size: 13pt)[{}]
@@ -2262,7 +2262,7 @@ pub fn generate_shoot_list_markup(
     // big tracked Courier section name, italic subtitle, asterism
     // before credits.
     markup.push_str(
-        r#"#par(first-line-indent: 0cm)[
+        r#"#block(width: 100%)[
   #align(center)[
     #v(1cm)
     #box(width: 22mm, baseline: -3pt)[#line(length: 100%, stroke: 0.5pt + luma(150))]
@@ -2272,7 +2272,7 @@ pub fn generate_shoot_list_markup(
     #box(width: 22mm, baseline: -3pt)[#line(length: 100%, stroke: 0.5pt + luma(150))]
   ]
 ]
-#par(first-line-indent: 0cm)[
+#block(width: 100%)[
   #align(center)[
     #v(0.6cm)
     #text(font: "Courier Prime", size: 30pt, weight: "bold", tracking: 0.06em)[DAILY SHOOT LIST]
@@ -2283,7 +2283,7 @@ pub fn generate_shoot_list_markup(
 
     if !meta.title.trim().is_empty() {
         markup.push_str(&format!(
-            r#"#par(first-line-indent: 0cm)[
+            r#"#block(width: 100%)[
   #align(center)[
     #v(0.45cm)
     #text(size: 13pt, style: "italic", fill: luma(90))[{}]
@@ -2297,7 +2297,7 @@ pub fn generate_shoot_list_markup(
     let credits = format_credit_lines(&meta.author, &meta.director);
     if !credits.is_empty() {
         markup.push_str(
-            r#"#par(first-line-indent: 0cm)[
+            r#"#block(width: 100%)[
   #align(center)[
     #v(0.9cm)
     #text(size: 14pt, fill: luma(170), tracking: 0.4em)[· · ·]
@@ -2307,13 +2307,13 @@ pub fn generate_shoot_list_markup(
         );
         for (label, name) in &credits {
             markup.push_str(&format!(
-                r#"#par(first-line-indent: 0cm)[
+                r#"#block(width: 100%)[
   #align(center)[
     #v(0.6cm)
     #text(size: 9pt, weight: "bold", tracking: 0.18em, fill: luma(125))[{}]
   ]
 ]
-#par(first-line-indent: 0cm)[
+#block(width: 100%)[
   #align(center)[
     #v(0.25cm)
     #text(size: 13pt)[{}]

@@ -29,6 +29,7 @@
   import { InputModeManager } from '$lib/editor/input/InputModeManager';
   import { toggleMark } from 'prosemirror-commands';
   import { screenplaySchema } from '$lib/editor/schema';
+  import { convertCurrentBlockTo } from '$lib/editor/keymap';
 
   let showAbout = $state(false);
   let showHelp = $state(false);
@@ -503,6 +504,57 @@
 
       track(await listen('menu-edit-meta', () => {
         showMetadata = true;
+      }));
+
+      // File → Export (#166)
+      track(await listen('menu-export', () => {
+        showExport = true;
+      }));
+
+      // File → Close Window (#166) — routes through the dirty-state
+      // guard so unsaved work surfaces a Save / Don't Save / Cancel
+      // dialog before the window goes away.
+      track(await listen('menu-close-window', async () => {
+        if (!(await documentStore.confirmIfDirty())) return;
+        quitConfirmed = true;
+        await getCurrentWindow().close();
+      }));
+
+      // View → Writing (#168) — flip back to the editor view from
+      // Cards / Story.
+      track(await listen('menu-view-writing', () => {
+        activeView = 'writing';
+      }));
+
+      // Format → Element Type submenu (#167) — converts the current
+      // block to the chosen screenplay element. Mirrors the
+      // `Mod-Alt-N` shortcuts already in the editor keymap, exposed
+      // through the menu for discoverability.
+      track(await listen<string>('menu-element-type', (event) => {
+        const view = editorStore.view;
+        if (!view) return;
+        const elementType = event.payload as
+          | 'scene_heading'
+          | 'action'
+          | 'character'
+          | 'parenthetical'
+          | 'dialogue'
+          | 'transition';
+        convertCurrentBlockTo(elementType)(view.state, view.dispatch);
+        view.focus();
+      }));
+
+      // View → Theme submenu (#168) — Light / Dark / System.
+      track(await listen<string>('menu-theme', (event) => {
+        const choice = event.payload as 'light' | 'dark' | 'system';
+        if (choice === 'system') {
+          // Match system uses the prefers-color-scheme media query.
+          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (themeStore.isDark !== prefersDark) themeStore.toggle();
+        } else {
+          const wantDark = choice === 'dark';
+          if (themeStore.isDark !== wantDark) themeStore.toggle();
+        }
       }));
 
       track(await listen('menu-quit', async () => {

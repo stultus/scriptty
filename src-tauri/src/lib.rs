@@ -38,7 +38,8 @@ pub fn run() {
       // Save As, About, etc.) emit events to the frontend. Predefined items (Undo, Redo,
       // Cut, Copy, Paste, Select All, Quit) are handled automatically by the OS.
 
-      // File menu with custom items for document operations
+      // File menu with custom items for document operations (#166).
+      // Order: file ops · save group · export · doc props · close · quit.
       let file_menu = Submenu::with_items(
         app,
         "File",
@@ -53,7 +54,18 @@ pub fn run() {
           &MenuItem::with_id(app, "save", "Save", true, Some("CmdOrCtrl+S"))?,
           &MenuItem::with_id(app, "save-as", "Save As...", true, Some("CmdOrCtrl+Shift+S"))?,
           &PredefinedMenuItem::separator(app)?,
-          &MenuItem::with_id(app, "edit-meta", "Metadata...", true, None::<&str>)?,
+          // Export — discoverability fix (#166). macOS users reach for
+          // File → Export by reflex; the title-bar button alone wasn't
+          // enough.
+          &MenuItem::with_id(app, "export", "Export...", true, Some("CmdOrCtrl+Shift+E"))?,
+          &PredefinedMenuItem::separator(app)?,
+          // Renamed from "Metadata..." — "Document Properties..." is
+          // the macOS-native phrasing every word-processor uses.
+          &MenuItem::with_id(app, "edit-meta", "Document Properties...", true, None::<&str>)?,
+          &PredefinedMenuItem::separator(app)?,
+          // Close Window — macOS convention is ⌘W. Routes through the
+          // frontend's dirty-state guard before actually closing.
+          &MenuItem::with_id(app, "close-window", "Close Window", true, Some("CmdOrCtrl+W"))?,
           &PredefinedMenuItem::separator(app)?,
           // Custom quit item instead of PredefinedMenuItem::quit so the frontend
           // can intercept it and prompt for unsaved changes before quitting.
@@ -80,7 +92,25 @@ pub fn run() {
         ],
       )?;
 
-      // Format menu for text formatting (bold, italic, underline)
+      // Element Type submenu (#167) — exposes the screenplay vocabulary
+      // that was previously only reachable via Tab/Enter. Each item
+      // emits a frontend event that converts the current paragraph to
+      // the chosen element type via a ProseMirror command.
+      let element_type_menu = Submenu::with_items(
+        app,
+        "Element Type",
+        true,
+        &[
+          &MenuItem::with_id(app, "elem-scene-heading", "Scene Heading", true, Some("CmdOrCtrl+Shift+H"))?,
+          &MenuItem::with_id(app, "elem-action", "Action", true, Some("CmdOrCtrl+Alt+A"))?,
+          &MenuItem::with_id(app, "elem-character", "Character", true, Some("CmdOrCtrl+Alt+C"))?,
+          &MenuItem::with_id(app, "elem-parenthetical", "Parenthetical", true, Some("CmdOrCtrl+Alt+P"))?,
+          &MenuItem::with_id(app, "elem-dialogue", "Dialogue", true, Some("CmdOrCtrl+Alt+D"))?,
+          &MenuItem::with_id(app, "elem-transition", "Transition", true, Some("CmdOrCtrl+Shift+T"))?,
+        ],
+      )?;
+
+      // Format menu — text marks + element-type vocabulary submenu.
       let format_menu = Submenu::with_items(
         app,
         "Format",
@@ -89,20 +119,43 @@ pub fn run() {
           &MenuItem::with_id(app, "bold", "Bold", true, Some("CmdOrCtrl+B"))?,
           &MenuItem::with_id(app, "italic", "Italic", true, Some("CmdOrCtrl+I"))?,
           &MenuItem::with_id(app, "underline", "Underline", true, Some("CmdOrCtrl+U"))?,
+          &PredefinedMenuItem::separator(app)?,
+          &element_type_menu,
         ],
       )?;
 
-      // View menu for statistics and scene cards
+      // Theme submenu (#168) — Light / Dark / System. Selection routes
+      // through themeStore. The active theme isn't shown with a check
+      // mark here because Tauri's CheckMenuItem has to be rebuilt to
+      // change state; for now the Settings popover is the canonical
+      // visual indicator.
+      let theme_menu = Submenu::with_items(
+        app,
+        "Theme",
+        true,
+        &[
+          &MenuItem::with_id(app, "theme-light", "Light", true, None::<&str>)?,
+          &MenuItem::with_id(app, "theme-dark", "Dark", true, None::<&str>)?,
+          &PredefinedMenuItem::separator(app)?,
+          &MenuItem::with_id(app, "theme-system", "Match System", true, None::<&str>)?,
+        ],
+      )?;
+
+      // View menu (#168) — view switchers get ⌘1/⌘2/⌘3 number
+      // shortcuts so the keyboard path matches macOS reading apps.
       let view_menu = Submenu::with_items(
         app,
         "View",
         true,
         &[
-          &MenuItem::with_id(app, "statistics", "Statistics", true, Some("CmdOrCtrl+Shift+I"))?,
-          &MenuItem::with_id(app, "scene-cards", "Scene Cards", true, Some("CmdOrCtrl+Shift+K"))?,
-          &MenuItem::with_id(app, "story-mode", "Story Mode", true, Some("CmdOrCtrl+Shift+L"))?,
+          &MenuItem::with_id(app, "view-writing", "Writing", true, Some("CmdOrCtrl+1"))?,
+          &MenuItem::with_id(app, "scene-cards", "Cards", true, Some("CmdOrCtrl+2"))?,
+          &MenuItem::with_id(app, "story-mode", "Story", true, Some("CmdOrCtrl+3"))?,
           &PredefinedMenuItem::separator(app)?,
-          &MenuItem::with_id(app, "toggle-sidebar", "Toggle Sidebar", true, None::<&str>)?,
+          &MenuItem::with_id(app, "statistics", "Statistics", true, Some("CmdOrCtrl+Shift+I"))?,
+          &MenuItem::with_id(app, "toggle-sidebar", "Toggle Sidebar", true, Some("Ctrl+CmdOrCtrl+B"))?,
+          &PredefinedMenuItem::separator(app)?,
+          &theme_menu,
         ],
       )?;
 
@@ -145,11 +198,27 @@ pub fn run() {
           "statistics" => { let _ = app.emit("menu-statistics", ()); }
           "scene-cards" => { let _ = app.emit("menu-scene-cards", ()); }
           "story-mode" => { let _ = app.emit("menu-story-mode", ()); }
+          "view-writing" => { let _ = app.emit("menu-view-writing", ()); }
           "toggle-sidebar" => { let _ = app.emit("menu-toggle-sidebar", ()); }
           "edit-meta" => { let _ = app.emit("menu-edit-meta", ()); }
+          "export" => { let _ = app.emit("menu-export", ()); }
+          "close-window" => { let _ = app.emit("menu-close-window", ()); }
           "bold" => { let _ = app.emit("menu-bold", ()); }
           "italic" => { let _ = app.emit("menu-italic", ()); }
           "underline" => { let _ = app.emit("menu-underline", ()); }
+          // Element type submenu (#167) — each item emits a single
+          // event with the element name as payload, frontend dispatches
+          // the corresponding ProseMirror command.
+          "elem-scene-heading" => { let _ = app.emit("menu-element-type", "scene_heading"); }
+          "elem-action" => { let _ = app.emit("menu-element-type", "action"); }
+          "elem-character" => { let _ = app.emit("menu-element-type", "character"); }
+          "elem-parenthetical" => { let _ = app.emit("menu-element-type", "parenthetical"); }
+          "elem-dialogue" => { let _ = app.emit("menu-element-type", "dialogue"); }
+          "elem-transition" => { let _ = app.emit("menu-element-type", "transition"); }
+          // Theme submenu (#168)
+          "theme-light" => { let _ = app.emit("menu-theme", "light"); }
+          "theme-dark" => { let _ = app.emit("menu-theme", "dark"); }
+          "theme-system" => { let _ = app.emit("menu-theme", "system"); }
           "find" => { let _ = app.emit("menu-find", ()); }
           "find-replace" => { let _ = app.emit("menu-find-replace", ()); }
           "quit" => { let _ = app.emit("menu-quit", ()); }

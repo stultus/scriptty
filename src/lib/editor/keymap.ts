@@ -405,7 +405,7 @@ const handleModT: Command = (state, dispatch) => {
  * Returning a Command (not invoking it) keeps each shortcut bindable
  * individually in the keymap below.
  */
-function convertCurrentBlockTo(typeName: keyof typeof screenplaySchema.nodes): Command {
+export function convertCurrentBlockTo(typeName: keyof typeof screenplaySchema.nodes): Command {
 	return (state, dispatch) => {
 		const target = screenplaySchema.nodes[typeName];
 		if (!target) return false;

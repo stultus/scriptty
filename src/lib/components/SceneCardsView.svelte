@@ -904,36 +904,84 @@
         && !card.scheduledDate.trim()
         && !card.locationGroup.trim()}
       {@const hasProduction = !!(card.extraCharacters.trim() || card.locationGroup.trim() || card.scheduledDate.trim())}
+      {@const settingWord = cardSetting === 'INT' ? 'INTERIOR'
+        : cardSetting === 'EXT' ? 'EXTERIOR'
+        : cardSetting === 'INT_EXT' ? 'INT · EXT'
+        : ''}
+      {@const timeWord = (card.time ?? '').toUpperCase()}
       <div
         class="card scene-card"
         class:dragging={dragFromScene === card.sceneNumber}
         class:drop-target={dropTargetScene === card.sceneNumber}
         class:skeleton={isSkeleton}
+        data-time={timeWord}
         animate:flip={{ duration: 450, easing: cubicInOut }}
       >
-        <!-- Time-of-day stripe — full-height bar at the very left edge.
-             Same color logic as the SceneNavigator (#158) so cards and
-             rail speak the same visual language. -->
-        <span class="card-time-stripe" data-time={card.time?.toUpperCase() ?? ''} aria-hidden="true"></span>
-        <div class="card-header">
-          <!-- Scene number badge is the drag handle -->
-          <span
-            class="card-number"
-            class:disabled={groupByLocation}
-            onmousedown={(e: MouseEvent) => { if (!groupByLocation) startDrag(e, card.sceneNumber); }}
-            role="button"
-            tabindex="-1"
-            aria-label={groupByLocation
-              ? `Scene ${card.sceneNumber} (drag disabled while grouped)`
-              : `Drag to reorder scene ${card.sceneNumber}`}
-            title={groupByLocation ? 'Switch off "Group by location" to drag-reorder' : ''}
-          >{String(card.sceneNumber).padStart(2, '0')}</span>
-          <!-- INT/EXT tag — same typographic shape as the nav (#147). -->
-          {#if cardSetting}
-            <span class="card-setting setting-{cardSetting.toLowerCase()}" aria-hidden="true">
-              {cardSetting === 'INT' ? 'I' : cardSetting === 'EXT' ? 'E' : 'I/E'}
-            </span>
-          {/if}
+        <!-- Gutter — the dominant typographic anchor of the card. The
+             zero-padded scene number reads as a chapter marker, set in
+             the editor's Courier Prime so it visually rhymes with the
+             scene-number gutter on the printed shooting script. The
+             1px right rule is hand-set, not a border, so it stops at
+             the footer hairline. -->
+        <div
+          class="card-gutter"
+          class:disabled={groupByLocation}
+          onmousedown={(e: MouseEvent) => { if (!groupByLocation) startDrag(e, card.sceneNumber); }}
+          role="button"
+          tabindex="-1"
+          aria-label={groupByLocation
+            ? `Scene ${card.sceneNumber} (drag disabled while grouped)`
+            : `Drag to reorder scene ${card.sceneNumber}`}
+          title={groupByLocation ? 'Switch off "Group by location" to drag-reorder' : 'Drag to reorder'}
+        >
+          <span class="gutter-number">{String(card.sceneNumber).padStart(2, '0')}</span>
+        </div>
+
+        <div class="card-body">
+          <header class="card-header">
+            <!-- Eyebrow: "INTERIOR · DAY" / "EXTERIOR · NIGHT". Replaces
+                 the colored stripe and the I/E typographic chip — one
+                 line of typeset metadata reads cleaner than two
+                 ornaments at narrow column widths. -->
+            <div class="card-eyebrow">
+              {#if settingWord}<span class="eb-setting">{settingWord}</span>{/if}
+              {#if settingWord && timeWord}<span class="eb-sep" aria-hidden="true">·</span>{/if}
+              {#if timeWord}<span class="eb-time">{timeWord}</span>{/if}
+              {#if !settingWord && !timeWord}<span class="eb-empty">No slug yet</span>{/if}
+            </div>
+
+            <div class="card-actions-cluster">
+              <button
+                class="card-delete"
+                type="button"
+                onclick={() => duplicateScene(card.sceneNumber, card.sceneOrder)}
+                aria-label="Duplicate scene {card.sceneNumber}"
+                title="Duplicate scene"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="9" width="11" height="11" rx="2"/>
+                  <path d="M5 15 H4 A1 1 0 0 1 3 14 V4 A1 1 0 0 1 4 3 H14 A1 1 0 0 1 15 4 V5"/>
+                </svg>
+              </button>
+              <button
+                class="card-delete"
+                type="button"
+                onclick={() => deleteScene(card.sceneNumber, card.sceneOrder)}
+                aria-label="Delete scene {card.sceneNumber}"
+                title="Delete scene"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                  <path d="M10 11v6"></path>
+                  <path d="M14 11v6"></path>
+                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+                </svg>
+              </button>
+            </div>
+          </header>
+
+          <!-- Slug — the scene heading in big Courier. Click-to-rename. -->
           {#if editingHeadingFor === card.sceneNumber}
             <!-- svelte-ignore a11y_autofocus -->
             <input
@@ -950,123 +998,89 @@
               type="button"
               onclick={() => beginHeadingEdit(card.sceneNumber, card.heading)}
               title="Click to rename"
-            >{headingUpper || '(empty)'}</button>
+            >{headingUpper || 'Untitled scene'}</button>
           {/if}
-          <div class="card-actions-cluster">
-            <button
-              class="card-delete"
-              type="button"
-              onclick={() => duplicateScene(card.sceneNumber, card.sceneOrder)}
-              aria-label="Duplicate scene {card.sceneNumber}"
-              title="Duplicate scene"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="9" y="9" width="11" height="11" rx="2"/>
-                <path d="M5 15 H4 A1 1 0 0 1 3 14 V4 A1 1 0 0 1 4 3 H14 A1 1 0 0 1 15 4 V5"/>
-              </svg>
-            </button>
-            <button
-              class="card-delete"
-              type="button"
-              onclick={() => deleteScene(card.sceneNumber, card.sceneOrder)}
-              aria-label="Delete scene {card.sceneNumber}"
-              title="Delete scene"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-                <path d="M10 11v6"></path>
-                <path d="M14 11v6"></path>
-                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
-              </svg>
-            </button>
-          </div>
-        </div>
-        {#if card.characters.length > 0}
-          <div class="card-meta">
-            <span class="meta-item">{card.characters.join(', ')}</span>
-          </div>
-        {/if}
-        <div class="card-editable">
-          <label class="field-label" for="desc-{card.sceneNumber}">Description</label>
-          <textarea
-            id="desc-{card.sceneNumber}"
-            class="card-textarea"
-            placeholder="What happens in this scene..."
-            value={card.description}
-            oninput={(e) => updateDescription(card.sceneOrder, (e.target as HTMLTextAreaElement).value)}
-            onkeydown={handleKeydown}
-          ></textarea>
 
-          <!-- Production-prep fields collapsed behind a disclosure (#159).
-               Auto-expanded if any production field already has content
-               (so a populated card never hides the writer's data); closed
-               by default for empty cards so the eyebrow wall is gone. -->
-          <details class="production-disclosure" open={hasProduction}>
-            <summary class="production-summary">
-              <svg class="caret" width="9" height="9" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true">
-                <path d="M3 2 L7 5 L3 8 Z" />
-              </svg>
-              <span class="production-label">Production</span>
-              {#if hasProduction}
-                <span class="production-hint">
-                  {#if card.locationGroup.trim()}<span>{card.locationGroup}</span>{/if}
-                  {#if card.scheduledDate.trim()}<span>· {card.scheduledDate}</span>{/if}
-                  {#if card.extraCharacters.trim()}<span>· extras</span>{/if}
-                </span>
-              {:else}
-                <span class="production-hint muted">Cast extras · location group · shoot date</span>
-              {/if}
-            </summary>
-            <div class="production-body">
-              <label class="field-label" for="extras-{card.sceneNumber}">Non-speaking characters</label>
-              <input
-                id="extras-{card.sceneNumber}"
-                class="card-input"
-                type="text"
-                placeholder="Comma-separated, e.g. Extras, Guard"
-                value={card.extraCharacters}
-                oninput={(e) => updateExtraCharacters(card.sceneOrder, (e.target as HTMLInputElement).value)}
-                onkeydown={handleKeydown}
-              />
-              <!-- Shoot scheduling fields (#124) — two thin inputs on one row. -->
-              <div class="schedule-row">
-                <div class="schedule-field">
-                  <label class="field-label" for="locgroup-{card.sceneNumber}">Location group</label>
-                  <input
-                    id="locgroup-{card.sceneNumber}"
-                    class="card-input"
-                    type="text"
-                    placeholder="e.g. Main House, Studio Lot"
-                    value={card.locationGroup}
-                    oninput={(e) => updateLocationGroup(card.sceneOrder, (e.target as HTMLInputElement).value)}
-                    onkeydown={handleKeydown}
-                  />
-                </div>
-                <div class="schedule-field">
-                  <span class="field-label">Shoot date</span>
-                  <DatePicker
-                    value={card.scheduledDate}
-                    onChange={(v: string) => updateScheduledDate(card.sceneOrder, v)}
-                    placeholder="Pick a date"
-                  />
+          {#if card.characters.length > 0}
+            <p class="card-cast"><span class="cast-mark" aria-hidden="true">w/</span> {card.characters.join(' · ')}</p>
+          {/if}
+
+          <div class="card-editable">
+            <textarea
+              class="card-textarea"
+              placeholder="What happens in this scene…"
+              aria-label="Scene description"
+              value={card.description}
+              oninput={(e) => updateDescription(card.sceneOrder, (e.target as HTMLTextAreaElement).value)}
+              onkeydown={handleKeydown}
+            ></textarea>
+
+            <!-- Production-prep fields collapsed behind a disclosure
+                 (#159). Restyled to match the typeset tear-sheet
+                 aesthetic — small caps eyebrow, ruled hairline, italic
+                 hint of the populated values. -->
+            <details class="production-disclosure" open={hasProduction}>
+              <summary class="production-summary">
+                <svg class="caret" width="9" height="9" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true">
+                  <path d="M3 2 L7 5 L3 8 Z" />
+                </svg>
+                <span class="production-label">Production</span>
+                {#if hasProduction}
+                  <span class="production-hint">
+                    {#if card.locationGroup.trim()}<span>{card.locationGroup}</span>{/if}
+                    {#if card.scheduledDate.trim()}<span>· {card.scheduledDate}</span>{/if}
+                    {#if card.extraCharacters.trim()}<span>· extras</span>{/if}
+                  </span>
+                {:else}
+                  <span class="production-hint muted">cast extras · location group · shoot date</span>
+                {/if}
+              </summary>
+              <div class="production-body">
+                <input
+                  class="card-input"
+                  type="text"
+                  placeholder="Non-speaking characters — Extras, Guard…"
+                  aria-label="Non-speaking characters"
+                  value={card.extraCharacters}
+                  oninput={(e) => updateExtraCharacters(card.sceneOrder, (e.target as HTMLInputElement).value)}
+                  onkeydown={handleKeydown}
+                />
+                <div class="schedule-row">
+                  <div class="schedule-field">
+                    <input
+                      class="card-input"
+                      type="text"
+                      placeholder="Location group — Main House…"
+                      aria-label="Location group"
+                      value={card.locationGroup}
+                      oninput={(e) => updateLocationGroup(card.sceneOrder, (e.target as HTMLInputElement).value)}
+                      onkeydown={handleKeydown}
+                    />
+                  </div>
+                  <div class="schedule-field">
+                    <DatePicker
+                      value={card.scheduledDate}
+                      onChange={(v: string) => updateScheduledDate(card.sceneOrder, v)}
+                      placeholder="Shoot date"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          </details>
+            </details>
 
-          <label class="field-label" for="notes-{card.sceneNumber}">Notes</label>
-          <textarea
-            id="notes-{card.sceneNumber}"
-            class="card-textarea"
-            placeholder="Additional notes..."
-            value={card.shootNotes}
-            oninput={(e) => updateShootNotes(card.sceneOrder, (e.target as HTMLTextAreaElement).value)}
-            onkeydown={handleKeydown}
-          ></textarea>
-        </div>
-        <div class="card-footer">
-          <span class="page-estimate">{card.pageEstimate}</span>
+            <textarea
+              class="card-textarea card-notes"
+              placeholder="Notes for the floor…"
+              aria-label="Scene notes"
+              value={card.shootNotes}
+              oninput={(e) => updateShootNotes(card.sceneOrder, (e.target as HTMLTextAreaElement).value)}
+              onkeydown={handleKeydown}
+            ></textarea>
+          </div>
+
+          <footer class="card-footer">
+            <span class="page-estimate">{card.pageEstimate}</span>
+          </footer>
         </div>
       </div>
     {/each}
@@ -1242,27 +1256,6 @@
     letter-spacing: 0.02em;
   }
 
-  /* Legacy toolbar — still used by the Episode-cards pane wrapper.
-     Cards-hero replaces it everywhere else. */
-  .cards-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 14px;
-    padding: 0 4px;
-    font-family: var(--ui-font);
-    font-size: 11.5px;
-    color: var(--text-muted);
-  }
-
-  .toolbar-count {
-    font-variant-numeric: tabular-nums;
-  }
-
-  .toolbar-spacer {
-    flex: 1;
-  }
-
   .toolbar-toggle {
     display: inline-flex;
     align-items: center;
@@ -1277,66 +1270,6 @@
     cursor: pointer;
   }
 
-  /* ─── Breadcrumb / drilled-in toolbar (#134) ─── */
-  .cards-toolbar.with-breadcrumb {
-    margin-bottom: 18px;
-  }
-
-  .crumb-back {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px 10px 4px 6px;
-    border-radius: 6px;
-    border: 1px solid var(--border-subtle);
-    background: var(--surface-base);
-    color: var(--text-secondary);
-    font-family: var(--ui-font);
-    font-size: 11.5px;
-    cursor: pointer;
-    transition: background var(--motion-fast, 100ms) ease,
-                color var(--motion-fast, 100ms) ease,
-                border-color var(--motion-fast, 100ms) ease;
-  }
-
-  .crumb-back:hover {
-    background: var(--surface-hover);
-    color: var(--text-primary);
-    border-color: var(--border-medium);
-  }
-
-  .crumb-sep {
-    color: var(--text-muted);
-    font-size: 12px;
-    opacity: 0.5;
-  }
-
-  .toolbar-crumb {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 8px;
-    min-width: 0;
-  }
-
-  .toolbar-eyebrow {
-    font-size: 9.5px;
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-  }
-
-  .toolbar-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-primary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    min-width: 0;
-    max-width: 280px;
-  }
-
   /* Episode-cards pane just provides the same scrollable container as the
      scene grid; the inner EpisodeCardsView owns its own grid layout. */
   .episodes-pane {
@@ -1344,12 +1277,6 @@
     min-height: 0;
   }
 
-  /* Drag handle becomes visually disabled while Group by location is on,
-     since drag-reorder would mutate document order behind a sorted view. */
-  .card-number.disabled {
-    cursor: default;
-    opacity: 0.6;
-  }
 
   /* Two-up row holding the new scheduling fields (#124). */
   .schedule-row {
@@ -1386,21 +1313,34 @@
 
   .cards-grid.compact .card {
     min-height: 0;
+    grid-template-columns: 48px 1fr;
   }
 
-  .cards-grid.compact .card-meta,
+  .cards-grid.compact .card-gutter {
+    padding: 8px 0;
+  }
+
+  .cards-grid.compact .gutter-number {
+    font-size: 18px;
+  }
+
+  .cards-grid.compact .card-body {
+    padding: 8px 14px;
+  }
+
+  .cards-grid.compact .card-cast,
   .cards-grid.compact .card-editable {
     display: none;
   }
 
-  .cards-grid.compact .card-header {
-    border-bottom: none;
-    padding-top: 8px;
-    padding-bottom: 8px;
+  .cards-grid.compact .card-heading {
+    margin-bottom: 0;
   }
 
   .cards-grid.compact .card-footer {
-    padding: 4px 14px 8px;
+    padding: 0;
+    margin-top: 4px;
+    border-top: none;
   }
 
   .cards-grid.compact .add-scene-card {
@@ -1410,83 +1350,36 @@
     padding: 8px 14px;
   }
 
+  /* ─── Scene card — typeset tear-sheet aesthetic ─────────────────────
+     The card is structured like a slug-numbered tear-sheet from a
+     printed shooting script: a dedicated left gutter holds a hero
+     scene number set in Courier, separated from the body by a 1px
+     rule. The body opens with a small-caps eyebrow ("INTERIOR · DAY")
+     and the heading slug below it, flowing into the editable section.
+     No filled INT/EXT chip, no full-height color stripe — those
+     ornaments competed with the slug. */
   .card {
     position: relative;
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    align-items: stretch;
     background: var(--surface-elevated);
     border: 1px solid var(--border-subtle);
-    border-radius: 8px;
+    border-radius: 6px;
     overflow: hidden;
-    transition: opacity 120ms ease, border-color 120ms ease;
-    display: flex;
-    flex-direction: column;
-    min-height: 280px;
+    min-height: 240px;
+    transition: opacity 160ms ease,
+                border-color 160ms ease,
+                box-shadow 200ms ease,
+                transform 200ms ease;
   }
 
-  /* Time-of-day stripe — pinned to the left edge for the full height
-     of the card. Same color tokens as SceneNavigator (#158). Reads as
-     a quiet rhythm: warm dawn/day cards, cool night/dusk cards,
-     neutral default. */
-  .card-time-stripe {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    width: 4px;
-    background: var(--border-subtle);
-    pointer-events: none;
-    z-index: 1;
-  }
-  .card-time-stripe[data-time='DAY'],
-  .card-time-stripe[data-time='MORNING'],
-  .card-time-stripe[data-time='AFTERNOON'],
-  .card-time-stripe[data-time='DAWN'] {
-    background: var(--accent-warm, #d6a14a);
-  }
-  .card-time-stripe[data-time='NIGHT'],
-  .card-time-stripe[data-time='DUSK'],
-  .card-time-stripe[data-time='EVENING'] {
-    background: var(--accent-deep, #2a4d5c);
-  }
-  .card-time-stripe[data-time='CONTINUOUS'],
-  .card-time-stripe[data-time='LATER'] {
-    background: var(--text-muted);
-    opacity: 0.4;
+  .card:hover {
+    border-color: var(--border-medium);
+    box-shadow: 0 6px 18px var(--shadow-soft, rgba(0, 0, 0, 0.05));
+    transform: translateY(-1px);
   }
 
-  /* INT/EXT tag — typographic so it doesn't read as a checkbox (#147). */
-  .card-setting {
-    flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 16px;
-    height: 14px;
-    padding: 0 3px;
-    margin-right: 2px;
-    border-radius: 3px;
-    font-family: var(--editor-font-en), var(--ui-font);
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    line-height: 1;
-  }
-  .card-setting.setting-int {
-    background: var(--text-muted);
-    color: var(--surface-base);
-    border: 1px solid var(--text-muted);
-  }
-  .card-setting.setting-ext {
-    background: transparent;
-    color: var(--text-muted);
-    border: 1px solid var(--border-medium);
-  }
-  .card-setting.setting-int_ext {
-    background: linear-gradient(90deg,
-      var(--text-muted) 0%, var(--text-muted) 50%,
-      transparent 50%, transparent 100%);
-    color: var(--text-muted);
-    border: 1px solid var(--text-muted);
-  }
   .card.dragging {
     opacity: 0.25;
     /* Mask the interior so the empty slot hints where the card came from
@@ -1494,17 +1387,20 @@
     filter: grayscale(0.4);
   }
 
-  /* Skeleton cards (#162) — no authored content yet. Visually thinner
-     than full cards so the writer scanning the grid can tell which
-     scenes are outlined vs still untouched. Border becomes dashed
-     (echoes the Add-scene placeholder), surface dims down, content
-     dims slightly. The first focus on any field flips the card back
-     to a regular card automatically (because the field gains content). */
+  /* Skeleton cards (#162) — no authored content yet. The gutter
+     number stays full-strength (the writer needs to see which slot
+     they're filling); the rest dims to a dashed-border placeholder
+     state so a scan of the grid distinguishes outlined from still-
+     untouched scenes. Adding any field flips the card back. */
   .card.skeleton {
     background: transparent;
     border-style: dashed;
     border-color: var(--border-medium);
     box-shadow: none;
+  }
+
+  .card.skeleton:hover {
+    box-shadow: 0 4px 14px var(--shadow-soft, rgba(0, 0, 0, 0.04));
   }
 
   .card.skeleton .card-textarea,
@@ -1521,7 +1417,6 @@
     border-color: var(--accent);
     box-shadow: 0 0 0 1px var(--accent);
     transform: scale(0.985);
-    transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
   }
 
   /* The floating ghost: a fixed-position overlay positioned at the cursor.
@@ -1554,102 +1449,246 @@
     opacity: 0 !important;
   }
 
-  .card-header {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border-subtle);
+  /* Gutter — the dominant typographic anchor. A 1px right rule reads
+     as the page-margin gutter on a printed shooting script. Skeleton
+     cards keep the full-strength gutter; only the body greys out. */
+  .card-gutter {
+    position: relative;
     display: flex;
-    align-items: baseline;
-    gap: 6px;
-  }
-
-  /* Scene number badge — same zero-padded Courier chip the
-     EpisodeCardsView uses (#161). Reads as both an identifier and a
-     draggable affordance, not as plain typography in the heading row. */
-  .card-number {
-    flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    min-width: 30px;
-    height: 24px;
-    padding: 0 8px;
-    border-radius: 5px;
-    background: var(--accent-muted);
-    color: var(--accent);
-    font-family: var(--editor-font-en), var(--ui-font);
-    font-size: 12px;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.04em;
+    padding: 18px 0 12px;
+    border: none;
+    background: transparent;
     cursor: grab;
     user-select: none;
-    transition: background var(--motion-fast, 100ms) ease,
-                color var(--motion-fast, 100ms) ease;
+    transition: background 160ms ease;
   }
 
-  .card-number:hover {
-    background: var(--accent);
-    color: var(--text-on-accent);
+  .card-gutter::after {
+    content: '';
+    position: absolute;
+    top: 14px;
+    bottom: 14px;
+    right: 0;
+    width: 1px;
+    background: var(--border-subtle);
+    pointer-events: none;
   }
 
-  .card-number:active {
+  .card-gutter:active {
     cursor: grabbing;
   }
 
-  /* Scene heading on a card — Courier Prime bold, tracking matches the
-     editor's scene-heading style so cards and pages read as the same
-     system. The heading is now a button: click to inline-edit. Hover
-     reveals a soft surface so the click affordance is discoverable. */
-  .card-heading {
+  .card:hover .card-gutter {
+    background: linear-gradient(180deg,
+      var(--surface-base) 0%,
+      transparent 100%);
+  }
+
+  .card-gutter.disabled {
+    cursor: default;
+  }
+
+  .card-gutter.disabled .gutter-number {
+    opacity: 0.55;
+  }
+
+  /* The hero numeral — Courier Prime, tabular, set big enough to
+     anchor the card and read as an editorial chapter mark. Time-of-day
+     tints the digit warm or cool so the gutter still carries that
+     signal even though the colored stripe is gone. */
+  .gutter-number {
+    font-family: var(--editor-font-en), ui-monospace, monospace;
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    color: var(--text-secondary);
+    transition: color 160ms ease;
+  }
+
+  .card[data-time='DAY'] .gutter-number,
+  .card[data-time='MORNING'] .gutter-number,
+  .card[data-time='AFTERNOON'] .gutter-number,
+  .card[data-time='DAWN'] .gutter-number {
+    color: var(--accent-warm, #b58136);
+  }
+
+  .card[data-time='NIGHT'] .gutter-number,
+  .card[data-time='DUSK'] .gutter-number,
+  .card[data-time='EVENING'] .gutter-number {
+    color: var(--accent-deep, #2a4d5c);
+  }
+
+  .card.skeleton .gutter-number {
+    color: var(--text-muted);
+  }
+
+  /* Body — every right-side region of the card. */
+  .card-body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 14px 18px 0;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+
+  /* Eyebrow — small caps "INTERIOR · DAY" line that replaces both the
+     I/E typographic chip and the colored time stripe. Tracks
+     generously so it reads as typeset metadata, not a label. */
+  .card-eyebrow {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
     flex: 1;
     min-width: 0;
-    padding: 2px 6px;
-    margin: 0 -4px;
+    font-family: var(--ui-font);
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .eb-setting {
+    color: var(--text-secondary);
+  }
+
+  .eb-time {
+    color: var(--text-muted);
+  }
+
+  .card[data-time='DAY'] .eb-time,
+  .card[data-time='MORNING'] .eb-time,
+  .card[data-time='AFTERNOON'] .eb-time,
+  .card[data-time='DAWN'] .eb-time {
+    color: var(--accent-warm, #b58136);
+  }
+
+  .card[data-time='NIGHT'] .eb-time,
+  .card[data-time='DUSK'] .eb-time,
+  .card[data-time='EVENING'] .eb-time {
+    color: var(--accent-deep, #2a4d5c);
+  }
+
+  .eb-sep {
+    color: var(--border-medium);
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+
+  .eb-empty {
+    font-style: italic;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: none;
+    color: var(--text-muted);
+    opacity: 0.7;
+  }
+
+  /* Slug — the scene heading. Courier, bold, set larger than before
+     so it carries the card's identity. Click-to-rename keeps a
+     hover-reveal of a soft surface as the editable affordance. */
+  .card-heading {
+    display: block;
+    width: calc(100% + 8px);
+    margin: 0 -4px 8px;
+    padding: 4px 4px;
     background: transparent;
     border: 1px solid transparent;
     border-radius: 4px;
     font-family: var(--editor-font-en), var(--editor-font-ml), ui-monospace, monospace;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 700;
-    letter-spacing: 0.04em;
+    line-height: 1.3;
+    letter-spacing: 0.02em;
     color: var(--text-primary);
     text-align: left;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     cursor: text;
-    transition: background var(--motion-fast, 100ms) ease;
+    transition: background 120ms ease;
   }
 
   .card-heading:hover {
     background: var(--surface-hover);
   }
 
+  .card.skeleton .card-heading {
+    color: var(--text-muted);
+    font-style: italic;
+    font-weight: 500;
+  }
+
   .card-heading-input {
-    flex: 1;
-    min-width: 0;
-    padding: 2px 6px;
-    margin: 0 -4px;
+    display: block;
+    width: calc(100% + 8px);
+    margin: 0 -4px 8px;
+    padding: 4px;
     background: var(--surface-base);
     border: 1px solid var(--accent);
     border-radius: 4px;
     font-family: var(--editor-font-en), var(--editor-font-ml), ui-monospace, monospace;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 700;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.02em;
     color: var(--text-primary);
     text-transform: uppercase;
     outline: none;
   }
 
-  /* Cluster for the duplicate / delete buttons in the card header
-     (#163). Keeps them as a tight visual group on the right while
-     also reserving a single hover region. */
+  /* Cast line — italic, small, prefixed with a typeset "w/" mark. The
+     mark tells the writer this is a cast list, not just floating
+     names; "w/" is the call-sheet shorthand and reads instantly to
+     anyone who's read a shooting schedule. */
+  .card-cast {
+    margin: 0 0 10px;
+    font-family: var(--ui-font);
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--text-secondary);
+  }
+
+  .cast-mark {
+    display: inline-block;
+    margin-right: 4px;
+    font-family: var(--editor-font-en), ui-monospace, monospace;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* Action cluster — duplicate + delete. Hidden at rest (opacity 0)
+     so the eyebrow has room to breathe, surface on hover. The bigger
+     rest-state typography deserves a quieter chrome. */
   .card-actions-cluster {
     display: inline-flex;
     align-items: center;
     gap: 1px;
     flex-shrink: 0;
+    margin: -4px -6px 0 0;
+    opacity: 0;
+    transition: opacity 160ms ease;
+  }
+
+  .card:hover .card-actions-cluster,
+  .card-actions-cluster:focus-within {
+    opacity: 1;
   }
 
   .card-delete {
@@ -1665,56 +1704,46 @@
     border-radius: 4px;
     cursor: pointer;
     flex-shrink: 0;
-    opacity: 0.4;
-    transition: background 120ms ease, color 120ms ease, opacity 120ms ease;
-  }
-
-  .card:hover .card-delete,
-  .card-delete:focus-visible {
-    opacity: 1;
+    transition: background 120ms ease, color 120ms ease;
   }
 
   .card-delete:hover {
     background: var(--accent-muted);
     color: var(--accent);
-    opacity: 1;
   }
 
   .card-delete:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 1px;
-    opacity: 1;
   }
 
-  .card-meta {
-    padding: 6px 16px;
-    border-bottom: 1px solid var(--border-subtle);
-  }
-
-  .meta-item {
-    font-family: var(--editor-font-en), var(--editor-font-ml), ui-monospace, monospace;
-    font-size: 11px;
-    color: var(--text-secondary);
-  }
-
+  /* Footer — page estimate as a small Courier note in the right
+     corner with a hairline rule above. Reads as a marginal
+     annotation, not a separate UI strip. */
   .card-footer {
-    padding: 3px 16px;
-    border-top: 1px solid var(--border-subtle);
     margin-top: auto;
+    padding: 8px 0 12px;
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    justify-content: flex-end;
   }
 
   .page-estimate {
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: var(--editor-font-en), ui-monospace, monospace;
     font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
     color: var(--text-muted);
-    font-style: italic;
+    font-variant-numeric: tabular-nums;
+    text-transform: uppercase;
   }
 
   .card-editable {
-    padding: 10px 16px 14px;
     flex: 1;
     display: flex;
     flex-direction: column;
+    min-height: 0;
+    padding-bottom: 10px;
   }
 
   /* Production disclosure (#159) — collapses extras / location group
@@ -1722,21 +1751,25 @@
      any production field has content so populated cards never hide
      the writer's data; collapsed by default for empty cards so the
      eyebrow wall is gone. */
+  /* Production disclosure — typeset eyebrow + hairline rules above
+     and below the row, so the disclosure reads as a section break in
+     the body, not as a separate UI element. The italic hint of the
+     populated values keeps the closed state informative. */
   .production-disclosure {
-    margin: 8px 0 6px;
-    border-top: 1px dashed var(--border-subtle);
-    border-bottom: 1px dashed var(--border-subtle);
+    margin: 6px 0 10px;
+    border-top: 1px solid var(--border-subtle);
   }
 
   .production-disclosure[open] {
-    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 8px;
   }
 
   .production-summary {
     display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 0;
+    align-items: baseline;
+    gap: 8px;
+    padding: 8px 0 6px;
     cursor: pointer;
     list-style: none;
     user-select: none;
@@ -1748,21 +1781,23 @@
 
   .production-summary .caret {
     color: var(--text-muted);
-    transition: transform 120ms ease;
+    transition: transform 160ms ease;
     flex-shrink: 0;
+    transform: translateY(-1px);
   }
 
   .production-disclosure[open] .production-summary .caret {
-    transform: rotate(90deg);
+    transform: rotate(90deg) translateX(-1px);
   }
 
   .production-label {
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: var(--ui-font);
     font-size: 9.5px;
     font-weight: 700;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--text-secondary);
+    flex-shrink: 0;
   }
 
   .production-hint {
@@ -1771,14 +1806,15 @@
     white-space: nowrap;
     min-width: 0;
     flex: 1;
+    font-family: var(--ui-font);
     font-size: 10.5px;
+    font-style: italic;
     color: var(--text-muted);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
   }
 
   .production-hint.muted {
-    font-style: italic;
-    opacity: 0.75;
+    opacity: 0.65;
   }
 
   .production-hint span + span {
@@ -1786,96 +1822,119 @@
   }
 
   .production-body {
-    padding: 4px 0 8px;
+    padding: 4px 0 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
   }
 
-  /* Shared tokens — keep in lock-step with .ann-label in Editor.svelte */
-  .field-label {
-    display: block;
-    font-family: system-ui, -apple-system, sans-serif;
-    font-size: var(--label-font-size);
-    font-weight: var(--label-font-weight);
-    color: var(--label-color);
-    text-transform: uppercase;
-    letter-spacing: var(--label-tracking);
-    margin-bottom: 4px;
-    margin-top: 8px;
-  }
-
-  .field-label:first-child {
-    margin-top: 0;
-  }
-
+  /* Textareas + inputs: notepad treatment. No border at rest — a soft
+     lower hairline reads as a ruled writing line. Hover lifts the
+     hairline; focus surfaces the field with a subtle bg + accent
+     underline. Far less rectangle-noise than the bordered version. */
   .card-textarea {
     width: 100%;
-    padding: 6px 8px;
+    padding: 6px 0;
     font-size: 12px;
-    line-height: 1.5;
+    line-height: 1.55;
     color: var(--text-primary);
-    background: var(--surface-base);
-    border: 1px solid var(--border-subtle);
-    border-radius: 4px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid transparent;
+    border-radius: 0;
     font-family: var(--editor-font-en), var(--editor-font-ml), var(--ui-font);
     resize: none;
     box-sizing: border-box;
-    transition: border-color 120ms ease;
+    transition: border-color 160ms ease, background 160ms ease;
     flex: 1;
-    min-height: 60px;
+    min-height: 56px;
+  }
+
+  .card-textarea.card-notes {
+    flex: 0 0 auto;
+    min-height: 36px;
+    font-style: italic;
+    color: var(--text-secondary);
+    font-size: 11.5px;
+  }
+
+  .card-textarea:hover {
+    border-bottom-color: var(--border-subtle);
   }
 
   .card-textarea:focus {
     outline: none;
-    border-color: var(--accent);
+    background: var(--surface-base);
+    border-bottom-color: var(--accent);
+    padding: 6px 8px;
+    margin: 0 -8px;
+    width: calc(100% + 16px);
+    border-radius: 4px 4px 0 0;
   }
 
   .card-textarea::placeholder {
     color: var(--text-muted);
   }
 
-  /* Single-line input for non-speaking characters — shares surface + border
-     treatment with the textarea so the fields read as the same type. */
+  /* Single-line input for non-speaking characters / location group —
+     same notepad treatment as the textarea. */
   .card-input {
     width: 100%;
-    padding: 6px 8px;
-    font-size: 12px;
+    padding: 6px 0;
+    font-size: 11.5px;
     line-height: 1.5;
     color: var(--text-primary);
-    background: var(--surface-base);
-    border: 1px solid var(--border-subtle);
-    border-radius: 4px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid transparent;
+    border-radius: 0;
     font-family: var(--editor-font-en), var(--editor-font-ml), var(--ui-font);
     box-sizing: border-box;
-    transition: border-color 120ms ease;
+    transition: border-color 160ms ease, background 160ms ease;
+  }
+
+  .card-input:hover {
+    border-bottom-color: var(--border-subtle);
   }
 
   .card-input:focus {
     outline: none;
-    border-color: var(--accent);
+    background: var(--surface-base);
+    border-bottom-color: var(--accent);
+    padding: 6px 8px;
+    margin: 0 -8px;
+    width: calc(100% + 16px);
+    border-radius: 4px 4px 0 0;
   }
 
   .card-input::placeholder {
     color: var(--text-muted);
+    font-style: italic;
   }
 
-  /* ─── Add Scene card ─── */
+  /* ─── Add Scene placeholder ─── */
   .add-scene-card {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    border: 2px dashed var(--border-subtle);
+    min-height: 240px;
+    border: 1px dashed var(--border-medium);
+    border-radius: 6px;
     background: transparent;
     color: var(--text-muted);
-    font-family: system-ui, -apple-system, sans-serif;
-    font-size: 13px;
+    font-family: var(--ui-font);
+    font-size: 12.5px;
     font-weight: 500;
+    letter-spacing: 0.04em;
     cursor: pointer;
-    transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
+    transition: border-color 200ms ease, color 200ms ease, background 200ms ease;
   }
 
   .add-scene-card:hover {
     border-color: var(--accent);
+    border-style: solid;
     color: var(--accent);
     background: var(--accent-muted);
   }

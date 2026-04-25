@@ -10,6 +10,51 @@
   let editingSeries = $state(false);
   let seriesDraft = $state('');
 
+  // ─── Drag-to-reorder (#144) ────────────────────────────────────────
+  // HTML5 DnD is unreliable in Tauri's WebKit, so the same custom
+  // mousedown/mousemove/mouseup pattern from SceneNavigator and
+  // EpisodeCardsView. Tracks the source index and the current target
+  // by hit-testing each .episode-row's bounding rect.
+  let dragFromIndex = $state<number | null>(null);
+  let dropTargetIndex = $state<number | null>(null);
+  let listEl = $state<HTMLUListElement | null>(null);
+
+  function rowIndexAtY(clientY: number): number | null {
+    if (!listEl) return null;
+    const rows = listEl.querySelectorAll<HTMLElement>('.episode-row');
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i].getBoundingClientRect();
+      if (clientY >= r.top && clientY <= r.bottom) return i;
+    }
+    return null;
+  }
+
+  function startDrag(event: MouseEvent, index: number) {
+    event.preventDefault();
+    dragFromIndex = index;
+    dropTargetIndex = index;
+
+    const onMove = (e: MouseEvent) => {
+      const i = rowIndexAtY(e.clientY);
+      if (i !== null) dropTargetIndex = i;
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      if (
+        dragFromIndex !== null &&
+        dropTargetIndex !== null &&
+        dragFromIndex !== dropTargetIndex
+      ) {
+        documentStore.reorderEpisode(dragFromIndex, dropTargetIndex);
+      }
+      dragFromIndex = null;
+      dropTargetIndex = null;
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }
+
   // Episode list is a reactive snapshot of the series' episodes array.
   let episodes = $derived(documentStore.document?.series?.episodes ?? []);
   let seriesTitle = $derived(documentStore.document?.series?.title ?? '');
@@ -72,14 +117,6 @@
     documentStore.removeEpisode(index);
   }
 
-  function moveUp(index: number) {
-    if (index > 0) documentStore.reorderEpisode(index, index - 1);
-  }
-
-  function moveDown(index: number) {
-    if (index < episodes.length - 1) documentStore.reorderEpisode(index, index + 1);
-  }
-
   function beginSeriesRename() {
     seriesDraft = seriesTitle;
     editingSeries = true;
@@ -134,12 +171,35 @@
     </button>
   </header>
 
-  <ul class="episode-list">
+  <ul class="episode-list" bind:this={listEl}>
     {#each episodes as ep, index (ep.id)}
       {@const isActive = index === documentStore.activeEpisodeIndex}
       {@const isOpen = expanded[ep.id] ?? false}
-      <li class="episode-li" class:active={isActive}>
+      <li
+        class="episode-li"
+        class:active={isActive}
+        class:dragging={dragFromIndex === index}
+        class:drop-above={dropTargetIndex === index && dragFromIndex !== null && dragFromIndex > index}
+        class:drop-below={dropTargetIndex === index && dragFromIndex !== null && dragFromIndex < index}
+      >
         <div class="episode-row">
+          <span
+            class="drag-handle"
+            onmousedown={(e: MouseEvent) => startDrag(e, index)}
+            role="button"
+            tabindex="-1"
+            aria-label={`Drag to reorder Episode ${ep.number}`}
+            title="Drag to reorder"
+          >
+            <svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor" aria-hidden="true">
+              <circle cx="2" cy="3" r="1"/>
+              <circle cx="6" cy="3" r="1"/>
+              <circle cx="2" cy="7" r="1"/>
+              <circle cx="6" cy="7" r="1"/>
+              <circle cx="2" cy="11" r="1"/>
+              <circle cx="6" cy="11" r="1"/>
+            </svg>
+          </span>
           <button
             class="disclosure"
             onclick={() => toggleExpanded(ep.id)}
@@ -175,18 +235,11 @@
               <span class="episode-title">{ep.title || 'Untitled'}</span>
             </button>
             <div class="episode-actions">
-              <button class="tiny-btn" onclick={() => moveUp(index)} disabled={index === 0} title="Move up" aria-label={`Move Episode ${ep.number} up`}>
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><path d="M5 2 L9 7 L1 7 Z" /></svg>
-              </button>
-              <button class="tiny-btn" onclick={() => moveDown(index)} disabled={index === episodes.length - 1} title="Move down" aria-label={`Move Episode ${ep.number} down`}>
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><path d="M5 8 L1 3 L9 3 Z" /></svg>
-              </button>
               <button class="tiny-btn" onclick={() => beginRename(index, ep.title)} title="Rename" aria-label={`Rename Episode ${ep.number}`}>
                 <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 2 L14 4 L5 13 L2 14 L3 11 Z" />
                 </svg>
               </button>
-              <span class="action-divider" aria-hidden="true"></span>
               <button
                 class="tiny-btn danger"
                 onclick={() => removeEpisode(index)}
@@ -296,7 +349,41 @@
   }
 
   .episode-li {
+    position: relative;
     margin-bottom: 2px;
+  }
+
+  .episode-li.dragging {
+    opacity: 0.45;
+  }
+
+  /* Drop indicators — accent line above or below the target row.
+     Mirrors the SceneNavigator pattern (#144) so the two reorder
+     gestures look the same. */
+  .episode-li.drop-above::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 22px;
+    right: 6px;
+    height: 2px;
+    background: var(--accent);
+    border-radius: 1px;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .episode-li.drop-below::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 22px;
+    right: 6px;
+    height: 2px;
+    background: var(--accent);
+    border-radius: 1px;
+    z-index: 1;
+    pointer-events: none;
   }
 
   .episode-row {
@@ -314,6 +401,35 @@
 
   .episode-li:not(.active) .episode-row:hover {
     background: var(--surface-hover);
+  }
+
+  /* 6-dot drag handle on the left edge — matches SceneNavigator
+     (#144). Subtler at rest, full opacity on hover. */
+  .drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    flex-shrink: 0;
+    color: var(--text-muted);
+    cursor: grab;
+    opacity: 0;
+    transition: opacity 120ms ease;
+    user-select: none;
+  }
+
+  .drag-handle:active {
+    cursor: grabbing;
+  }
+
+  .episode-row:hover .drag-handle,
+  .episode-li.active .drag-handle {
+    opacity: 0.6;
+  }
+
+  .drag-handle:hover {
+    opacity: 1 !important;
+    color: var(--text-secondary);
   }
 
   .disclosure {
@@ -414,17 +530,6 @@
   .episode-li.active .episode-actions,
   .episode-actions:focus-within {
     opacity: 1;
-  }
-
-  /* Visual separator between reorder/rename (safe ops) and delete
-     (destructive). Reduces misclick risk when reaching for "Move down"
-     and overshooting into trash. */
-  .action-divider {
-    width: 1px;
-    height: 12px;
-    background: var(--border-subtle);
-    margin: 0 4px 0 2px;
-    flex-shrink: 0;
   }
 
   .tiny-btn {

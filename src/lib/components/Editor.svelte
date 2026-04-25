@@ -12,6 +12,7 @@
   import { smartQuotesPlugin } from '$lib/editor/smartQuotes';
   import { characterAutocompletePlugin, autocompleteKey } from '$lib/editor/characterAutocomplete';
   import { characterListPlugin, characterListKey } from '$lib/editor/characterList';
+  import { sceneTimeOfDayPlugin } from '$lib/editor/sceneTimeOfDay';
   import { findReplacePlugin } from '$lib/editor/findReplace';
   import FindReplaceBar from '$lib/components/FindReplaceBar.svelte';
   import FormatBubble from '$lib/components/FormatBubble.svelte';
@@ -569,6 +570,7 @@
         findReplacePlugin,
         annotationSpacerPlugin,
         characterListPlugin,
+        sceneTimeOfDayPlugin,
       ]
     });
 
@@ -976,26 +978,39 @@
     position: relative;
   }
 
-  /* Signature gutter scene number — floats into the left margin, italic
-     display style, right-aligned so two- and three-digit numbers sit on
-     the same rail. Sits inside the page's 72px left padding. */
+  /* Signature gutter scene number — floats into the left margin and
+     mirrors the SceneCardsView card-gutter typography: zero-padded
+     Courier Prime numeral, large enough to anchor the page like a
+     printed shooting-script slug-number. Right-aligned so two- and
+     three-digit numbers sit on the same rail. Tinted warm/cool by
+     time-of-day via the data-time attribute the navigator uses (set
+     by Editor's plugin) — keeps the page-margin numerals visually
+     synchronized with the card view's gutter numerals. */
   :global(.ProseMirror .scene-heading::before) {
-    content: counter(scene-counter);
+    content: counter(scene-counter, decimal-leading-zero);
     position: absolute;
-    left: -60px;
-    width: 44px;
+    left: -64px;
+    width: 48px;
     top: 0;
     text-align: right;
-    font-family: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
-    font-style: italic;
-    font-weight: 400;
-    font-size: 15px;
+    font-family: var(--editor-font-en), ui-monospace, monospace;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 17px;
     line-height: inherit;
-    color: var(--text-muted);
-    opacity: 0.8;
-    letter-spacing: 0.01em;
+    color: var(--text-secondary);
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
     pointer-events: none;
     user-select: none;
+  }
+
+  :global(.ProseMirror .scene-heading.time-day::before) {
+    color: var(--accent-warm);
+  }
+
+  :global(.ProseMirror .scene-heading.time-night::before) {
+    color: var(--accent-deep);
   }
 
   :global(.ProseMirror .scene-characters-line) {

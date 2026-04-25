@@ -1922,13 +1922,30 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
         numbering_opts, font_name
     ));
 
-    // Project title as main heading (if present)
+    // Section masthead — same vocabulary as the title page and the
+    // prose section covers (#176): tracked-caps eyebrow with flanking
+    // hairlines, project title bumped + tracked, asterism divider,
+    // small-caps tracked credit labels.
+    markup.push_str(
+        r#"#par(first-line-indent: 0cm)[
+  #align(center)[
+    #v(1cm)
+    #box(width: 18mm, baseline: -3pt)[#line(length: 100%, stroke: 0.5pt + luma(150))]
+    #h(0.7em)
+    #text(size: 9pt, weight: "bold", tracking: 0.22em, fill: luma(120))[SCENE BREAKDOWN]
+    #h(0.7em)
+    #box(width: 18mm, baseline: -3pt)[#line(length: 100%, stroke: 0.5pt + luma(150))]
+  ]
+]
+"#,
+    );
+
     if !meta.title.trim().is_empty() {
         markup.push_str(&format!(
             r#"#par(first-line-indent: 0cm)[
   #align(center)[
-    #v(1cm)
-    #text(size: 20pt, weight: "bold")[{}]
+    #v(0.9cm)
+    #text(size: 26pt, weight: "bold", tracking: 0.04em)[{}]
   ]
 ]
 "#,
@@ -1936,34 +1953,39 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
         ));
     }
 
-    // "Scene Breakdown" as section subtitle
-    markup.push_str(&format!(
-        r#"#par(first-line-indent: 0cm)[
-  #align(center)[
-    {}#text(size: 12pt, tracking: 0.15em, fill: luma(100))[SCENE BREAKDOWN]
-  ]
-]
-"#,
-        if meta.title.trim().is_empty() { "#v(1cm)\n    " } else { "#v(0.6cm)\n    " }
-    ));
-
-    // Credit lines — label italic and muted, name normal weight
     let credits = format_credit_lines(&meta.author, &meta.director);
-    for (label, name) in &credits {
-        markup.push_str(&format!(
+    if !credits.is_empty() {
+        markup.push_str(
             r#"#par(first-line-indent: 0cm)[
   #align(center)[
-    #v(0.3cm)
-    #text(size: 11pt)[#text(fill: luma(120))[#emph[{}]] {}]
+    #v(0.9cm)
+    #text(size: 14pt, fill: luma(170), tracking: 0.4em)[· · ·]
   ]
 ]
 "#,
-            escape_typst(label),
-            escape_typst(name)
-        ));
+        );
+        for (label, name) in &credits {
+            markup.push_str(&format!(
+                r#"#par(first-line-indent: 0cm)[
+  #align(center)[
+    #v(0.6cm)
+    #text(size: 9pt, weight: "bold", tracking: 0.18em, fill: luma(125))[{}]
+  ]
+]
+#par(first-line-indent: 0cm)[
+  #align(center)[
+    #v(0.25cm)
+    #text(size: 13pt)[{}]
+  ]
+]
+"#,
+                escape_typst(&label.to_uppercase()),
+                escape_typst(name),
+            ));
+        }
     }
 
-    markup.push_str("\n#v(1.5cm)\n\n");
+    markup.push_str("\n#v(1.4cm)\n\n");
 
     // cards_data is expected to be a JSON array of objects:
     // [{ scene_number, heading, location, time, characters, page_estimate, description, shoot_notes }]
@@ -1974,54 +1996,154 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
             let characters = card.get("characters").and_then(|v| v.as_str()).unwrap_or("");
             let description = card.get("description").and_then(|v| v.as_str()).unwrap_or("");
             let shoot_notes = card.get("shoot_notes").and_then(|v| v.as_str()).unwrap_or("");
+            let page_estimate = card.get("page_estimate").and_then(|v| v.as_str()).unwrap_or("");
 
-            // Card header: scene number + heading
+            // Parse setting + time from the heading so the card eyebrow
+            // can render "INTERIOR · DAY" / "EXTERIOR · NIGHT" the same
+            // way the on-screen card does.
+            let (setting_word, time_word) = parse_card_setting_time(heading);
+            // Time-of-day determines the gutter number color.
+            // Hex colors are written via `rgb(...)` with the `#` form
+            // wrapped in double-pound raw strings so Rust doesn't
+            // mistake the `#` for a string-delimiter.
+            let number_color = match time_word.as_str() {
+                "NIGHT" | "DUSK" | "EVENING" => r##"rgb("#7a2b2b")"##,
+                "DAY" | "MORNING" | "AFTERNOON" | "DAWN" => r##"rgb("#b76d0f")"##,
+                _ => "luma(80)",
+            };
+
+            // Build the eyebrow text — "INTERIOR · DAY", "EXTERIOR",
+            // or just the time word, depending on what's present.
+            let eyebrow_text = match (setting_word.is_empty(), time_word.is_empty()) {
+                (false, false) => format!("{} · {}", setting_word, time_word),
+                (false, true) => setting_word.clone(),
+                (true, false) => time_word.clone(),
+                (true, true) => String::new(),
+            };
+
+            // Card body. Two-column grid: hero number gutter on the
+            // left, content on the right with a 0.5pt rule between.
+            // Mirrors the on-screen SceneCardsView card layout.
             markup.push_str(&format!(
-                r#"#block(stroke: 0.5pt + luma(180), radius: 4pt, inset: 12pt, width: 100%)[
-  #text(weight: "bold")[{}. {}]
+                r#"#block(stroke: 0.5pt + luma(180), radius: 5pt, inset: 0pt, width: 100%, breakable: false)[
+  #grid(
+    columns: (16mm, 0.5pt, 1fr),
+    rows: auto,
+    align: (center + horizon, center + horizon, left + top),
+    pad(top: 14pt, bottom: 14pt)[#text(font: "Courier Prime", size: 22pt, weight: "bold", tracking: 0.04em, fill: {})[{:02}]],
+    rect(width: 0.5pt, height: 100%, fill: luma(210), stroke: none),
+    pad(top: 12pt, bottom: 12pt, left: 14pt, right: 14pt)[
 "#,
-                scene_num,
-                escape_typst(heading),
+                number_color, scene_num,
             ));
 
-            // Characters (if any)
-            if !characters.is_empty() {
+            // Eyebrow (INTERIOR · DAY)
+            if !eyebrow_text.is_empty() {
                 markup.push_str(&format!(
-                    "  #v(4pt)\n  #text(size: 10pt, fill: luma(80))[{}]\n",
-                    escape_typst(characters),
+                    "      #text(size: 7.5pt, weight: \"bold\", tracking: 0.22em, fill: luma(130))[{}]\n      #v(3pt)\n",
+                    escape_typst(&eyebrow_text)
                 ));
             }
 
-            // Description
+            // Slug (the heading text, Courier bold)
+            if !heading.trim().is_empty() {
+                markup.push_str(&format!(
+                    "      #text(font: \"Courier Prime\", size: 11pt, weight: \"bold\", tracking: 0.03em)[{}]\n",
+                    escape_typst(heading.trim())
+                ));
+            }
+
+            // Cast line with the "w/" mark
+            if !characters.is_empty() {
+                markup.push_str(&format!(
+                    "      #v(6pt)\n      #text(size: 9pt, fill: luma(110))[#text(font: \"Courier Prime\", weight: \"bold\", fill: luma(140))[w/] {}]\n",
+                    escape_typst(characters)
+                ));
+            }
+
+            // Description (body prose)
             if !description.is_empty() {
                 markup.push_str(&format!(
-                    "  #v(6pt)\n  _{}_\n",
+                    "      #v(8pt)\n      #text(size: 10.5pt)[{}]\n",
                     escape_typst(description)
                 ));
             }
 
-            // Notes
+            // Notes (italic, smaller, muted)
             if !shoot_notes.is_empty() {
                 markup.push_str(&format!(
-                    "  #v(4pt)\n  #text(size: 10pt, fill: luma(100))[Notes: {}]\n",
+                    "      #v(8pt)\n      #text(size: 9.5pt, style: \"italic\", fill: luma(110))[{}]\n",
                     escape_typst(shoot_notes)
                 ));
             }
 
-            // Page estimate as small footer
-            let page_estimate = card.get("page_estimate").and_then(|v| v.as_str()).unwrap_or("");
+            // Page estimate as a typeset corner footer (right-aligned,
+            // small caps Courier — matches the on-screen card footer).
             if !page_estimate.is_empty() {
                 markup.push_str(&format!(
-                    "  #v(4pt)\n  #text(size: 9pt, fill: luma(150))[{}]\n",
-                    escape_typst(page_estimate)
+                    "      #v(10pt)\n      #align(right)[#text(font: \"Courier Prime\", size: 8pt, weight: \"bold\", tracking: 0.08em, fill: luma(135))[{}]]\n",
+                    escape_typst(&page_estimate.to_uppercase())
                 ));
             }
 
-            markup.push_str("]\n#v(8pt)\n\n");
+            // Close the grid + block.
+            markup.push_str("    ]\n  )\n]\n#v(10pt)\n\n");
         }
     }
 
     markup
+}
+
+/// Parse the setting (INTERIOR / EXTERIOR / INT/EXT) and time-of-day
+/// (DAY / NIGHT / DAWN / DUSK / EVENING / MORNING / AFTERNOON /
+/// CONTINUOUS / LATER) tokens out of a scene heading. Mirrors the
+/// parsing the SceneCardsView frontend does, so the printed card and
+/// the on-screen card show the same eyebrow text.
+fn parse_card_setting_time(heading: &str) -> (String, String) {
+    let trimmed = heading.trim();
+    let upper = trimmed.to_uppercase();
+
+    let setting = if upper.starts_with("INT./EXT.") || upper.starts_with("INT/EXT") {
+        "INT/EXT"
+    } else if upper.starts_with("INT.") || upper.starts_with("INT ") {
+        "INTERIOR"
+    } else if upper.starts_with("EXT.") || upper.starts_with("EXT ") {
+        "EXTERIOR"
+    } else {
+        ""
+    };
+
+    // Take the trailing segment after the rightmost dash-like separator.
+    let tail = trimmed
+        .rsplit_once(" - ")
+        .or_else(|| trimmed.rsplit_once(" – "))
+        .or_else(|| trimmed.rsplit_once(" — "))
+        .map(|(_, t)| t.trim().to_uppercase())
+        .unwrap_or_default();
+
+    let time = if tail.contains("NIGHT") {
+        "NIGHT"
+    } else if tail.contains("DAWN") {
+        "DAWN"
+    } else if tail.contains("DUSK") {
+        "DUSK"
+    } else if tail.contains("EVENING") {
+        "EVENING"
+    } else if tail.contains("MORNING") {
+        "MORNING"
+    } else if tail.contains("AFTERNOON") {
+        "AFTERNOON"
+    } else if tail.contains("CONTINUOUS") {
+        "CONTINUOUS"
+    } else if tail.contains("LATER") {
+        "LATER"
+    } else if tail.contains("DAY") {
+        "DAY"
+    } else {
+        ""
+    };
+
+    (setting.to_string(), time.to_string())
 }
 
 /// Render the Daily Shoot List section: scenes grouped by `scheduled_date`,

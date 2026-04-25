@@ -1773,7 +1773,19 @@ pub fn generate_prose_section_markup(section_name: &str, body: &str, font_name: 
     // Screenplay uses asymmetric margins (left: 3cm) and tight leading (0.65em);
     // prose needs symmetric margins, justified text, and relaxed leading.
     // Only emit a page break if there's preceding content — avoids a blank first page.
+    //
+    // Per-section page numbering (each section starts at "1"): when page
+    // numbers are on we reset the page counter to 0 BEFORE the pagebreak.
+    // The pagebreak then steps the counter from 0 to 1, so the first
+    // page of this section reads as "1" regardless of how many pages
+    // the previous section consumed. The reset must precede the
+    // pagebreak (not follow it) — Typst lays out the new page's
+    // header at the time of the break, so a reset-after would leave
+    // the first page numbered with the previous section's tail value.
     if needs_pagebreak {
+        if page_numbers {
+            markup.push_str("#counter(page).update(0)\n");
+        }
         markup.push_str("#pagebreak()\n\n");
     }
 
@@ -1922,8 +1934,14 @@ pub fn generate_prose_section_markup(section_name: &str, body: &str, font_name: 
 pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &ScreenplayMeta, needs_pagebreak: bool, page_numbers: bool) -> String {
     let mut markup = String::new();
 
-    // Only emit a page break if there's preceding content.
+    // Only emit a page break if there's preceding content. When page
+    // numbers are on, reset the counter to 0 BEFORE the break so this
+    // section's first page reads "1" — see the prose-section function
+    // for the reasoning on why the reset must precede the pagebreak.
     if needs_pagebreak {
+        if page_numbers {
+            markup.push_str("#counter(page).update(0)\n");
+        }
         markup.push_str("#pagebreak()\n\n");
     }
 
@@ -2213,7 +2231,12 @@ pub fn generate_shoot_list_markup(
 ) -> String {
     let mut markup = String::new();
 
+    // Reset the page counter before the break so this section's
+    // first page reads "1" — same pattern as prose / scene cards.
     if needs_pagebreak {
+        if page_numbers {
+            markup.push_str("#counter(page).update(0)\n");
+        }
         markup.push_str("#pagebreak()\n\n");
     }
 

@@ -45,10 +45,28 @@
     const view = editorStore.view;
     if (!view) return;
 
+    // Walk the doc once, capturing both pieces of information we need:
+    //   - position of the target scene heading (for selection)
+    //   - heading-only index of the target (for DOM querySelector lookup)
+    // Previously we did two `doc.forEach()` walks for these (#104). One
+    // single-pass loop runs them both in a single O(n) traversal.
     let targetPos = -1;
-    view.state.doc.forEach((_node, offset, index) => {
-      if (index === sc.childIndex) targetPos = offset + 1;
-    });
+    let sceneCount = -1;
+    let targetHeadingIdx = -1;
+    const doc = view.state.doc;
+    let offset = 0;
+    for (let i = 0; i <= sc.childIndex && i < doc.childCount; i++) {
+      const node = doc.maybeChild(i);
+      if (!node) break;
+      if (node.type.name === 'scene_heading') sceneCount++;
+      if (i === sc.childIndex) {
+        targetPos = offset + 1;
+        if (node.type.name === 'scene_heading') {
+          targetHeadingIdx = sceneCount;
+        }
+      }
+      offset += node.nodeSize;
+    }
     if (targetPos === -1) return;
 
     const tr = view.state.tr.setSelection(
@@ -61,14 +79,6 @@
     // otherwise getBoundingClientRect can return stale positions.
     requestAnimationFrame(() => {
       const headings = view.dom.querySelectorAll('.scene-heading');
-      let sceneCount = -1;
-      let targetHeadingIdx = -1;
-      view.state.doc.forEach((node, _offset, index) => {
-        if (node.type.name === 'scene_heading') {
-          sceneCount++;
-          if (index === sc.childIndex) targetHeadingIdx = sceneCount;
-        }
-      });
       const sceneEl = targetHeadingIdx >= 0 ? headings[targetHeadingIdx] : null;
       const scrollContainer = view.dom.closest('.editor-scroll');
       if (scrollContainer && sceneEl) {

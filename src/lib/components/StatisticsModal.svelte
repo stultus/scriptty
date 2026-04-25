@@ -12,6 +12,25 @@
     percentage: number;
   }
 
+  /** One row in the Locations report — aggregated across the script. */
+  interface LocationStat {
+    name: string;
+    scenes: number;
+    /** "Interior", "Exterior", or "Both" — derived from the headings that
+     *  used this location string. */
+    setting: 'Interior' | 'Exterior' | 'Both';
+  }
+
+  /** One row in the Schedule report — listed in document order so the
+   *  writer can plan a sequence (or sort by location to group shoots). */
+  interface ScheduleEntry {
+    sceneNumber: number;
+    setting: string;
+    location: string;
+    time: string;
+    characterCount: number;
+  }
+
   interface Stats {
     pageCount: number;
     sceneCount: number;
@@ -23,7 +42,12 @@
     nightCount: number;
     screenTimeMinutes: number;
     characters: CharacterStat[];
+    locations: LocationStat[];
+    schedule: ScheduleEntry[];
   }
+
+  type Tab = 'overview' | 'characters' | 'locations' | 'schedule';
+  let activeTab = $state<Tab>('overview');
 
   let stats = $state<Stats>(untrack(() => computeStats()));
 
@@ -55,11 +79,41 @@
     stats = computeStats();
   }
 
+  /** Pull location and time-of-day out of a scene heading. Mirrors the
+   *  parser used by SceneCardsView so the two views agree on what counts
+   *  as "the location" versus "the time" for each scene. */
+  function parseHeading(heading: string): { setting: string; location: string; time: string } {
+    const trimmed = heading.trim();
+    let setting = '';
+    let rest = trimmed;
+    const upper = trimmed.toUpperCase();
+    if (upper.startsWith('INT./EXT.') || upper.startsWith('INT/EXT')) {
+      setting = 'INT./EXT.';
+      rest = trimmed.replace(/^(INT\.?\/EXT\.?|I\/E)\s*/i, '');
+    } else if (upper.startsWith('INT.') || upper.startsWith('INT ')) {
+      setting = 'INT.';
+      rest = trimmed.replace(/^INT\.?\s*/i, '');
+    } else if (upper.startsWith('EXT.') || upper.startsWith('EXT ')) {
+      setting = 'EXT.';
+      rest = trimmed.replace(/^EXT\.?\s*/i, '');
+    }
+    // Split on the rightmost dash (locations themselves can contain dashes).
+    const dashIdx = rest.lastIndexOf(' - ');
+    if (dashIdx > 0) {
+      return {
+        setting,
+        location: rest.slice(0, dashIdx).trim(),
+        time: rest.slice(dashIdx + 3).trim(),
+      };
+    }
+    return { setting, location: rest, time: '' };
+  }
+
   function computeStats(): Stats {
     const empty: Stats = {
       pageCount: 0, sceneCount: 0, wordCount: 0, dialogueLineCount: 0,
       intCount: 0, extCount: 0, dayCount: 0, nightCount: 0,
-      screenTimeMinutes: 0, characters: [],
+      screenTimeMinutes: 0, characters: [], locations: [], schedule: [],
     };
 
     // Stats reflect the active episode in series projects, not the top-level
@@ -92,6 +146,23 @@
     const charDialogueCount = new Map<string, number>();
     const charScenes = new Map<string, Set<number>>();
     let currentScene = 0;
+
+    // Per-location tracking for the Locations report (#119).
+    // Key: location name (case-preserved as written, but compared
+    // case-insensitively so "ROOM" and "Room" merge). Value: scene
+    // count + a Set of settings ("INT.", "EXT.") that location appeared in.
+    interface LocationAcc {
+      displayName: string;
+      scenes: number;
+      settings: Set<string>;
+    }
+    const locationAccs = new Map<string, LocationAcc>();
+
+    // Per-scene character tracking — needed for the Schedule report's
+    // characterCount column. We can't reuse charScenes because that one
+    // is keyed by character.
+    const sceneCharacters = new Map<number, Set<string>>();
+    const schedule: ScheduleEntry[] = [];
 
     for (const node of nodes) {
       const type = node.type;
@@ -129,6 +200,26 @@
         const nightPattern = /\b(NIGHT|DUSK|EVENING)\b/;
         if (dayPattern.test(upper)) dayCount++;
         if (nightPattern.test(upper)) nightCount++;
+
+        // Locations + Schedule — parse the heading once and feed both reports.
+        const parsed = parseHeading(text);
+        if (parsed.location.length > 0) {
+          const key = parsed.location.toLowerCase();
+          let acc = locationAccs.get(key);
+          if (!acc) {
+            acc = { displayName: parsed.location, scenes: 0, settings: new Set() };
+            locationAccs.set(key, acc);
+          }
+          acc.scenes++;
+          if (parsed.setting) acc.settings.add(parsed.setting);
+        }
+        schedule.push({
+          sceneNumber: sceneCount,
+          setting: parsed.setting,
+          location: parsed.location,
+          time: parsed.time,
+          characterCount: 0, // filled below from sceneCharacters
+        });
       }
 
       if (type === 'character') {
@@ -142,12 +233,23 @@
             charScenes.set(name, new Set());
           }
           charScenes.get(name)!.add(currentScene);
+
+          // Track per-scene speakers (for the Schedule report's count).
+          if (!sceneCharacters.has(currentScene)) {
+            sceneCharacters.set(currentScene, new Set());
+          }
+          sceneCharacters.get(currentScene)!.add(name);
         }
       }
 
       if (type === 'dialogue') {
         dialogueLineCount++;
       }
+    }
+
+    // Backfill characterCount per schedule row now that the walk is done.
+    for (const row of schedule) {
+      row.characterCount = sceneCharacters.get(row.sceneNumber)?.size ?? 0;
     }
 
     // Build per-character stats sorted by dialogue count descending
@@ -163,6 +265,22 @@
 
     const pageCount = Math.max(1, Math.ceil(totalChars / 3000));
 
+    // Sort locations by scene count desc — most-shot locations first,
+    // which is what a producer scanning for scheduling priorities wants.
+    const locations: LocationStat[] = Array.from(locationAccs.values())
+      .map((a): LocationStat => {
+        const setting: 'Interior' | 'Exterior' | 'Both' =
+          a.settings.size === 0
+            ? 'Interior'
+            : a.settings.has('INT.') && a.settings.has('EXT.')
+              ? 'Both'
+              : a.settings.has('EXT.')
+                ? 'Exterior'
+                : 'Interior';
+        return { name: a.displayName, scenes: a.scenes, setting };
+      })
+      .sort((a, b) => b.scenes - a.scenes);
+
     return {
       pageCount,
       sceneCount,
@@ -174,6 +292,8 @@
       nightCount,
       screenTimeMinutes: pageCount,
       characters,
+      locations,
+      schedule,
     };
   }
 </script>
@@ -190,63 +310,157 @@
         </div>
       </div>
 
-      <div class="stats-grid">
-        <div class="stat-item">
-          <span class="stat-value">{stats.pageCount}</span>
-          <span class="stat-label">Pages</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-value">{stats.sceneCount}</span>
-          <span class="stat-label">Scenes</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-value">{stats.wordCount.toLocaleString()}</span>
-          <span class="stat-label">Words</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-value">{stats.dialogueLineCount}</span>
-          <span class="stat-label">Dialogue blocks</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-value">~{stats.screenTimeMinutes} min</span>
-          <span class="stat-label">Est. screen time</span>
-        </div>
+      <!-- Tab strip: Overview is the default view; the other three tabs are
+           production-prep reports added in #119. They all read the same
+           snapshot computed at modal open, so switching is instant. -->
+      <div class="tabs" role="tablist" aria-label="Statistics views">
+        <button
+          class="tab"
+          class:active={activeTab === 'overview'}
+          role="tab"
+          aria-selected={activeTab === 'overview'}
+          onclick={() => { activeTab = 'overview'; }}
+        >Overview</button>
+        <button
+          class="tab"
+          class:active={activeTab === 'characters'}
+          role="tab"
+          aria-selected={activeTab === 'characters'}
+          onclick={() => { activeTab = 'characters'; }}
+        >Characters <span class="tab-count">{stats.characters.length}</span></button>
+        <button
+          class="tab"
+          class:active={activeTab === 'locations'}
+          role="tab"
+          aria-selected={activeTab === 'locations'}
+          onclick={() => { activeTab = 'locations'; }}
+        >Locations <span class="tab-count">{stats.locations.length}</span></button>
+        <button
+          class="tab"
+          class:active={activeTab === 'schedule'}
+          role="tab"
+          aria-selected={activeTab === 'schedule'}
+          onclick={() => { activeTab = 'schedule'; }}
+        >Schedule <span class="tab-count">{stats.schedule.length}</span></button>
       </div>
 
-      <div class="scene-breakdown">
-        <div class="section-label">Scene breakdown</div>
-        <div class="breakdown-row">
-          <span class="breakdown-pair"><strong>{stats.intCount}</strong> Interior</span>
-          <span class="breakdown-pair"><strong>{stats.extCount}</strong> Exterior</span>
-          <span class="breakdown-pair"><strong>{stats.dayCount}</strong> Day</span>
-          <span class="breakdown-pair"><strong>{stats.nightCount}</strong> Night</span>
+      {#if activeTab === 'overview'}
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-value">{stats.pageCount}</span>
+            <span class="stat-label">Pages</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">{stats.sceneCount}</span>
+            <span class="stat-label">Scenes</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">{stats.wordCount.toLocaleString()}</span>
+            <span class="stat-label">Words</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">{stats.dialogueLineCount}</span>
+            <span class="stat-label">Dialogue blocks</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">~{stats.screenTimeMinutes} min</span>
+            <span class="stat-label">Est. screen time</span>
+          </div>
         </div>
-      </div>
 
-      {#if stats.characters.length > 0}
-        <div class="section-label">Characters by dialogue</div>
-        <div class="char-table-wrap">
-          <table class="char-table">
-            <thead>
-              <tr>
-                <th class="col-name">Character</th>
-                <th class="col-num">Scenes</th>
-                <th class="col-num">Dialogue</th>
-                <th class="col-num">%</th>
-              </tr>
-            </thead>
-            <tbody>
-              {#each stats.characters as char}
+        <div class="scene-breakdown">
+          <div class="section-label">Scene breakdown</div>
+          <div class="breakdown-row">
+            <span class="breakdown-pair"><strong>{stats.intCount}</strong> Interior</span>
+            <span class="breakdown-pair"><strong>{stats.extCount}</strong> Exterior</span>
+            <span class="breakdown-pair"><strong>{stats.dayCount}</strong> Day</span>
+            <span class="breakdown-pair"><strong>{stats.nightCount}</strong> Night</span>
+          </div>
+        </div>
+      {:else if activeTab === 'characters'}
+        {#if stats.characters.length > 0}
+          <div class="char-table-wrap">
+            <table class="char-table">
+              <thead>
                 <tr>
-                  <td class="col-name">{char.name}</td>
-                  <td class="col-num">{char.scenes}</td>
-                  <td class="col-num">{char.dialogueBlocks}</td>
-                  <td class="col-num">{char.percentage}%</td>
+                  <th class="col-name">Character</th>
+                  <th class="col-num">Scenes</th>
+                  <th class="col-num">Dialogue</th>
+                  <th class="col-num">%</th>
                 </tr>
-              {/each}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {#each stats.characters as char}
+                  <tr>
+                    <td class="col-name">{char.name}</td>
+                    <td class="col-num">{char.scenes}</td>
+                    <td class="col-num">{char.dialogueBlocks}</td>
+                    <td class="col-num">{char.percentage}%</td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {:else}
+          <div class="empty-tab">No characters yet — add a Character element to populate this report.</div>
+        {/if}
+      {:else if activeTab === 'locations'}
+        {#if stats.locations.length > 0}
+          <div class="char-table-wrap">
+            <table class="char-table">
+              <thead>
+                <tr>
+                  <th class="col-name">Location</th>
+                  <th class="col-num">Scenes</th>
+                  <th class="col-meta">Setting</th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each stats.locations as loc}
+                  <tr>
+                    <td class="col-name">{loc.name}</td>
+                    <td class="col-num">{loc.scenes}</td>
+                    <td class="col-meta">{loc.setting}</td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {:else}
+          <div class="empty-tab">No locations parsed — write scene headings like <em>INT. KITCHEN — DAY</em> to populate this report.</div>
+        {/if}
+      {:else}
+        <!-- Schedule tab: scenes in document order with setting / time /
+             character count. The producer can scan top-to-bottom for the
+             shoot sequence the writer intended. -->
+        {#if stats.schedule.length > 0}
+          <div class="char-table-wrap">
+            <table class="char-table schedule-table">
+              <thead>
+                <tr>
+                  <th class="col-num">#</th>
+                  <th class="col-meta">Setting</th>
+                  <th class="col-name">Location</th>
+                  <th class="col-meta">Time</th>
+                  <th class="col-num">Cast</th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each stats.schedule as row}
+                  <tr>
+                    <td class="col-num">{row.sceneNumber}</td>
+                    <td class="col-meta">{row.setting || '—'}</td>
+                    <td class="col-name">{row.location || '(empty)'}</td>
+                    <td class="col-meta">{row.time || '—'}</td>
+                    <td class="col-num">{row.characterCount}</td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {:else}
+          <div class="empty-tab">No scenes yet.</div>
+        {/if}
       {/if}
     </div>
   </div>
@@ -451,5 +665,83 @@
   .col-name {
     font-weight: 500;
     color: var(--text-primary);
+  }
+
+  .col-meta {
+    color: var(--text-secondary);
+    font-size: 11.5px;
+    text-align: left;
+  }
+
+  /* ─── Tab strip (#119) ─── */
+  .tabs {
+    display: flex;
+    gap: 2px;
+    margin: 0 0 16px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .tab {
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-muted);
+    font-family: var(--ui-font);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-bottom: -1px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color var(--motion-fast, 100ms) ease, border-color var(--motion-fast, 100ms) ease;
+  }
+
+  .tab:hover {
+    color: var(--text-secondary);
+  }
+
+  .tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  .tab-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 16px;
+    padding: 0 5px;
+    border-radius: 8px;
+    background: var(--surface-base);
+    color: var(--text-muted);
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tab.active .tab-count {
+    background: var(--accent-muted);
+    color: var(--accent);
+  }
+
+  .empty-tab {
+    padding: 28px 12px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+
+  .empty-tab em {
+    font-family: var(--editor-font-en);
+    font-style: normal;
+    color: var(--text-secondary);
+  }
+
+  /* Schedule's first column is the scene number, narrower than other tables. */
+  .schedule-table .col-num:first-child {
+    width: 48px;
   }
 </style>

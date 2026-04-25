@@ -37,6 +37,13 @@
 
   function initialLevel(): CardLevel {
     if (!documentStore.isSeries) return 'scenes';
+    // Single-episode series — skip the Episode level entirely (#140).
+    // Drilling-into nothing is meaningless until the writer adds a
+    // second episode; show scenes directly. The level switcher in the
+    // hero header still works, so the writer can flip back to Episodes
+    // and add a new one when they're ready.
+    const epCount = documentStore.document?.series?.episodes?.length ?? 0;
+    if (epCount <= 1) return 'scenes';
     if (typeof localStorage === 'undefined') return 'episodes';
     const stored = localStorage.getItem(storageKey());
     return stored === 'scenes' ? 'scenes' : 'episodes';
@@ -69,6 +76,30 @@
   function backToEpisodes() {
     cardLevel = 'episodes';
   }
+
+  /** Series-wide totals for the Episode-level hero (#140). Producers
+   *  scanning the series want scope at a glance — total scenes, total
+   *  pages — alongside the episode count. Cheap derived: walks every
+   *  episode's content once, counts scene_heading nodes and total text
+   *  length. */
+  let seriesTotals = $derived.by<{ scenes: number; pages: string } | null>(() => {
+    if (!documentStore.isSeries) return null;
+    documentStore.contentVersionDebounced; // re-derive on edits
+    const eps = documentStore.document?.series?.episodes ?? [];
+    let scenes = 0;
+    let chars = 0;
+    for (const ep of eps) {
+      const content = ep.content as { content?: Array<{ type?: string; content?: Array<{ text?: string }> }> } | null;
+      if (!content?.content) continue;
+      for (const node of content.content) {
+        if (node.type === 'scene_heading') scenes++;
+        const inner = node.content ?? [];
+        for (const c of inner) chars += (c.text ?? '').length;
+      }
+    }
+    const pages = Math.max(0.1, chars / 3000).toFixed(1);
+    return { scenes, pages };
+  });
 
   /** Handle Malayalam input in card textareas */
   function handleKeydown(event: KeyboardEvent) {
@@ -648,6 +679,14 @@
         <h1 class="hero-level">Episodes</h1>
         <p class="hero-subtitle">
           {documentStore.document?.series?.title || 'Untitled Series'}
+          {#if seriesTotals}
+            <span class="hero-totals" aria-label="Series totals">
+              <span class="hero-totals-sep">·</span>
+              <strong>{seriesTotals.scenes}</strong> {seriesTotals.scenes === 1 ? 'scene' : 'scenes'}
+              <span class="hero-totals-sep">·</span>
+              <strong>~{seriesTotals.pages}</strong> pages
+            </span>
+          {/if}
         </p>
       {:else if documentStore.isSeries && cardLevel === 'scenes'}
         <h1 class="hero-level">Scenes</h1>
@@ -920,6 +959,27 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 60vw;
+  }
+
+  /* Series totals next to the series title — scope at a glance for
+     producers scanning the arc (#140). */
+  .hero-totals {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    color: var(--text-muted);
+    font-size: 11.5px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .hero-totals strong {
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  .hero-totals-sep {
+    color: var(--text-muted);
+    opacity: 0.45;
   }
 
   /* Episode badge inside the subtitle — same chip pattern as everywhere

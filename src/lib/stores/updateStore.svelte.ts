@@ -6,7 +6,29 @@ interface UpdateInfo {
 	releaseUrl: string;
 }
 
-const DOWNLOADS_URL = 'https://stultus.in/scriptty/downloads.json';
+/**
+ * GitHub's official Releases API. We fetch directly from github.com rather
+ * than stultus.in/scriptty/downloads.json because:
+ *
+ *   1. github.com's TLS cert is pinned at the CA level — an attacker who
+ *      compromises stultus.in or hijacks its DNS still can't impersonate
+ *      api.github.com to a victim.
+ *   2. There is no second JSON file to author, sign, or keep in sync with
+ *      releases — `gh release create` already publishes to this endpoint.
+ *   3. If stultus.in is ever down, the in-app updater keeps working.
+ *
+ * The endpoint requires no auth for public repos (60 unauth req/h per IP,
+ * which is well over what an in-app "Check for Updates" button generates).
+ * (#115)
+ */
+const RELEASES_API = 'https://api.github.com/repos/stultus/scriptty/releases/latest';
+
+interface GithubReleaseResponse {
+	tag_name?: string;
+	html_url?: string;
+	draft?: boolean;
+	prerelease?: boolean;
+}
 
 class UpdateStore {
 	available = $state<UpdateInfo | null>(null);
@@ -14,15 +36,26 @@ class UpdateStore {
 	async check(): Promise<'update' | 'current' | 'error'> {
 		try {
 			const currentVersion = await getVersion();
-			const res = await fetch(DOWNLOADS_URL, { cache: 'no-store' });
+			const res = await fetch(RELEASES_API, {
+				cache: 'no-store',
+				headers: { Accept: 'application/vnd.github+json' }
+			});
 			if (!res.ok) return 'error';
-			const data = (await res.json()) as { version?: string; release_url?: string };
-			if (!data.version || !data.release_url) return 'error';
-			if (compareVersions(data.version, currentVersion) <= 0) return 'current';
+			const data = (await res.json()) as GithubReleaseResponse;
+			// Skip drafts and pre-releases — only ship stable updates to users.
+			if (data.draft || data.prerelease) return 'current';
+			if (!data.tag_name || !data.html_url) return 'error';
+			// Defensive: only trust release URLs that actually point at our repo.
+			// Protects against a future API quirk where html_url could redirect
+			// somewhere unexpected.
+			if (!data.html_url.startsWith('https://github.com/stultus/scriptty/releases/')) {
+				return 'error';
+			}
+			if (compareVersions(data.tag_name, currentVersion) <= 0) return 'current';
 			this.available = {
 				currentVersion,
-				latestVersion: data.version,
-				releaseUrl: data.release_url
+				latestVersion: data.tag_name.replace(/^v/, ''),
+				releaseUrl: data.html_url
 			};
 			return 'update';
 		} catch {

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Fragment, type Node as PMNode } from 'prosemirror-model';
+  import { untrack } from 'svelte';
   import { flip } from 'svelte/animate';
   import { cubicInOut } from 'svelte/easing';
   import { confirm } from '@tauri-apps/plugin-dialog';
@@ -104,8 +105,21 @@
     return { location: heading, time: '' };
   }
 
-  /** Build scene cards from the ProseMirror content and stored scene_cards data */
+  /** Build scene cards from the ProseMirror content and stored scene_cards data.
+   *
+   *  Perf (#99): tracks ONLY contentVersionDebounced — the actual content,
+   *  active settings, and stored scene_cards are read inside untrack() so the
+   *  walk runs once per typing burst (~200ms idle) instead of once per
+   *  keystroke. The view is only mounted when active, but the derive is also
+   *  needed for the editor view (Editor.svelte reads `documentStore
+   *  .activeSceneCards` for the gutter), so a real derive is still right —
+   *  just one that doesn't churn. */
   let cards = $derived.by((): SceneCardData[] => {
+    documentStore.contentVersionDebounced;
+    return untrack(() => computeCards());
+  });
+
+  function computeCards(): SceneCardData[] {
     const doc = documentStore.document;
     if (!doc) return [];
     const rawContent = documentStore.activeContent;
@@ -189,7 +203,7 @@
 
     pushCurrentScene();
     return result;
-  });
+  }
 
   /** Update the description for a scene card */
   function updateDescription(sceneIndex: number, value: string) {

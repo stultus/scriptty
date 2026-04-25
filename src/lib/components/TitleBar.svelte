@@ -261,12 +261,15 @@
   }
 
   /* ─── View switcher tabs ─── */
+  /* Demoted vs the title-zone primary actions — smaller font, lighter
+     padding, less prominent at-rest background — so Save/Export retain
+     the right-side primary-action role (#107). */
   .view-switcher {
     display: flex;
     align-items: center;
     gap: 2px;
-    background: var(--surface-base);
-    border-radius: 6px;
+    background: transparent;
+    border-radius: 5px;
     padding: 2px;
     border: 1px solid var(--border-subtle);
     -webkit-app-region: no-drag;
@@ -276,12 +279,12 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 12px;
+    padding: 3px 10px;
     border-radius: 4px;
     border: none;
     background: transparent;
     color: var(--text-muted);
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 500;
     font-family: system-ui, -apple-system, sans-serif;
     cursor: pointer;
@@ -293,52 +296,62 @@
   }
 
   .view-tab.active {
-    background: var(--surface-elevated);
+    background: var(--surface-base);
     color: var(--text-primary);
     box-shadow: 0 1px 2px var(--shadow-soft);
   }
 
-  /* ─── Ghost button ─── */
+  /* ─── Ghost button (Export) ───
+     Carries a subtle outline so it reads as a button at rest, not as
+     ghost text next to the view switcher (#107). The outline disappears
+     on hover into the same surface treatment used by other ghost buttons. */
   .btn-ghost {
-    height: 24px;
-    padding: 0 10px;
+    height: 26px;
+    padding: 0 12px;
     border-radius: 5px;
-    border: none;
+    border: 1px solid var(--border-medium);
     background: transparent;
     color: var(--text-secondary);
     font-size: 12px;
+    font-weight: 500;
     font-family: system-ui, -apple-system, sans-serif;
     cursor: pointer;
-    transition: background 120ms ease, color 120ms ease;
+    transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
   }
   .btn-ghost:hover {
     background: var(--surface-hover);
     color: var(--text-primary);
+    border-color: var(--border-strong, var(--border-medium));
   }
   .btn-ghost:active {
     background: var(--surface-active);
   }
 
-  /* ─── Primary button (Save) ─── */
+  /* ─── Primary button (Save) ───
+     The only true primary action in the title bar. Bumped to 26px,
+     bolder weight, and a stronger filled accent so it reads as the
+     unmistakable primary among the right-group buttons (#107). */
   .btn-primary {
-    height: 24px;
-    padding: 0 12px;
+    height: 26px;
+    padding: 0 14px;
     border-radius: 5px;
-    border: none;
+    border: 1px solid var(--accent);
     background: var(--accent);
     color: var(--text-on-accent);
     font-size: 12px;
+    font-weight: 600;
     font-family: system-ui, -apple-system, sans-serif;
     cursor: pointer;
-    transition: background 120ms ease;
+    transition: background 120ms ease, border-color 120ms ease;
   }
   .btn-primary:hover {
     background: var(--accent-hover);
+    border-color: var(--accent-hover);
   }
 
-  /* ─── Icon button (theme toggle) ─── */
+  /* ─── Icon button (sidebar toggle, etc.) ─── */
   .btn-icon {
-    height: 24px;
+    height: 26px;
     padding: 0 6px;
     border-radius: 5px;
     border: none;

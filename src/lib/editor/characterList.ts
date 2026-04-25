@@ -8,14 +8,15 @@
 import { Plugin, PluginKey } from 'prosemirror-state';
 import { Decoration, DecorationSet } from 'prosemirror-view';
 
-/** Plugin state carries two flags:
- *   - enabled: whether to render the decoration at all
- *   - extras: per-scene-index list of user-supplied non-speaking characters,
- *             merged with auto-detected speakers at render time. Scene index is
- *             the 0-based position of the scene_heading in the document. */
+/** Plugin state carries the toggle, the per-scene extras, and the
+ *  decoration cache. Caching the DecorationSet here means we only walk
+ *  the document when something that affects the output actually changes
+ *  (doc edit, enabled flip, or extras update) — not on every transaction
+ *  the editor dispatches (#102). */
 export interface CharacterListState {
 	enabled: boolean;
 	extras: Record<number, string[]>;
+	decorations: DecorationSet;
 }
 
 export const characterListKey = new PluginKey<CharacterListState>('character-list');
@@ -67,71 +68,101 @@ function collectCharactersPerScene(
 	return perScene;
 }
 
+/** Build the DecorationSet from the document. This is the expensive walk
+ *  we want to call as rarely as possible — `apply()` below decides when. */
+function buildDecorations(
+	doc: import('prosemirror-model').Node,
+	extras: Record<number, string[]>
+): DecorationSet {
+	const perScene = collectCharactersPerScene(doc, extras);
+	const decos: Decoration[] = [];
+	let sceneIdx = 0;
+
+	doc.forEach((node, pos) => {
+		if (node.type.name !== 'scene_heading') return;
+		const line = perScene[sceneIdx] ?? '';
+		sceneIdx++;
+		if (line.length === 0) return;
+
+		// Place the widget just after the scene heading node's closing
+		// token so it renders visually on its own line below the heading.
+		const afterPos = pos + node.nodeSize;
+		decos.push(
+			Decoration.widget(
+				afterPos,
+				() => {
+					const el = document.createElement('div');
+					el.className = 'scene-characters-line';
+					el.setAttribute('aria-hidden', 'true');
+					el.setAttribute('contenteditable', 'false');
+
+					// Label + names are separate spans so CSS can style each
+					// distinctly — label is small-caps/muted, names read as prose.
+					const label = document.createElement('span');
+					label.className = 'scene-characters-label';
+					label.textContent = 'Characters';
+
+					const sep = document.createElement('span');
+					sep.className = 'scene-characters-sep';
+					sep.textContent = '·';
+
+					const names = document.createElement('span');
+					names.className = 'scene-characters-names';
+					names.textContent = line;
+
+					el.append(label, sep, names);
+					return el;
+				},
+				{ side: -1, ignoreSelection: true }
+			)
+		);
+	});
+
+	return DecorationSet.create(doc, decos);
+}
+
 export const characterListPlugin = new Plugin<CharacterListState>({
 	key: characterListKey,
 	state: {
-		init(): CharacterListState {
-			return { enabled: false, extras: {} };
+		init(_, state): CharacterListState {
+			return { enabled: false, extras: {}, decorations: DecorationSet.empty };
 		},
-		apply(tr, value): CharacterListState {
-			const meta = tr.getMeta(characterListKey) as Partial<CharacterListState> | undefined;
-			if (!meta) return value;
+		apply(tr, value, _oldState, newState): CharacterListState {
+			const meta = tr.getMeta(characterListKey) as
+				| Partial<Pick<CharacterListState, 'enabled' | 'extras'>>
+				| undefined;
+
+			const enabled = meta && typeof meta.enabled === 'boolean' ? meta.enabled : value.enabled;
+			const extras = meta?.extras ?? value.extras;
+
+			// Disabled — keep cache empty, skip the walk entirely.
+			if (!enabled) {
+				return value.enabled
+					? { enabled: false, extras, decorations: DecorationSet.empty }
+					: { enabled, extras, decorations: value.decorations };
+			}
+
+			// Enabled and nothing affecting output changed — reuse cache.
+			// Must still map decorations through the transaction so positions
+			// stay aligned with the new doc.
+			const extrasChanged = meta?.extras !== undefined && meta.extras !== value.extras;
+			const enabledChanged = enabled !== value.enabled;
+			if (!tr.docChanged && !extrasChanged && !enabledChanged) {
+				return value;
+			}
+
+			// Rebuild on real structural change (doc, extras, or enable flip).
 			return {
-				enabled: typeof meta.enabled === 'boolean' ? meta.enabled : value.enabled,
-				extras: meta.extras ?? value.extras
+				enabled,
+				extras,
+				decorations: buildDecorations(newState.doc, extras)
 			};
 		}
 	},
 	props: {
 		decorations(state) {
 			const pluginState = characterListKey.getState(state);
-			if (!pluginState || !pluginState.enabled) return DecorationSet.empty;
-
-			const perScene = collectCharactersPerScene(state.doc, pluginState.extras);
-			const decos: Decoration[] = [];
-			let sceneIdx = 0;
-
-			state.doc.forEach((node, pos) => {
-				if (node.type.name !== 'scene_heading') return;
-				const line = perScene[sceneIdx] ?? '';
-				sceneIdx++;
-				if (line.length === 0) return;
-
-				// Place the widget just after the scene heading node's closing
-				// token so it renders visually on its own line below the heading.
-				const afterPos = pos + node.nodeSize;
-				decos.push(
-					Decoration.widget(
-						afterPos,
-						() => {
-							const el = document.createElement('div');
-							el.className = 'scene-characters-line';
-							el.setAttribute('aria-hidden', 'true');
-							el.setAttribute('contenteditable', 'false');
-
-							// Label + names are separate spans so CSS can style each
-							// distinctly — label is small-caps/muted, names read as prose.
-							const label = document.createElement('span');
-							label.className = 'scene-characters-label';
-							label.textContent = 'Characters';
-
-							const sep = document.createElement('span');
-							sep.className = 'scene-characters-sep';
-							sep.textContent = '·';
-
-							const names = document.createElement('span');
-							names.className = 'scene-characters-names';
-							names.textContent = line;
-
-							el.append(label, sep, names);
-							return el;
-						},
-						{ side: -1, ignoreSelection: true }
-					)
-				);
-			});
-
-			return DecorationSet.create(state.doc, decos);
+			return pluginState?.decorations ?? DecorationSet.empty;
 		}
 	}
 });

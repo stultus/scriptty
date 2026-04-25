@@ -157,8 +157,8 @@
     { id: 'view.writing', group: 'View', label: 'Writing View', action: () => { activeView = 'writing'; } },
     { id: 'view.cards', group: 'View', label: 'Scene Cards', hint: '⌘⇧K', action: () => { activeView = activeView === 'cards' ? 'writing' : 'cards'; } },
     { id: 'view.story', group: 'View', label: 'Story Mode', hint: '⌘⇧L', action: () => { activeView = activeView === 'story' ? 'writing' : 'story'; } },
-    { id: 'view.sidebar', group: 'View', label: 'Toggle Scene Navigator', hint: '⌘\\', keywords: 'sidebar panel scenes',
-      action: () => { if (activeView === 'writing') panelOpen = !panelOpen; } },
+    { id: 'view.sidebar', group: 'View', label: 'Toggle Sidebar', hint: '⌘\\', keywords: 'sidebar panel scenes episodes',
+      action: () => { panelOpen = !panelOpen; } },
     { id: 'view.outline', group: 'View', label: 'Toggle Outline Peek', hint: '⌘⇧O', keywords: 'timeline strip',
       action: toggleOutlinePeek },
     { id: 'view.annotations', group: 'View', label: 'Toggle Scene Annotations', hint: '⌘⇧A', keywords: 'notes comments',
@@ -327,10 +327,10 @@
         findReplaceMode = 'replace';
         return;
       }
-      // Ctrl+\ (Mac: Cmd+\) toggles left panel (writing view only)
+      // Ctrl+\ (Mac: Cmd+\) toggles left sidebar from any view (#171).
       if ((event.metaKey || event.ctrlKey) && event.key === '\\') {
         event.preventDefault();
-        if (activeView === 'writing') panelOpen = !panelOpen;
+        panelOpen = !panelOpen;
         return;
       }
       // Cmd+Shift+A — Toggle annotations in writing view
@@ -480,7 +480,7 @@
       }));
 
       track(await listen('menu-toggle-sidebar', () => {
-        if (activeView === 'writing') panelOpen = !panelOpen;
+        panelOpen = !panelOpen;
       }));
 
       track(await listen('menu-edit-meta', () => {
@@ -552,6 +552,10 @@
     onShowExport={() => { showExport = true; }}
   />
   <div class="workspace">
+    <!-- Sidebar lives at the workspace level so it overlays whichever
+         view is active (Writing / Cards / Story) — fixes #171. The panel
+         is position:absolute and anchors to .workspace's relative box. -->
+    <LeftPanel isOpen={panelOpen} />
     {#if activeView === 'cards'}
       <SceneCardsView />
     {/if}
@@ -559,7 +563,6 @@
       <StoryModeView />
     {/if}
     <div class="editor-area" class:hidden={activeView !== 'writing'}>
-      <LeftPanel isOpen={panelOpen} />
       <Editor bind:findReplaceOpen bind:findReplaceMode {showAnnotations} isActive={activeView === 'writing'} bind:this={editorRef} />
     </div>
   </div>
@@ -609,6 +612,10 @@
     display: flex;
     flex-direction: row;
     overflow: hidden;
+    /* Anchor for the absolutely-positioned LeftPanel (#171) — without
+       this the panel would resolve against the .main flex column and
+       sit above the title bar / status bar. */
+    position: relative;
   }
 
   .editor-area {

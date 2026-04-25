@@ -442,6 +442,26 @@ class DocumentStore {
     }
   }
 
+  /** Create a new screenplay seeded with parsed content from a paste-to-script
+   *  flow (#122). Same as newDocument() but with the editor preloaded, marked
+   *  dirty so the writer is reminded to save. */
+  async newDocumentFromContent(content: unknown): Promise<void> {
+    try {
+      const doc = await invoke<ScreenplayDocument>('new_screenplay');
+      doc.content = content;
+      this.document = doc;
+      this.currentPath = null;
+      this.isDirty = true;
+      this.lastSavedAt = null;
+      this.activeEpisodeIndex = 0;
+      this.loadedContent = content;
+      this.loadTrigger++;
+      this.#bumpContentVersion(true);
+    } catch (error) {
+      console.error('Failed to create screenplay from pasted content:', error);
+    }
+  }
+
   /** Save the current document. If path is provided, save there; otherwise use currentPath. */
   async saveDocument(path?: string): Promise<void> {
     const savePath = path ?? this.currentPath;

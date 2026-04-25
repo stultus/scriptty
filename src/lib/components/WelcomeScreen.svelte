@@ -2,6 +2,7 @@
   import { documentStore } from '$lib/stores/documentStore.svelte';
   import { open } from '@tauri-apps/plugin-dialog';
   import SeriesTitleDialog from './SeriesTitleDialog.svelte';
+  import PasteScriptDialog from './PasteScriptDialog.svelte';
 
   let {
     onOpen,
@@ -16,6 +17,7 @@
   // concern and the store doesn't grow a persistent-state dependency.
   let recent = $state<{ path: string; name: string }[]>(loadRecent());
   let showSeriesDialog = $state(false);
+  let showPasteDialog = $state(false);
 
   function loadRecent() {
     try {
@@ -50,6 +52,16 @@
     if (!(await documentStore.confirmIfDirty())) return;
     await documentStore.openDocument(path);
   }
+
+  function handlePasteScript() {
+    showPasteDialog = true;
+  }
+
+  async function handlePasteConfirm(content: unknown) {
+    showPasteDialog = false;
+    if (!(await documentStore.confirmIfDirty())) return;
+    await documentStore.newDocumentFromContent(content);
+  }
 </script>
 
 <div class="welcome">
@@ -70,7 +82,10 @@
       </button>
     </div>
 
-    <button class="open-existing" onclick={onOpen}>Open Existing…</button>
+    <div class="secondary-row">
+      <button class="open-existing" onclick={onOpen}>Open Existing…</button>
+      <button class="open-existing" onclick={handlePasteScript}>Paste Script…</button>
+    </div>
 
     {#if recent.length > 0}
       <div class="recent">
@@ -91,6 +106,7 @@
 </div>
 
 <SeriesTitleDialog bind:open={showSeriesDialog} onConfirm={handleCreateSeries} />
+<PasteScriptDialog bind:open={showPasteDialog} onConfirm={handlePasteConfirm} />
 
 <style>
   .welcome {
@@ -218,8 +234,15 @@
     color: var(--text-muted);
   }
 
-  .open-existing {
+  /* Two-button row under the primary cards — Open Existing and Paste
+     Script live here as equal-weight ghost buttons. */
+  .secondary-row {
+    display: flex;
+    gap: 8px;
     margin-top: 6px;
+  }
+
+  .open-existing {
     height: 32px;
     padding: 0 16px;
     background: transparent;

@@ -23,7 +23,9 @@
 
   /** One row in the Schedule report — listed in document order so the
    *  writer can plan a sequence (or sort by location to group shoots).
-   *  `locationGroup` and `scheduledDate` come from the SceneCard (#124). */
+   *  `locationGroup` and `scheduledDate` come from the SceneCard (#124).
+   *  `eighths` mirrors the PDF shoot list math: 1 page ≈ 8 eighths ≈
+   *  3000 chars, so ~375 chars per eighth. */
   interface ScheduleEntry {
     sceneNumber: number;
     setting: string;
@@ -32,6 +34,7 @@
     characterCount: number;
     locationGroup: string;
     scheduledDate: string;
+    eighths: number;
   }
 
   interface Stats {
@@ -168,6 +171,63 @@
     return dir === 'asc' ? 'ascending' : 'descending';
   }
 
+  // ─── Grouped schedule view (#136) ───────────────────────────────────
+  // The Schedule tab's default render is grouped by shoot date — mirrors
+  // the printed Daily Shoot List PDF (#124) so the writer can preview
+  // the same structure. Once the writer activates a column sort the
+  // table flips to a flat sorted view (grouping by date wouldn't
+  // preserve the chosen ordering).
+  interface ScheduleGroup {
+    date: string;
+    label: string;
+    rows: ScheduleEntry[];
+    totalEighths: number;
+  }
+
+  function formatDateLabel(iso: string): string {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+    if (!m) return iso;
+    const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString(undefined, {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  }
+
+  function formatDayTotal(eighths: number): string {
+    if (eighths === 0) return '';
+    const pages = (eighths / 8).toFixed(1);
+    return `${eighths} eighth${eighths === 1 ? '' : 's'} · ~${pages} pages`;
+  }
+
+  let groupedSchedule = $derived.by<ScheduleGroup[]>(() => {
+    const groups = new Map<string, ScheduleEntry[]>();
+    for (const row of stats.schedule) {
+      const key = row.scheduledDate || '';
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(row);
+    }
+    // Dated groups by ISO ascending, unscheduled last.
+    const keys = Array.from(groups.keys()).sort((a, b) => {
+      if (a === '' && b === '') return 0;
+      if (a === '') return 1;
+      if (b === '') return -1;
+      return a.localeCompare(b);
+    });
+    return keys.map((k) => {
+      const rows = groups.get(k)!;
+      return {
+        date: k,
+        label: k ? formatDateLabel(k) : 'Unscheduled',
+        rows,
+        totalEighths: rows.reduce((s, r) => s + r.eighths, 0),
+      };
+    });
+  });
+
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Escape') {
       open = false;
@@ -267,6 +327,9 @@
     // characterCount column. We can't reuse charScenes because that one
     // is keyed by character.
     const sceneCharacters = new Map<number, Set<string>>();
+    // Per-scene char-count, used to derive page-eighths for each scene
+    // (mirrors buildShootListData in ExportModal).
+    const sceneCharCount = new Map<number, number>();
     const schedule: ScheduleEntry[] = [];
 
     // Pull SceneCard scheduling fields up-front so the per-scene loop
@@ -338,7 +401,16 @@
           characterCount: 0, // filled below from sceneCharacters
           locationGroup: card?.location_group ?? '',
           scheduledDate: card?.scheduled_date ?? '',
+          eighths: 0, // filled below from sceneCharCount
         });
+        // Seed the count for this scene with the heading's chars so a
+        // heading-only scene still registers a non-trivial size.
+        sceneCharCount.set(currentScene, text.length);
+      } else if (currentScene > 0) {
+        sceneCharCount.set(
+          currentScene,
+          (sceneCharCount.get(currentScene) ?? 0) + text.length,
+        );
       }
 
       if (type === 'character') {
@@ -366,9 +438,14 @@
       }
     }
 
-    // Backfill characterCount per schedule row now that the walk is done.
+    // Backfill characterCount + eighths per schedule row now that the
+    // walk is done. Eighths math mirrors buildShootListData: 1 page ≈
+    // 8 eighths ≈ 3000 chars, so 1 eighth ≈ 375 chars (min 1 eighth so
+    // a near-empty scene still occupies a row).
     for (const row of schedule) {
       row.characterCount = sceneCharacters.get(row.sceneNumber)?.size ?? 0;
+      const chars = sceneCharCount.get(row.sceneNumber) ?? 0;
+      row.eighths = Math.max(1, Math.round(chars / 375));
     }
 
     // Build per-character stats sorted by dialogue count descending
@@ -720,19 +797,53 @@
                       </th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {#each sortedSchedule as row}
-                      <tr>
-                        <td class="col-snum">{row.sceneNumber}</td>
-                        <td class="col-meta">{row.setting || '—'}</td>
-                        <td class="col-name">{row.location || '(empty)'}</td>
-                        <td class="col-meta">{row.time || '—'}</td>
-                        <td class="col-num">{row.characterCount}</td>
-                        <td class="col-meta">{row.locationGroup || '—'}</td>
-                        <td class="col-meta">{row.scheduledDate || '—'}</td>
-                      </tr>
+                  {#if schedSortKey === null}
+                    <!-- Default view: grouped by shoot date with per-day
+                         header + total. Mirrors the printed Daily Shoot
+                         List PDF so the on-screen and printed schedules
+                         read the same way. (#136) -->
+                    {#each groupedSchedule as group (group.date || 'unscheduled')}
+                      <tbody class="schedule-group">
+                        <tr class="schedule-group-header" class:unscheduled={group.date === ''}>
+                          <td colspan="7">
+                            <span class="sg-label">{group.label}</span>
+                            <span class="sg-meta">
+                              <span class="sg-count">{group.rows.length} {group.rows.length === 1 ? 'scene' : 'scenes'}</span>
+                              {#if group.totalEighths > 0 && group.date !== ''}
+                                <span class="sg-sep">·</span>
+                                <span class="sg-total">{formatDayTotal(group.totalEighths)}</span>
+                              {/if}
+                            </span>
+                          </td>
+                        </tr>
+                        {#each group.rows as row}
+                          <tr>
+                            <td class="col-snum">{row.sceneNumber}</td>
+                            <td class="col-meta">{row.setting || '—'}</td>
+                            <td class="col-name">{row.location || '(empty)'}</td>
+                            <td class="col-meta">{row.time || '—'}</td>
+                            <td class="col-num">{row.characterCount}</td>
+                            <td class="col-meta">{row.locationGroup || '—'}</td>
+                            <td class="col-meta">{row.scheduledDate || '—'}</td>
+                          </tr>
+                        {/each}
+                      </tbody>
                     {/each}
-                  </tbody>
+                  {:else}
+                    <tbody>
+                      {#each sortedSchedule as row}
+                        <tr>
+                          <td class="col-snum">{row.sceneNumber}</td>
+                          <td class="col-meta">{row.setting || '—'}</td>
+                          <td class="col-name">{row.location || '(empty)'}</td>
+                          <td class="col-meta">{row.time || '—'}</td>
+                          <td class="col-num">{row.characterCount}</td>
+                          <td class="col-meta">{row.locationGroup || '—'}</td>
+                          <td class="col-meta">{row.scheduledDate || '—'}</td>
+                        </tr>
+                      {/each}
+                    </tbody>
+                  {/if}
                 </table>
               </div>
             {:else}
@@ -1214,6 +1325,54 @@
   th[aria-sort='ascending'],
   th[aria-sort='descending'] {
     color: var(--accent);
+  }
+
+  /* Schedule group header — one per shoot date in the default view.
+     Reads as a typographic eyebrow, not a data row: bigger top padding,
+     accent left rule, mixed-weight label + meta. (#136) */
+  .schedule-group-header td {
+    padding: 14px 12px 8px;
+    background: var(--surface-base);
+    border-top: 1px solid var(--border-medium);
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    font-size: 11.5px;
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+
+  .schedule-group:first-child .schedule-group-header td {
+    border-top: none;
+  }
+
+  .schedule-group-header.unscheduled td {
+    box-shadow: inset 3px 0 0 var(--text-muted);
+    color: var(--text-secondary);
+  }
+
+  .sg-label {
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    margin-right: 14px;
+  }
+
+  .sg-meta {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 10.5px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .sg-sep {
+    color: var(--border-medium);
+  }
+
+  /* Don't paint hover on the group header rows. */
+  .schedule-group-header:hover td {
+    background: var(--surface-base);
   }
 
   .data-table td {

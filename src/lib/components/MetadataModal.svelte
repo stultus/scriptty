@@ -22,6 +22,11 @@
   let titleInvalid = $derived(!title.trim());
   let isSeries = $derived(documentStore.isSeries);
 
+  /** Title input ref — used to auto-focus the field on open of an
+   *  untitled doc (#143) so the writer can start typing the most
+   *  important piece of metadata immediately. */
+  let titleInputEl = $state<HTMLInputElement | null>(null);
+
   /** Smart credit line for the title-page preview — matches the PDF
    *  generator's combined "Written and Directed by" treatment when the
    *  same person fills both roles, separate lines otherwise. */
@@ -71,6 +76,14 @@
     draftNumber = meta.draft_number || 1;
     draftDate = meta.draft_date || '';
     titleTouched = false;
+    // For untitled docs, focus the Title field so the writer can start
+    // typing the most important piece of metadata immediately. For docs
+    // that already have a title, leave focus on the focusTrap default
+    // (close button) so Escape feels predictable for "I just opened to
+    // peek." (#143)
+    if (!title.trim()) {
+      queueMicrotask(() => titleInputEl?.focus());
+    }
   });
 
   function handleSave() {
@@ -154,6 +167,7 @@
               <input
                 id="meta-title"
                 type="text"
+                bind:this={titleInputEl}
                 bind:value={title}
                 onblur={() => (titleTouched = true)}
                 placeholder={isSeries ? "Used on this episode's title page" : 'e.g. The Great Screenplay'}

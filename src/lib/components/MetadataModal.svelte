@@ -1,6 +1,7 @@
 <script lang="ts">
   import { documentStore } from '$lib/stores/documentStore.svelte';
   import { focusTrap } from '$lib/actions/focusTrap';
+  import DatePicker from './DatePicker.svelte';
 
   // Props using Svelte 5 $props rune
   let { open = $bindable(false) } = $props<{ open: boolean }>();
@@ -139,106 +140,110 @@
       <div class="meta-body">
         <!-- ── Form column ────────────────────────────────────── -->
         <section class="meta-form" aria-labelledby="form-heading">
-          <h3 id="form-heading" class="form-section-heading">Identity</h3>
+          <div class="form-group">
+            <h3 id="form-heading" class="form-section-heading">Identity</h3>
 
-          <div class="field">
-            <label for="meta-title">
-              <span class="field-name">Title</span>
-              <span class="field-meta required">required</span>
-            </label>
-            <input
-              id="meta-title"
-              type="text"
-              bind:value={title}
-              onblur={() => (titleTouched = true)}
-              placeholder={isSeries ? "Used on this episode's title page" : 'e.g. The Great Screenplay'}
-              required
-              aria-required="true"
-              aria-invalid={titleTouched && titleInvalid}
-              class:invalid={titleTouched && titleInvalid}
-            />
-            {#if titleTouched && titleInvalid}
-              <span class="error-text" role="alert">Title is required.</span>
-            {/if}
-          </div>
-
-          {#if isSeries}
             <div class="field">
-              <label for="meta-episode-title">
-                <span class="field-name">Episode title</span>
-                <span class="field-meta">Navigator · series header</span>
+              <label for="meta-title">
+                <span class="field-name">Title</span>
+                <span class="field-meta required">required</span>
               </label>
               <input
-                id="meta-episode-title"
+                id="meta-title"
                 type="text"
-                bind:value={episodeTitle}
-                placeholder="e.g. Pilot, The Return"
+                bind:value={title}
+                onblur={() => (titleTouched = true)}
+                placeholder={isSeries ? "Used on this episode's title page" : 'e.g. The Great Screenplay'}
+                required
+                aria-required="true"
+                aria-invalid={titleTouched && titleInvalid}
+                class:invalid={titleTouched && titleInvalid}
               />
+              {#if titleTouched && titleInvalid}
+                <span class="error-text" role="alert">Title is required.</span>
+              {/if}
             </div>
-          {/if}
 
-          <div class="field">
-            <label for="meta-tagline">
-              <span class="field-name">Tagline</span>
-              <span class="field-meta">Renders under the title</span>
-            </label>
-            <input id="meta-tagline" type="text" bind:value={tagline} placeholder="A one-line logline" />
-          </div>
+            {#if isSeries}
+              <div class="field">
+                <label for="meta-episode-title">
+                  <span class="field-name">Episode title</span>
+                  <span class="field-meta">Navigator · series header</span>
+                </label>
+                <input
+                  id="meta-episode-title"
+                  type="text"
+                  bind:value={episodeTitle}
+                  placeholder="e.g. Pilot, The Return"
+                />
+              </div>
+            {/if}
 
-          <div class="field-row">
             <div class="field">
-              <label for="meta-author">
-                <span class="field-name">Author</span>
+              <label for="meta-tagline">
+                <span class="field-name">Tagline</span>
+                <span class="field-meta">Renders under the title</span>
               </label>
-              <input id="meta-author" type="text" bind:value={author} placeholder="Writer name(s)" />
+              <input id="meta-tagline" type="text" bind:value={tagline} placeholder="A one-line logline" />
             </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label for="meta-author">
+                  <span class="field-name">Author</span>
+                </label>
+                <input id="meta-author" type="text" bind:value={author} placeholder="Writer name(s)" />
+              </div>
+              <div class="field">
+                <label for="meta-director">
+                  <span class="field-name">Director</span>
+                </label>
+                <input id="meta-director" type="text" bind:value={director} placeholder="Director name" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <h3 class="form-section-heading">Production</h3>
+
             <div class="field">
-              <label for="meta-director">
-                <span class="field-name">Director</span>
+              <label for="meta-contact">
+                <span class="field-name">Contact</span>
+                <span class="field-meta">Address · phone · email</span>
               </label>
-              <input id="meta-director" type="text" bind:value={director} placeholder="Director name" />
+              <textarea id="meta-contact" rows="3" bind:value={contact} placeholder="Bottom-left of the title page"></textarea>
             </div>
-          </div>
 
-          <h3 class="form-section-heading">Production</h3>
+            <div class="field-row">
+              <div class="field">
+                <label for="meta-draft">
+                  <span class="field-name">Draft #</span>
+                </label>
+                <input id="meta-draft" type="number" min="1" bind:value={draftNumber} />
+              </div>
+              <div class="field">
+                <label for="meta-date">
+                  <span class="field-name">Draft date</span>
+                </label>
+                <DatePicker bind:value={draftDate} placeholder="Pick a date" />
+              </div>
+            </div>
 
-          <div class="field">
-            <label for="meta-contact">
-              <span class="field-name">Contact</span>
-              <span class="field-meta">Address · phone · email</span>
-            </label>
-            <textarea id="meta-contact" rows="3" bind:value={contact} placeholder="Bottom-left of the title page"></textarea>
-          </div>
-
-          <div class="field-row">
             <div class="field">
-              <label for="meta-draft">
-                <span class="field-name">Draft #</span>
+              <label for="meta-reg">
+                <span class="field-name">Registration number</span>
+                <span class="field-meta">WGA · film board · copyright</span>
               </label>
-              <input id="meta-draft" type="number" min="1" bind:value={draftNumber} />
+              <input id="meta-reg" type="text" bind:value={registrationNumber} placeholder="Optional" />
             </div>
+
             <div class="field">
-              <label for="meta-date">
-                <span class="field-name">Draft date</span>
+              <label for="meta-footnote">
+                <span class="field-name">Footnote</span>
+                <span class="field-meta">Bottom of the title page</span>
               </label>
-              <input id="meta-date" type="date" bind:value={draftDate} />
+              <textarea id="meta-footnote" rows="2" bind:value={footnote} placeholder="Confidentiality line, 'based on...', dedication"></textarea>
             </div>
-          </div>
-
-          <div class="field">
-            <label for="meta-reg">
-              <span class="field-name">Registration number</span>
-              <span class="field-meta">WGA · film board · copyright</span>
-            </label>
-            <input id="meta-reg" type="text" bind:value={registrationNumber} placeholder="Optional" />
-          </div>
-
-          <div class="field">
-            <label for="meta-footnote">
-              <span class="field-name">Footnote</span>
-              <span class="field-meta">Bottom of the title page</span>
-            </label>
-            <textarea id="meta-footnote" rows="2" bind:value={footnote} placeholder="Confidentiality line, 'based on...', dedication"></textarea>
           </div>
         </section>
 
@@ -252,55 +257,59 @@
             <span>Title page preview</span>
           </div>
 
-          <!-- Stylized mini title page — sized to fit the preview pane,
-               proportions roughly match the printed PDF so the writer
-               sees a faithful preview without rendering Typst. -->
-          <div class="preview-page">
-            {#if registrationNumber.trim()}
-              <div class="preview-reg">{registrationNumber}</div>
-            {/if}
-            <div class="preview-title-block">
+          <!-- Faithful preview of the Typst-rendered title page (see
+               generate_title_page_markup in pdf.rs). Layout mirrors the
+               printed cover:
+                 - Title centered, tagline italic below
+                 - Credits centered: small italic label ABOVE each name
+                 - Bottom-LEFT block: contact, "Draft N — DATE", "Reg: ..."
+                 - Footnote: italic, centered, very bottom of the page
+               Aspect ratio matches A4 portrait so what the writer sees on
+               screen reads as the same composition Typst produces. -->
+          <div class="preview-page" aria-hidden="false">
+            <div class="preview-center">
               <div class="preview-title" class:placeholder={!title.trim()}>
                 {title.trim() || 'Untitled'}
               </div>
               {#if tagline.trim()}
                 <div class="preview-tagline">{tagline}</div>
               {/if}
+              {#if creditLines.length > 0}
+                <div class="preview-credits">
+                  {#each creditLines as line}
+                    <div class="preview-credit">
+                      <span class="preview-credit-label">{line.label}</span>
+                      <span class="preview-credit-name">{line.name}</span>
+                    </div>
+                  {/each}
+                </div>
+              {:else}
+                <div class="preview-credit-placeholder">— add an author or director —</div>
+              {/if}
             </div>
 
-            {#if creditLines.length > 0}
-              <div class="preview-credits">
-                {#each creditLines as line}
-                  <div class="preview-credit">
-                    <span class="preview-credit-label">{line.label}</span>
-                    <span class="preview-credit-name">{line.name}</span>
-                  </div>
-                {/each}
-              </div>
-            {:else}
-              <div class="preview-credits muted">
-                <div class="preview-credit-placeholder">add an author or director...</div>
-              </div>
-            {/if}
-
-            <div class="preview-bottom">
+            <div class="preview-bottom-left">
               {#if contact.trim()}
                 <div class="preview-contact">{contact}</div>
               {/if}
-              <div class="preview-draft">
-                <span>Draft {draftNumber}</span>
-                {#if formattedDraftDate}
-                  <span class="preview-draft-sep">·</span>
-                  <span>{formattedDraftDate}</span>
-                {/if}
-              </div>
-              {#if footnote.trim()}
-                <div class="preview-footnote">{footnote}</div>
+              {#if draftNumber > 0 || formattedDraftDate}
+                <div class="preview-draft">
+                  {#if draftNumber > 0}<span>Draft {draftNumber}</span>{/if}
+                  {#if draftNumber > 0 && formattedDraftDate}<span class="preview-em-dash"> — </span>{/if}
+                  {#if formattedDraftDate}<span>{formattedDraftDate}</span>{/if}
+                </div>
+              {/if}
+              {#if registrationNumber.trim()}
+                <div class="preview-reg">Reg: {registrationNumber}</div>
               {/if}
             </div>
+
+            {#if footnote.trim()}
+              <div class="preview-footnote">{footnote}</div>
+            {/if}
           </div>
 
-          <p class="preview-note">A faithful preview of the cover sheet — exported title pages will use the selected font.</p>
+          <p class="preview-note">Mirrors the printed cover sheet — exports use the selected document font.</p>
         </aside>
       </div>
 
@@ -331,17 +340,17 @@
     z-index: var(--modal-z);
   }
 
-  /* Wide two-pane layout matched to Statistics / Export — sized so the
-     full form is visible without scrolling on most viewports, and so the
-     live title-page preview earns its place beside the form. */
+  /* Wide two-pane layout matched to Statistics / Export. Big enough that
+     the form fits without scrolling on standard viewports — the writer
+     sees every metadata field at once alongside the live preview. */
   .meta-card {
     background: var(--surface-float);
     border: 1px solid var(--border-medium);
     border-radius: var(--modal-radius);
-    width: 800px;
-    max-width: 92vw;
-    height: 78vh;
-    max-height: 720px;
+    width: 1080px;
+    max-width: 96vw;
+    height: 86vh;
+    max-height: 820px;
     box-shadow: var(--modal-shadow);
     animation: modal-in var(--modal-anim-duration) ease-out;
     font-family: var(--ui-font);
@@ -440,6 +449,9 @@
   }
 
   /* ─── Two-pane body ─── */
+  /* The two columns each scroll independently if needed — but at 1080px
+     wide × 86vh tall the form should fit without overflow on any
+     reasonable viewport. */
   .meta-body {
     flex: 1;
     min-height: 0;
@@ -448,34 +460,44 @@
   }
 
   .meta-form {
+    min-height: 0;
     overflow-y: auto;
-    padding: 22px 28px 24px;
+    padding: 26px 32px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
   }
 
+  /* Section group — heading + fields cluster, with a soft divider between
+     groups instead of the noisy top-border-on-every-heading. */
   .form-section-heading {
     margin: 0 0 12px;
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 700;
-    letter-spacing: 0.16em;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .form-section-heading::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-subtle);
   }
 
   .form-section-heading + .field {
     margin-top: 0;
   }
 
-  .form-section-heading:not(:first-child) {
-    margin-top: 24px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border-subtle);
-  }
-
   .field {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    margin-bottom: 14px;
+    margin: 0;
   }
 
   .field label {
@@ -508,7 +530,7 @@
   .field input,
   .field textarea {
     width: 100%;
-    padding: 9px 11px;
+    padding: 10px 12px;
     font-size: 12.5px;
     color: var(--text-primary);
     background: var(--surface-base);
@@ -517,7 +539,8 @@
     font-family: var(--ui-font);
     box-sizing: border-box;
     transition: border-color var(--motion-fast, 100ms) ease,
-                background var(--motion-fast, 100ms) ease;
+                background var(--motion-fast, 100ms) ease,
+                box-shadow var(--motion-fast, 100ms) ease;
   }
 
   .field input:focus,
@@ -525,6 +548,7 @@
     outline: none;
     border-color: var(--accent);
     background: var(--surface-float);
+    box-shadow: 0 0 0 3px var(--accent-muted);
   }
 
   .field input.invalid {
@@ -533,15 +557,12 @@
 
   .field textarea {
     resize: vertical;
-    line-height: 1.45;
+    line-height: 1.5;
+    min-height: 84px;
   }
 
   .field input[type='number'] {
     font-variant-numeric: tabular-nums;
-  }
-
-  .field input[type='date'] {
-    font-family: var(--ui-font);
   }
 
   .error-text {
@@ -552,23 +573,33 @@
   .field-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    gap: 14px;
   }
 
-  .field-row .field {
-    margin-bottom: 14px;
-  }
-
-  /* ─── Live title-page preview ─── */
-  .meta-preview {
-    background: var(--surface-base);
-    border-left: 1px solid var(--border-subtle);
-    padding: 22px 24px 24px;
+  /* Section block — wraps a heading + several fields so the gap rule on
+     .meta-form spaces sections, not individual fields. */
+  .form-group {
     display: flex;
     flex-direction: column;
     gap: 14px;
+  }
+
+  /* ─── Live title-page preview ─── */
+  /* The preview pane is the visual reward for the form. Pinned-cork-board
+     vibe: a cool gray "desk" with the cream A4 page card floating on it.
+     Subtle radial vignette behind the page makes it feel placed rather
+     than pasted. */
+  .meta-preview {
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 40%, var(--surface-base), var(--surface-elevated) 80%);
+    border-left: 1px solid var(--border-subtle);
+    padding: 28px 32px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
     min-width: 0;
-    overflow-y: auto;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .preview-eyebrow {
@@ -576,147 +607,157 @@
     align-items: center;
     gap: 6px;
     font-size: 10.5px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--text-muted);
-    letter-spacing: 0.06em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
   }
 
-  /* The mini title page itself — proportions tuned to feel like an A4
-     page card on the desk, not a literal scale. The cream tone borrows
-     from --page-bg so light/dark themes both give the writer a faithful
-     mental model of the printed cover. */
+  /* The mini title page — A4 portrait aspect, faithful to what
+     generate_title_page_markup() produces in pdf.rs. */
   .preview-page {
     flex: 1;
     min-height: 0;
+    aspect-ratio: 1 / 1.414;     /* A4 portrait */
+    max-width: 100%;
+    margin: 0 auto;
+    align-self: center;
     background: var(--page-bg);
     color: var(--text-on-page);
-    border-radius: 4px;
+    background-image: var(--page-grain);
+    background-size: 240px 240px;
+    border-radius: 3px;
     box-shadow:
       inset 0 1px 0 var(--page-edge-highlight),
       0 1px 2px var(--page-shadow-close),
-      0 8px 22px var(--page-shadow);
-    padding: 28px 30px 26px;
+      0 16px 36px var(--page-shadow);
+    padding: 12% 14% 9% 14%;     /* mirrors the Typst 3cm-ish margins */
     display: grid;
-    grid-template-rows: auto 1fr auto;
-    gap: 24px;
-    font-family: var(--editor-font-en), var(--editor-font-ml), ui-monospace, monospace;
-    /* Sit on the desk surface even when the wider preview pane is short,
-       so the page never collapses to nothing. */
-    min-height: 380px;
+    grid-template-rows: 1fr auto;
     position: relative;
     overflow: hidden;
+    font-family: var(--editor-font-en), var(--editor-font-ml), ui-monospace, monospace;
   }
 
-  .preview-reg {
-    position: absolute;
-    top: 16px;
-    right: 18px;
-    font-size: 9px;
-    color: rgba(0, 0, 0, 0.5);
-    letter-spacing: 0.05em;
-  }
-
-  .preview-title-block {
-    text-align: center;
-    margin-top: 36px;
+  /* ── Centered title + tagline + credits ── */
+  .preview-center {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 14px;
+    padding-top: 4%;
   }
 
   .preview-title {
-    font-size: 22px;
+    font-size: clamp(13px, 2vw, 22px);
     font-weight: 700;
-    line-height: 1.18;
+    line-height: 1.16;
     letter-spacing: 0.02em;
-    text-transform: uppercase;
     word-break: break-word;
+    color: var(--text-on-page);
   }
 
   .preview-title.placeholder {
-    color: rgba(0, 0, 0, 0.32);
-    font-style: italic;
+    color: rgba(0, 0, 0, 0.3);
     font-weight: 500;
-    text-transform: none;
+    font-style: italic;
   }
 
   .preview-tagline {
-    font-size: 11.5px;
+    font-size: clamp(10px, 1.05vw, 12px);
     font-style: italic;
-    color: rgba(0, 0, 0, 0.65);
+    color: rgba(0, 0, 0, 0.55);
+    line-height: 1.4;
+    max-width: 80%;
   }
 
   .preview-credits {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 14px;
     align-items: center;
-    align-self: center;
-    text-align: center;
-  }
-
-  .preview-credits.muted .preview-credit-placeholder {
-    color: rgba(0, 0, 0, 0.32);
-    font-style: italic;
-    font-size: 11px;
+    margin-top: 18px;
   }
 
   .preview-credit {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    align-items: center;
+    gap: 4px;
   }
 
+  /* Label small, light, italic — matches Typst's `text(size: 11pt, fill: luma(100))` */
   .preview-credit-label {
-    font-size: 9.5px;
-    color: rgba(0, 0, 0, 0.55);
-    letter-spacing: 0.04em;
+    font-size: clamp(9px, 0.85vw, 10.5px);
+    color: rgba(0, 0, 0, 0.5);
     font-style: italic;
+    letter-spacing: 0.03em;
   }
 
+  /* Name larger and prominent — matches Typst's `text(size: 16pt)` */
   .preview-credit-name {
-    font-size: 13px;
+    font-size: clamp(11px, 1.4vw, 15px);
     font-weight: 600;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
   }
 
-  .preview-bottom {
+  .preview-credit-placeholder {
+    margin-top: 12px;
+    font-size: 10.5px;
+    font-style: italic;
+    color: rgba(0, 0, 0, 0.28);
+    letter-spacing: 0.04em;
+  }
+
+  /* ── Bottom-LEFT block: contact, draft, registration ──
+     Matches the Typst `#align(left) #v(1fr)` block — pinned to the
+     bottom-left corner, sits on top of the body grid via grid-row.  */
+  .preview-bottom-left {
+    align-self: end;
+    text-align: left;
+    color: rgba(0, 0, 0, 0.7);
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    font-size: 10.5px;
-    color: rgba(0, 0, 0, 0.7);
-    text-align: center;
+    gap: 6px;
+    font-size: clamp(8.5px, 0.85vw, 10px);
+    line-height: 1.45;
   }
 
   .preview-contact {
     white-space: pre-line;
-    line-height: 1.5;
   }
 
   .preview-draft {
-    display: inline-flex;
-    justify-content: center;
-    gap: 6px;
     color: rgba(0, 0, 0, 0.55);
-    font-size: 10px;
-    letter-spacing: 0.05em;
   }
 
-  .preview-draft-sep {
+  .preview-em-dash {
     color: rgba(0, 0, 0, 0.35);
   }
 
+  .preview-reg {
+    color: rgba(0, 0, 0, 0.45);
+  }
+
+  /* Footnote — italic, centered, very bottom of the page (matches Typst's
+     `#place(bottom + center)` for the footnote block). */
   .preview-footnote {
-    font-size: 9.5px;
-    color: rgba(0, 0, 0, 0.55);
+    position: absolute;
+    bottom: 6%;
+    left: 14%;
+    right: 14%;
+    text-align: center;
     font-style: italic;
+    color: rgba(0, 0, 0, 0.5);
+    font-size: clamp(8px, 0.75vw, 9.5px);
     line-height: 1.4;
   }
 
   .preview-note {
     margin: 0;
+    text-align: center;
     font-size: 10.5px;
     color: var(--text-muted);
     line-height: 1.45;

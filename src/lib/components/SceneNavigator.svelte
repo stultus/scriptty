@@ -6,6 +6,21 @@
   import { editorStore } from '$lib/stores/editorStore.svelte';
   import { screenplaySchema } from '$lib/editor/schema';
 
+  // For series projects in IDE-explorer mode (#156), one SceneNavigator
+  // can be rendered per *expanded* episode — including episodes that
+  // aren't currently active. Pass the episode's index via this prop and
+  // the navigator reads its content directly. Omit the prop and it
+  // behaves as before, reading the active episode (or top-level film
+  // content). Add-scene and drag-reorder are disabled for non-active
+  // episodes (they need editorStore.view); click-to-jump still works
+  // and triggers an episode switch.
+  let { episodeIndex }: { episodeIndex?: number } = $props();
+
+  let isActiveEpisode = $derived(
+    episodeIndex === undefined ||
+      episodeIndex === documentStore.activeEpisodeIndex,
+  );
+
   // Scene heading extracted from ProseMirror JSON content
   type SetLocation = 'INT' | 'EXT' | 'INT_EXT' | null;
   type TimeOfDay = 'DAY' | 'NIGHT' | 'DAWN' | 'DUSK' | 'EVENING' | 'MORNING' | 'AFTERNOON' | 'CONTINUOUS' | 'LATER' | null;
@@ -139,14 +154,26 @@
   function computeScenes(): SceneEntry[] {
     const doc = documentStore.document;
     if (!doc) return [];
-    const rawContent = documentStore.activeContent;
+
+    // When `episodeIndex` is set we're rendering a non-active episode's
+    // scene list; pull content + scene_number_start from that episode
+    // directly. Falls back to the active accessors otherwise.
+    let rawContent: unknown;
+    let startNum: number;
+    if (episodeIndex !== undefined) {
+      const ep = doc.series?.episodes?.[episodeIndex];
+      rawContent = ep?.content ?? null;
+      startNum = ep?.settings?.scene_number_start ?? 1;
+    } else {
+      rawContent = documentStore.activeContent;
+      startNum = documentStore.activeSettings?.scene_number_start ?? 1;
+    }
     if (!rawContent) return [];
 
     const content = rawContent as { type?: string; content?: Array<{ type?: string; content?: Array<{ text?: string }> }> };
     if (!content.content) return [];
 
     const entries: SceneEntry[] = [];
-    const startNum = documentStore.activeSettings?.scene_number_start ?? 1;
     let sceneNumber = startNum - 1;
 
     // Accumulate body character count for the current scene so we can emit
@@ -192,8 +219,10 @@
 
   // Add a blank scene heading at the end of the document and focus it.
   // Mirrors the Cards view's "Add Scene" behavior so both entry points
-  // stay in sync.
+  // stay in sync. Only the active episode's navigator can add scenes —
+  // editorStore.view points at the active episode's content. (#156)
   function addScene() {
+    if (!isActiveEpisode) return;
     const view = editorStore.view;
     if (!view) return;
 
@@ -211,8 +240,31 @@
     view.focus();
   }
 
-  // Navigate to a scene heading in the editor
+  // Navigate to a scene heading in the editor. For non-active episodes,
+  // switch active first so the editor renders the right content, then
+  // poll for the new view and apply the scroll. (#156)
   function scrollToScene(sceneIndex: number) {
+    if (episodeIndex !== undefined && episodeIndex !== documentStore.activeEpisodeIndex) {
+      documentStore.setActiveEpisode(episodeIndex);
+      // Wait for the editor to remount on the new episode's content.
+      // rAF loop with a short ceiling — usually resolves within 1–2
+      // frames; if anything's wrong we don't want to spin forever.
+      const start = performance.now();
+      const tick = () => {
+        if (editorStore.view && documentStore.activeEpisodeIndex === episodeIndex) {
+          doScrollToScene(sceneIndex);
+          return;
+        }
+        if (performance.now() - start > 1000) return;
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+      return;
+    }
+    doScrollToScene(sceneIndex);
+  }
+
+  function doScrollToScene(sceneIndex: number) {
     const view = editorStore.view;
     if (!view) return;
 
@@ -451,7 +503,7 @@
       <span class="nav-eyebrow">Scenes</span>
       <span class="nav-count">{scenes.length}</span>
     </div>
-    {#if scenes.length > 0}
+    {#if scenes.length > 0 && isActiveEpisode}
       <button class="nav-add" onclick={addScene} title="Add a new scene at the end" aria-label="Add scene">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="12" y1="5" x2="12" y2="19"/>
@@ -475,10 +527,12 @@
       </div>
       <p class="empty-title">No scenes yet</p>
       <p class="empty-hint">Start with a scene heading like <em>INT. ROOM — DAY</em>.</p>
-      <button class="empty-cta" onclick={addScene}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-        Add scene
-      </button>
+      {#if isActiveEpisode}
+        <button class="empty-cta" onclick={addScene}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Add scene
+        </button>
+      {/if}
     </div>
   {:else}
     <ul
@@ -489,8 +543,10 @@
       aria-label="Scene navigator"
     >
       {#each scenes as scene, sceneArrayIdx (scene.index)}
-        {@const sceneOrder = scene.number - (documentStore.activeSettings?.scene_number_start ?? 1)}
-        {@const isActive = sceneOrder === editorStore.currentSceneIndex}
+        {@const sceneOrder = scene.number - (episodeIndex !== undefined
+          ? (documentStore.document?.series?.episodes?.[episodeIndex]?.settings?.scene_number_start ?? 1)
+          : (documentStore.activeSettings?.scene_number_start ?? 1))}
+        {@const isActive = isActiveEpisode && sceneOrder === editorStore.currentSceneIndex}
         {@const isFocusable = sceneArrayIdx === effectiveFocused}
         <li
           class="scene-li"
@@ -499,23 +555,30 @@
           class:drop-below={dropTargetScene === scene.number && dragFromScene !== null && dragFromScene < scene.number}
           class:dragging={dragFromScene === scene.number}
         >
-          <!-- Drag handle: subtler at rest, full on hover. -->
-          <span
-            class="drag-handle"
-            onmousedown={(e: MouseEvent) => startDrag(e, scene.number)}
-            role="button"
-            tabindex="-1"
-            aria-label="Drag to reorder scene {scene.number}"
-          >
-            <svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor" aria-hidden="true">
-              <circle cx="2" cy="3" r="1"/>
-              <circle cx="6" cy="3" r="1"/>
-              <circle cx="2" cy="7" r="1"/>
-              <circle cx="6" cy="7" r="1"/>
-              <circle cx="2" cy="11" r="1"/>
-              <circle cx="6" cy="11" r="1"/>
-            </svg>
-          </span>
+          {#if isActiveEpisode}
+            <!-- Drag handle only on the active episode — drag-reorder
+                 needs editorStore.view, which only points at the active
+                 episode's content. Cross-episode reordering is a
+                 follow-up. (#156) -->
+            <span
+              class="drag-handle"
+              onmousedown={(e: MouseEvent) => startDrag(e, scene.number)}
+              role="button"
+              tabindex="-1"
+              aria-label="Drag to reorder scene {scene.number}"
+            >
+              <svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor" aria-hidden="true">
+                <circle cx="2" cy="3" r="1"/>
+                <circle cx="6" cy="3" r="1"/>
+                <circle cx="2" cy="7" r="1"/>
+                <circle cx="6" cy="7" r="1"/>
+                <circle cx="2" cy="11" r="1"/>
+                <circle cx="6" cy="11" r="1"/>
+              </svg>
+            </span>
+          {:else}
+            <span class="drag-handle drag-spacer" aria-hidden="true"></span>
+          {/if}
           <button
             class="scene-item"
             data-time={scene.time ?? ''}
@@ -743,6 +806,13 @@
 
   .drag-handle:active {
     cursor: grabbing;
+  }
+
+  /* Non-active episodes (#156) — keep the column reserved so scenes
+     align across all expanded episodes, but no grab affordance. */
+  .drag-handle.drag-spacer {
+    cursor: default;
+    pointer-events: none;
   }
 
   .scene-li:hover .drag-handle,

@@ -10,6 +10,42 @@
   let editingSeries = $state(false);
   let seriesDraft = $state('');
 
+  // ─── Per-project expansion persistence (#156) ──────────────────────
+  // Keyed by current file path so each project's IDE-explorer state
+  // is remembered across sessions (mirrors VSCode's per-workspace
+  // explorer state). When the project changes (open another file),
+  // load that file's state — clearing the previous project's state
+  // from the in-memory map but leaving the localStorage entry alone.
+  function expandedKey(): string | null {
+    const p = documentStore.currentPath;
+    return p ? `scriptty:expanded-episodes:${p}` : null;
+  }
+
+  $effect(() => {
+    // Track the current path so reloads (open another project) trigger
+    // a re-load of expansion state.
+    const key = expandedKey();
+    if (typeof localStorage === 'undefined') return;
+    if (!key) {
+      expanded = {};
+      return;
+    }
+    try {
+      const raw = localStorage.getItem(key);
+      expanded = raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
+    } catch {
+      expanded = {};
+    }
+  });
+
+  // Persist on every change. Idempotent and cheap — the map is at
+  // most ~12 entries for a typical series.
+  $effect(() => {
+    const key = expandedKey();
+    if (!key || typeof localStorage === 'undefined') return;
+    localStorage.setItem(key, JSON.stringify(expanded));
+  });
+
   // ─── Drag-to-reorder (#144) ────────────────────────────────────────
   // HTML5 DnD is unreliable in Tauri's WebKit, so the same custom
   // mousedown/mousemove/mouseup pattern from SceneNavigator and
@@ -73,7 +109,11 @@
     return { primary: title, secondary: '' };
   }
 
-  // The *active* episode's folder auto-expands so its scenes are visible.
+  // First-activation auto-expand: when the writer activates an episode
+  // that has never had an explicit expansion state, default it to open
+  // so they see the scenes inside. Subsequent manual collapses are
+  // honored — `undefined` means "never decided"; `false` means
+  // "explicitly collapsed". (#156)
   $effect(() => {
     const active = documentStore.activeEpisode;
     if (active && expanded[active.id] === undefined) {
@@ -86,9 +126,10 @@
   }
 
   function activate(index: number) {
+    // Activation no longer force-expands. The first-activation effect
+    // above seeds the expansion if the writer's never made a choice;
+    // afterward, expansion is decoupled from activation. (#156)
     documentStore.setActiveEpisode(index);
-    const ep = documentStore.document?.series?.episodes?.[index];
-    if (ep) expanded[ep.id] = true;
   }
 
   async function addEpisode() {
@@ -302,12 +343,18 @@
           {/if}
         </div>
 
-        {#if isOpen && isActive}
+        {#if isOpen}
+          <!-- Multi-expand IDE explorer (#156): every expanded episode
+               renders its own scene tree, even when not active. The
+               active episode's tree shows its current-scene highlight;
+               other expanded trees show no active row (the cursor
+               isn't in them). -->
           <div
             class="episode-scenes"
+            class:non-active={!isActive}
             transition:slide={{ duration: 180, easing: cubicOut }}
           >
-            <SceneNavigator />
+            <SceneNavigator episodeIndex={index} />
           </div>
         {/if}
       </li>
@@ -721,15 +768,33 @@
 
   /* Scene list nested inside an expanded episode — a softer dotted
      leader (instead of a solid border) and a touch more padding makes
-     the indent breathe at the rail's narrow width. (#149) */
+     the indent breathe at the rail's narrow width. (#149)
+
+     Non-active expanded episodes pick up a slightly muted treatment
+     so the active episode's tree remains the primary focus — the
+     "where am I" answer stays single-valued. (#156) */
   .episode-scenes {
     margin: 4px 4px 6px 18px;
     padding: 4px 0 4px 8px;
     border-left: 1px dotted var(--border-medium);
   }
 
+  .episode-scenes.non-active {
+    opacity: 0.78;
+  }
+
+  .episode-scenes.non-active:hover {
+    opacity: 1;
+  }
+
   .episode-scenes :global(.navigator-content) {
     padding: 2px 4px 4px 4px;
     background: transparent;
+  }
+
+  /* Hide the nested navigator's sticky "Scenes" header — the parent
+     episode row already provides the section heading. (#156) */
+  .episode-scenes :global(.nav-header) {
+    display: none;
   }
 </style>

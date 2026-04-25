@@ -186,6 +186,7 @@
                   <path d="M12 2 L14 4 L5 13 L2 14 L3 11 Z" />
                 </svg>
               </button>
+              <span class="action-divider" aria-hidden="true"></span>
               <button
                 class="tiny-btn danger"
                 onclick={() => removeEpisode(index)}
@@ -379,17 +380,33 @@
     outline: none;
   }
 
+  /* Actions stay visible at low opacity at rest so keyboard users can
+     see them without hovering — full opacity on hover or any descendant
+     focus (#113). The active row also surfaces them at full opacity
+     since it's the row the writer is acting on. */
   .episode-actions {
     display: flex;
     align-items: center;
     gap: 1px;
-    opacity: 0;
+    opacity: 0.55;
     transition: opacity 120ms ease;
   }
 
   .episode-li:hover .episode-actions,
-  .episode-li.active .episode-actions {
+  .episode-li.active .episode-actions,
+  .episode-actions:focus-within {
     opacity: 1;
+  }
+
+  /* Visual separator between reorder/rename (safe ops) and delete
+     (destructive). Reduces misclick risk when reaching for "Move down"
+     and overshooting into trash. */
+  .action-divider {
+    width: 1px;
+    height: 12px;
+    background: var(--border-subtle);
+    margin: 0 4px 0 2px;
+    flex-shrink: 0;
   }
 
   .tiny-btn {
@@ -403,6 +420,7 @@
     border-radius: 3px;
     color: var(--text-muted);
     cursor: pointer;
+    transition: background 120ms ease, color 120ms ease;
   }
 
   .tiny-btn:hover:not(:disabled) {
@@ -411,6 +429,7 @@
   }
 
   .tiny-btn.danger:hover:not(:disabled) {
+    background: var(--error-muted, var(--accent-muted));
     color: var(--error);
   }
 

@@ -285,6 +285,16 @@
                screen reads as the same composition Typst produces. -->
           <div class="preview-page" aria-hidden="false">
             <div class="preview-center">
+              <!-- Editorial masthead vocabulary borrowed from the
+                   SceneCardsView hero: tracked-caps eyebrow flanked by
+                   hairlines, confident title, italic tagline, asterism
+                   divider before the credits block, small-caps tracked
+                   credit labels. -->
+              <div class="preview-masthead-eyebrow" aria-hidden="true">
+                <span class="preview-eyebrow-rule"></span>
+                <span class="preview-eyebrow-text">A Screenplay</span>
+                <span class="preview-eyebrow-rule"></span>
+              </div>
               <div class="preview-title" class:placeholder={!title.trim()}>
                 {title.trim() || 'Untitled'}
               </div>
@@ -292,6 +302,7 @@
                 <div class="preview-tagline">{tagline}</div>
               {/if}
               {#if creditLines.length > 0}
+                <div class="preview-asterism" aria-hidden="true">· · ·</div>
                 <div class="preview-credits">
                   {#each creditLines as line}
                     <div class="preview-credit">
@@ -686,15 +697,42 @@
     align-items: center;
     justify-content: center;
     text-align: center;
-    gap: 14px;
+    gap: 12px;
     padding-top: 4%;
   }
 
-  .preview-title {
-    font-size: clamp(13px, 2vw, 22px);
+  /* Masthead eyebrow — "A Screenplay" set in tracked small caps,
+     flanked by hairlines. Mirrors the SceneCardsView hero vocabulary
+     and the new Typst PDF layout. */
+  .preview-masthead-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: clamp(8px, 1vw, 14px);
+    margin-bottom: clamp(10px, 1.6vw, 18px);
+  }
+
+  .preview-eyebrow-rule {
+    display: inline-block;
+    width: clamp(22px, 4vw, 38px);
+    height: 1px;
+    background: rgba(0, 0, 0, 0.32);
+  }
+
+  .preview-eyebrow-text {
+    font-size: clamp(8px, 0.85vw, 10px);
     font-weight: 700;
-    line-height: 1.16;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(0, 0, 0, 0.55);
+  }
+
+  .preview-title {
+    /* Bumped + tracked to match the typeset PDF title (28pt with
+       0.04em tracking). */
+    font-size: clamp(15px, 2.4vw, 26px);
+    font-weight: 700;
+    line-height: 1.12;
+    letter-spacing: 0.04em;
     word-break: break-word;
     color: var(--text-on-page);
   }
@@ -703,9 +741,11 @@
     color: rgba(0, 0, 0, 0.3);
     font-weight: 500;
     font-style: italic;
+    letter-spacing: 0.02em;
   }
 
   .preview-tagline {
+    margin-top: clamp(4px, 0.6vw, 8px);
     font-size: clamp(10px, 1.05vw, 12px);
     font-style: italic;
     color: rgba(0, 0, 0, 0.55);
@@ -713,27 +753,39 @@
     max-width: 80%;
   }
 
+  /* Asterism — three middle-dots, classical print divider between the
+     title block and the credits block. Matches the Typst layout. */
+  .preview-asterism {
+    margin: clamp(10px, 1.6vw, 18px) 0 clamp(8px, 1.2vw, 14px);
+    font-size: clamp(11px, 1.3vw, 14px);
+    color: rgba(0, 0, 0, 0.32);
+    letter-spacing: 0.4em;
+    line-height: 1;
+    user-select: none;
+  }
+
   .preview-credits {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: clamp(10px, 1.4vw, 16px);
     align-items: center;
-    margin-top: 18px;
   }
 
   .preview-credit {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: clamp(3px, 0.5vw, 6px);
   }
 
-  /* Label small, light, italic — matches Typst's `text(size: 11pt, fill: luma(100))` */
+  /* Label — small caps tracked, no italic. Mirrors the new Typst
+     `tracking: 0.18em` credit-label style. */
   .preview-credit-label {
-    font-size: clamp(9px, 0.85vw, 10.5px);
+    font-size: clamp(8px, 0.8vw, 10px);
     color: rgba(0, 0, 0, 0.5);
-    font-style: italic;
-    letter-spacing: 0.03em;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
   }
 
   /* Name larger and prominent — matches Typst's `text(size: 16pt)` */

@@ -614,24 +614,51 @@ pub fn generate_title_page_markup(meta: &ScreenplayMeta, page_numbers: bool) -> 
         page.push_str("#page(margin: (top: 3cm, bottom: 3cm, left: 3cm, right: 2.5cm))[\n");
     }
 
-    // --- Centered section: title + credit lines ---
+    // --- Centered section: eyebrow + title + tagline + asterism + credits ---
     // Wrap in `#block(breakable: false)` so a long title + many credit lines
     // can never silently split across two pages. If the content truly
     // overflows the title page, Typst will emit a warning — preferable to
     // a halved title page that a writer might not notice.
+    //
+    // Vocabulary borrowed from the in-app SceneCardsView "editorial
+    // masthead" hero: a tracked-caps eyebrow flanked by hairlines above
+    // the title, a confidently weighted title, an asterism (· · ·)
+    // divider before the credits block, and small-caps tracked credit
+    // labels instead of plain italic.
     page.push_str("  #block(breakable: false, width: 100%)[\n");
     page.push_str("  #align(center)[\n");
     page.push_str("    #v(8cm)\n");
-    // Escape the title so any Typst special characters (like # or $) are rendered literally.
+
+    // Eyebrow — "A SCREENPLAY" set in tracked small caps, flanked by
+    // 18mm hairline rules. Uses Typst boxes with a top stroke so the
+    // rules sit on the baseline rather than slicing through the
+    // text. luma(150) keeps them quiet against the page.
+    page.push_str(
+        "    #box(width: 18mm, baseline: -3pt)[#line(length: 100%, stroke: 0.5pt + luma(150))]\n",
+    );
+    page.push_str("    #h(0.7em)\n");
+    page.push_str(
+        "    #text(size: 9pt, weight: \"bold\", tracking: 0.2em, fill: luma(120))[A SCREENPLAY]\n",
+    );
+    page.push_str("    #h(0.7em)\n");
+    page.push_str(
+        "    #box(width: 18mm, baseline: -3pt)[#line(length: 100%, stroke: 0.5pt + luma(150))]\n",
+    );
+    page.push_str("    #v(0.9cm)\n");
+
+    // Title — bumped 24pt → 28pt with subtle tracking so the uppercase
+    // characters breathe. Bold weight stays for confidence.
+    // Escape the title so any Typst special characters (like # or $)
+    // are rendered literally.
     page.push_str(&format!(
-        "    #text(size: 24pt, weight: \"bold\")[{}]\n",
+        "    #text(size: 28pt, weight: \"bold\", tracking: 0.04em)[{}]\n",
         escape_typst(meta.title.trim())
     ));
 
-    // Tagline / logline — italic, muted, tight under the title. Optional; only
-    // emitted when the writer has filled it in (issue #14).
+    // Tagline / logline — italic, muted, tight under the title.
+    // Optional; only emitted when the writer has filled it in (#14).
     if !meta.tagline.trim().is_empty() {
-        page.push_str("    #v(0.5cm)\n");
+        page.push_str("    #v(0.55cm)\n");
         page.push_str(&format!(
             "    #text(size: 12pt, style: \"italic\", fill: luma(90))[{}]\n",
             escape_typst(meta.tagline.trim())
@@ -640,21 +667,29 @@ pub fn generate_title_page_markup(meta: &ScreenplayMeta, page_numbers: bool) -> 
 
     // Generate credit lines from author and director fields.
     // Uses format_credit_lines() to handle "Written by", "Directed by",
-    // or combined "Written and Directed by" when they're the same person.
+    // or combined "Written and Directed by" when they're the same
+    // person.
     let credits = format_credit_lines(&meta.author, &meta.director);
     if !credits.is_empty() {
-        page.push_str("    #v(1cm)\n");
+        // Asterism (· · ·) — classical print divider between the
+        // title block and the credits block. Small luma so it reads
+        // as ornamental, not as content.
+        page.push_str("    #v(0.9cm)\n");
+        page.push_str("    #text(size: 14pt, fill: luma(170), tracking: 0.4em)[· · ·]\n");
+        page.push_str("    #v(0.9cm)\n");
+
         for (i, (label, name)) in credits.iter().enumerate() {
             if i > 0 {
-                page.push_str("    #v(0.6cm)\n");
+                page.push_str("    #v(0.7cm)\n");
             }
-            // Label ("Written by") — small, light, understated
+            // Label — small caps, tracked, no italic. Mirrors the
+            // hero eyebrow vocabulary.
             page.push_str(&format!(
-                "    #text(size: 11pt, fill: luma(100))[{}]\n",
-                escape_typst(label)
+                "    #text(size: 9pt, weight: \"bold\", tracking: 0.18em, fill: luma(125))[{}]\n",
+                escape_typst(&label.to_uppercase())
             ));
-            page.push_str("    #v(0.4cm)\n");
-            // Name — larger, prominent
+            page.push_str("    #v(0.35cm)\n");
+            // Name — larger, prominent.
             page.push_str(&format!(
                 "    #text(size: 16pt)[{}]\n",
                 escape_typst(name)

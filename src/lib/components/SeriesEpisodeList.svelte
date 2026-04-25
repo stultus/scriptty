@@ -452,14 +452,22 @@
   .episode-list {
     list-style: none;
     margin: 0;
-    padding: 6px 6px 10px;
+    padding: 8px 6px 12px;
     overflow-y: auto;
     flex: 1;
   }
 
   .episode-li {
     position: relative;
-    margin-bottom: 2px;
+    margin-bottom: 1px;
+  }
+
+  /* Hairline separator above non-active rows — gives the rail typeset
+     rhythm. The active row gets its own background so it doesn't need
+     a separator above. (#149) */
+  .episode-li + .episode-li:not(.active) > .episode-row {
+    border-top: 1px solid var(--border-subtle);
+    margin-top: 0;
   }
 
   .episode-li.dragging {
@@ -504,8 +512,12 @@
     transition: background 120ms ease;
   }
 
+  /* Active row — accent muted bg + inset accent left bar to mirror the
+     scene-item active treatment in SceneNavigator. The two active
+     surfaces should feel like the same system. (#149) */
   .episode-li.active .episode-row {
     background: var(--accent-muted);
+    box-shadow: inset 2px 0 0 var(--accent);
   }
 
   .episode-li:not(.active) .episode-row:hover {
@@ -707,13 +719,17 @@
     cursor: not-allowed;
   }
 
+  /* Scene list nested inside an expanded episode — a softer dotted
+     leader (instead of a solid border) and a touch more padding makes
+     the indent breathe at the rail's narrow width. (#149) */
   .episode-scenes {
-    margin-left: 16px;
-    padding-top: 4px;
-    border-left: 1px solid var(--border-subtle);
+    margin: 4px 4px 6px 18px;
+    padding: 4px 0 4px 8px;
+    border-left: 1px dotted var(--border-medium);
   }
 
   .episode-scenes :global(.navigator-content) {
-    padding: 4px 6px 6px 8px;
+    padding: 2px 4px 4px 4px;
+    background: transparent;
   }
 </style>

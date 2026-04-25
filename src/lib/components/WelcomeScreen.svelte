@@ -82,11 +82,7 @@
     <h1 class="title">SCRIPTTY</h1>
     <p class="subtitle">for Malayalam &amp; English screenwriters</p>
 
-    <div class="asterism" aria-hidden="true">
-      <span class="asterism-glyph">·</span>
-      <span class="asterism-glyph">·</span>
-      <span class="asterism-glyph">·</span>
-    </div>
+    <div class="masthead-divider" aria-hidden="true"></div>
 
     <div class="choice-row">
       <!-- svelte-ignore a11y_autofocus -->
@@ -162,7 +158,7 @@
     position: relative;
     width: 580px;
     max-width: 92vw;
-    padding: 36px 44px 32px;
+    padding: 44px 56px 36px;
     background: var(--surface-float);
     border: 1px solid var(--border-medium);
     border-radius: 12px;
@@ -170,6 +166,9 @@
                 0 2px 8px var(--shadow-soft);
     display: flex;
     flex-direction: column;
+    /* Classical magazine treatment: display masthead and feature
+       spread sit on the page-centerline (frontispiece feel); reading
+       content (the recent index) breaks left below the divider. */
     align-items: center;
     text-align: center;
   }
@@ -178,13 +177,16 @@
     width: 44px;
     height: 44px;
     border-radius: 10px;
-    margin-bottom: 18px;
+    margin-bottom: 22px;
     opacity: 0.92;
   }
 
   /* ─── Editorial masthead ──────────────────────────────────────────── */
-  /* Eyebrow with flanking hairlines — same vocabulary as the
-     SceneCardsView hero, the title-page preview, and the PDF cover. */
+  /* Frontispiece-style centered masthead: tracked-caps eyebrow
+     flanked by hairline rules on both sides, big confident title,
+     italic Manjari subtitle. The flanking rules give the eyebrow
+     visual weight on a centered axis without it disappearing into
+     the surrounding negative space. */
   .masthead-eyebrow {
     display: inline-flex;
     align-items: center;
@@ -194,7 +196,7 @@
 
   .eyebrow-rule {
     display: inline-block;
-    width: 32px;
+    width: 28px;
     height: 1px;
     background: var(--border-medium);
   }
@@ -211,14 +213,15 @@
   /* SCRIPTTY in Courier Prime — the screenplay's own typeface. Sets
      the wordmark in the same vocabulary as a printed cover sheet,
      so the welcome reads as a title-page extract from the form of
-     work the app produces. */
+     work the app produces. Sized to dominate the masthead block
+     without crowding the eyebrow above or subtitle below. */
   .title {
     margin: 0;
     font-family: var(--editor-font-en), ui-monospace, monospace;
-    font-size: 36px;
+    font-size: 44px;
     font-weight: 700;
     color: var(--text-primary);
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     line-height: 1;
   }
@@ -233,30 +236,55 @@
     letter-spacing: 0.005em;
   }
 
-  /* Asterism — three middle-dots, classical print divider. Each
-     glyph gets its own span so we can space them confidently
-     without relying on letter-spacing collapsing in some fonts. */
-  .asterism {
-    display: inline-flex;
-    gap: 16px;
+  /* Horizontal section break — classical magazine divider:
+     a hairline rule running edge-to-edge, broken in the middle by
+     a centered middle-dot. Same vocabulary the SceneCardsView hero
+     uses below its masthead. */
+  .masthead-divider {
+    position: relative;
+    width: 100%;
+    height: 1px;
     margin: 26px 0 28px;
-    color: var(--text-muted);
-    font-size: 16px;
-    line-height: 1;
-    user-select: none;
+    background: linear-gradient(
+      to right,
+      transparent 0,
+      var(--border-medium) 8%,
+      var(--border-medium) 46%,
+      transparent 47.5%,
+      transparent 52.5%,
+      var(--border-medium) 54%,
+      var(--border-medium) 92%,
+      transparent 100%);
   }
 
-  .asterism-glyph {
-    display: inline-block;
+  .masthead-divider::before {
+    content: '·';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 14px;
     line-height: 1;
+    background: var(--surface-float);
   }
 
   /* ─── Choice cards ─────────────────────────────────────────────────── */
+  /* Two-card feature spread, centered as a balanced pair on the
+     page-centerline. Text inside each card stays left-aligned for
+     readability — a classical magazine layout combination
+     (centered display + flush-left body). */
   .choice-row {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     width: 100%;
-    margin-bottom: 14px;
+    margin-bottom: 16px;
+    text-align: left;
   }
 
   /* Each choice is a typeset card: tracked-caps eyebrow, bold title,
@@ -387,26 +415,30 @@
   }
 
   /* ─── Recent index ─────────────────────────────────────────────────── */
+  /* Reading content. Eyebrow stays centered above the list with
+     flanking rules (matches the masthead vocabulary), but the list
+     itself reads left-aligned like a typeset table-of-contents. */
   .recent {
     width: 100%;
     margin-top: 28px;
+    padding-top: 22px;
+    border-top: 1px solid var(--border-subtle);
     text-align: left;
   }
 
-  /* Eyebrow row mirrors the masthead — flanking hairlines around the
-     "Recent" label so the section break reads as typeset, not as a
-     lazy header. */
   .recent-eyebrow {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
     justify-content: center;
+    gap: 12px;
+    margin-bottom: 14px;
+    text-align: center;
   }
 
   .recent-eyebrow .eyebrow-rule {
     flex: 1;
     width: auto;
+    max-width: 60px;
   }
 
   .recent ul {

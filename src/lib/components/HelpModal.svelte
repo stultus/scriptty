@@ -103,7 +103,14 @@
   <div class="modal-backdrop" onclick={handleBackdropClick} onkeydown={handleKeydown} role="dialog" aria-modal="true" aria-labelledby="help-title" tabindex="-1">
     <div class="modal-card" use:focusTrap>
       <div class="modal-header">
-        <h2 id="help-title">How to Use Scriptty</h2>
+        <div class="modal-header-text">
+          <div class="mh-eyebrow" aria-hidden="true">
+            <span class="mh-rule"></span>
+            <span>The Manual</span>
+            <span class="mh-rule"></span>
+          </div>
+          <h2 id="help-title" class="mh-title help-title">How to Use Scriptty</h2>
+        </div>
         <button class="btn-close" onclick={() => { open = false; }} aria-label="Close help">&times;</button>
       </div>
 
@@ -444,18 +451,29 @@
 
   .modal-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    padding: 20px 24px;
+    gap: 16px;
+    padding: 20px 24px 18px;
     border-bottom: 1px solid var(--border-subtle);
     flex-shrink: 0;
   }
 
-  .modal-header h2 {
+  .modal-header-text {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .modal-header :global(.mh-eyebrow) {
+    flex-shrink: 0;
+  }
+
+  .help-title {
     margin: 0;
-    font-size: 15px;
-    color: var(--text-primary);
-    font-weight: 600;
+    font-size: 18px;
+    line-height: 1;
   }
 
   .btn-close {

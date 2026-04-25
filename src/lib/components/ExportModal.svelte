@@ -641,8 +641,11 @@
 
       <header class="export-header">
         <div class="header-text">
-          <span class="header-eyebrow">Build &amp; export</span>
-          <h2>Export</h2>
+          <div class="mh-eyebrow" aria-hidden="true">
+            <span class="mh-rule"></span>
+            <span>Build &amp; export</span>
+          </div>
+          <h2 class="mh-title export-title">Export</h2>
         </div>
         <button class="btn-close" onclick={() => { open = false; }} disabled={anyExporting} aria-label="Close export">&times;</button>
       </header>
@@ -1153,16 +1156,14 @@
   .header-text {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
     min-width: 0;
   }
 
-  .header-eyebrow {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--text-muted);
+  .export-title {
+    margin: 0;
+    font-size: 22px;
+    line-height: 1;
   }
 
   .export-header h2 {

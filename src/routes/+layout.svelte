@@ -153,6 +153,22 @@
     --label-tracking: 0.06em;
     --label-color: var(--text-muted);
 
+    /* ─── Editorial masthead tokens (#176) ───
+       Vocabulary used by SceneCardsView hero, WelcomeScreen,
+       AboutModal, HelpModal, ExportModal, StatisticsModal,
+       MetadataModal, the PDF title page preview, and the printed
+       cover. Centralised so all surfaces stay in lock-step. */
+    --mh-eyebrow-size: 9.5px;
+    --mh-eyebrow-tracking: 0.22em;
+    --mh-eyebrow-color: var(--text-secondary);
+    --mh-rule-width: 24px;
+    --mh-rule-color: var(--border-medium);
+    --mh-rule-gap: 10px;
+    --mh-title-tracking: 0.06em;
+    --mh-asterism-size: 14px;
+    --mh-asterism-gap: 14px;
+    --mh-asterism-color: var(--text-muted);
+
     /* ─── Three font roles (issue #66) ───
        --ui-font: chrome, menus, toolbars, buttons, dialogs
        --editor-font-en: Latin script inside the editor page — Courier Prime,
@@ -206,6 +222,68 @@
     --motion-base: 160ms;
     --motion-slow: 220ms;
     --motion-easing: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ─── Editorial masthead utility classes (#176) ───
+     Reusable across modals, sidebars and the welcome surface so the
+     masthead vocabulary stays consistent without each component
+     duplicating the rule structure. Left-aligned by default —
+     center-aligned variants keep the trailing rule visible (use the
+     class `mh-eyebrow.is-centered`). */
+  :global(.mh-eyebrow) {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--mh-rule-gap);
+    font-family: var(--ui-font);
+    font-size: var(--mh-eyebrow-size);
+    font-weight: 700;
+    letter-spacing: var(--mh-eyebrow-tracking);
+    text-transform: uppercase;
+    color: var(--mh-eyebrow-color);
+    line-height: 1;
+  }
+
+  :global(.mh-eyebrow .mh-rule) {
+    display: inline-block;
+    width: var(--mh-rule-width);
+    height: 1px;
+    background: var(--mh-rule-color);
+  }
+
+  /* In the left-aligned default, only the leading rule renders. The
+     `.is-centered` variant flips both back on. */
+  :global(.mh-eyebrow .mh-rule:last-child) {
+    display: none;
+  }
+
+  :global(.mh-eyebrow.is-centered .mh-rule:last-child) {
+    display: inline-block;
+  }
+
+  :global(.mh-asterism) {
+    display: inline-flex;
+    gap: var(--mh-asterism-gap);
+    color: var(--mh-asterism-color);
+    font-size: var(--mh-asterism-size);
+    line-height: 1;
+    user-select: none;
+  }
+
+  :global(.mh-title) {
+    font-family: var(--editor-font-en), ui-monospace, monospace;
+    font-weight: 700;
+    letter-spacing: var(--mh-title-tracking);
+    text-transform: uppercase;
+    color: var(--text-primary);
+    line-height: 1;
+  }
+
+  :global(.mh-subtitle) {
+    font-family: 'Manjari', var(--ui-font);
+    font-style: italic;
+    color: var(--text-secondary);
+    line-height: 1.3;
+    letter-spacing: 0.005em;
   }
 
   /* ─── Disabled button baseline ───

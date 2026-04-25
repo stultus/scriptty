@@ -105,6 +105,9 @@
     max-width: 90vw;
     box-shadow: var(--modal-shadow);
     animation: modal-in var(--modal-anim-duration) ease-out;
+    /* Classical frontispiece: centered masthead (logo + eyebrow +
+       title + tagline + asterism), then left-aligned reading
+       content (credits sections). */
     text-align: center;
     font-family: var(--ui-font);
     display: flex;
@@ -121,11 +124,11 @@
     width: 44px;
     height: 44px;
     border-radius: 10px;
-    margin-bottom: 16px;
+    margin-bottom: 18px;
     opacity: 0.92;
   }
 
-  /* ─── Editorial masthead ─── */
+  /* ─── Editorial masthead — centered frontispiece ─── */
   .masthead-eyebrow {
     display: inline-flex;
     align-items: center;
@@ -135,7 +138,7 @@
 
   .eyebrow-rule {
     display: inline-block;
-    width: 32px;
+    width: 28px;
     height: 1px;
     background: var(--border-medium);
   }
@@ -155,9 +158,9 @@
   .app-name {
     margin: 0;
     font-family: var(--editor-font-en), ui-monospace, monospace;
-    font-size: 32px;
+    font-size: 36px;
     font-weight: 700;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--text-primary);
     line-height: 1;
@@ -172,17 +175,51 @@
     line-height: 1.4;
   }
 
+  /* Horizontal masthead break — same vocabulary as the welcome
+     and cards-hero. Replaces the prior vertical asterism. */
   .asterism {
-    margin: 22px 0 22px;
-    font-size: 14px;
-    color: var(--text-muted);
-    letter-spacing: 0.4em;
-    line-height: 1;
-    user-select: none;
+    position: relative;
+    width: 100%;
+    height: 1px;
+    margin: 24px 0;
+    background: linear-gradient(
+      to right,
+      transparent 0,
+      var(--border-medium) 8%,
+      var(--border-medium) 46%,
+      transparent 47.5%,
+      transparent 52.5%,
+      var(--border-medium) 54%,
+      var(--border-medium) 92%,
+      transparent 100%);
+    color: transparent;
+    font-size: 0;
   }
 
+  .asterism::before {
+    content: '·';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1;
+    background: var(--surface-float);
+  }
+
+  /* Credits sections — left-aligned reading content beneath the
+     centered masthead. Classical magazine layout: display centered,
+     body flush-left. */
   .credits-section {
     margin-bottom: 18px;
+    text-align: left;
+    align-self: stretch;
   }
 
   /* Eyebrow style for credits headings — matches the masthead
@@ -236,10 +273,14 @@
     padding-top: 18px;
     border-top: 1px solid var(--border-subtle);
     align-self: stretch;
+    text-align: center;
   }
 
   .modal-footer {
     margin-top: 18px;
+    align-self: stretch;
+    display: flex;
+    justify-content: center;
   }
 
   .btn-ghost {

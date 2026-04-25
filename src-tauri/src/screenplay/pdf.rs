@@ -915,20 +915,27 @@ pub fn generate_typst_markup(
             }
             ScreenplayGroup::CharacterBlock { name, lines } => {
                 let escaped_name = escape_typst(name);
-                // Wrap the entire character + dialogue sequence in an unbreakable block
-                // so the character name is never separated from their lines.
+                // Wrap the entire character + dialogue sequence in an
+                // unbreakable block so the character name is never
+                // separated from their lines.
                 //
-                // Hollywood alignment (A4 210mm wide, 1.5"/3.81cm left margin,
-                // 1.0"/2.5cm right margin → text area 14.69cm). Positions given
-                // here are absolute from the page left edge; `pad(left: X)`
-                // values are `X = (absolute - 3.81cm)` relative to the text area:
-                // - Character cue:   9.0cm  from page left  → pad(left: 5.19cm)
-                // - Dialogue block:  6.5cm–15.5cm from page → pad(left: 2.69cm, right: 3cm)
-                // - Parenthetical:   7.5cm–15.0cm from page → pad(left: 3.69cm, right: 3.5cm)
-                // Using `pad(left:)` gives stable absolute positions rather than
-                // the content-width-dependent positions of centered blocks.
+                // Visual centerline alignment: character, parenthetical
+                // and dialogue all share the same horizontal axis so
+                // the dialogue + parenthetical read as visually
+                // anchored beneath the character cue.
+                //
+                // - Character cue: `#align(center)` — short single
+                //   line collapses to the centerline.
+                // - Parenthetical: centered block, `#align(center)`
+                //   inside #emph so the italic direction note also
+                //   sits on the centerline.
+                // - Dialogue: a 9cm-wide box centered on the text
+                //   area, with text left-aligned inside the box so
+                //   multi-line dialogue still reads in a natural
+                //   left-to-right wrap. The 9cm width matches the
+                //   classic Hollywood dialogue measure (~3.5").
                 let mut block = format!(
-                    "#block(breakable: false, width: 100%)[\n  #v(1.2em)\n  #pad(left: 5.19cm)[#text(weight: \"bold\")[{}]]\n  #v(0.2em)\n",
+                    "#block(breakable: false, width: 100%)[\n  #v(1.2em)\n  #align(center)[#text(weight: \"bold\")[{}]]\n  #v(0.2em)\n",
                     escaped_name.to_uppercase()
                 );
                 for line in lines {
@@ -942,20 +949,23 @@ pub fn generate_typst_markup(
                             } else {
                                 format!("({})", escaped)
                             };
-                            // Parenthetical: padded block, centered within the pad
-                            // so the text visually aligns under the character cue above
-                            // instead of sitting flush-left inside the pad.
+                            // Parenthetical: centered on the text-area
+                            // centerline, italic.
                             block.push_str(&format!(
-                                "  #pad(left: 3.69cm, right: 3.5cm)[#align(center)[#emph[{}]]]\n",
+                                "  #align(center)[#emph[{}]]\n",
                                 display
                             ));
                         }
                         DialogueLine::Dialogue(text, typst_inline) => {
                             // Auto-wrap dialogue in quotes if missing
                             let (prefix, suffix) = dialogue_quote_wrap(text);
-                            // Dialogue: padded block per Hollywood spec
+                            // Dialogue: a 9cm box centered on the text
+                            // area. The outer #align(center) centers the
+                            // box; the box inherits left-aligned text by
+                            // default so wrapped lines read naturally.
+                            let _ = text;
                             block.push_str(&format!(
-                                "  #pad(left: 2.69cm, right: 3cm)[{}{}{}]\n",
+                                "  #align(center)[#box(width: 9cm)[{}{}{}]]\n",
                                 prefix, typst_inline, suffix
                             ));
                         }

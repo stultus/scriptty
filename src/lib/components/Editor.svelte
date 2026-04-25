@@ -1039,10 +1039,16 @@
     opacity: 0.85;
   }
 
-  /* Character name: already auto-uppercased by the plugin; tracking widens
-     the caps so the cue reads as a label not a word (issue #70). */
+  /* Character / parenthetical / dialogue — all share a common visual
+     centerline so the dialogue + parenthetical read as visually
+     anchored to the character cue above. The character and
+     parenthetical are short single-line elements, so text-align:
+     center collapses them onto the centerline. The dialogue is a
+     centered narrow block with left-aligned text inside, so the block
+     stays centered but multi-line dialogue still wraps in a readable
+     left-to-right flow. */
   :global(.ProseMirror .character) {
-    margin-left: 200px;
+    text-align: center;
     margin-top: 1em;
     margin-bottom: 0;
     color: var(--text-on-page);
@@ -1051,8 +1057,9 @@
   }
 
   :global(.ProseMirror .dialogue) {
-    margin-left: 100px;
-    margin-right: 100px;
+    max-width: 360px;
+    margin-left: auto;
+    margin-right: auto;
     margin-top: 0;
     margin-bottom: 0.5em;
     color: var(--text-on-page);
@@ -1060,10 +1067,10 @@
   }
 
   /* Parenthetical: italic direction note, slightly smaller than body so it
-     reads as a whispered aside rather than a peer to dialogue (issue #70). */
+     reads as a whispered aside rather than a peer to dialogue (issue #70).
+     Text-align: center keeps it visually anchored beneath the character. */
   :global(.ProseMirror .parenthetical) {
-    margin-left: 160px;
-    margin-right: 160px;
+    text-align: center;
     margin-top: 0;
     margin-bottom: 0;
     color: var(--text-on-page);

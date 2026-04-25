@@ -660,6 +660,76 @@
     documentStore.markDirty();
   }
 
+  // ─── Inline scene-heading edit ──────────────────────────────────────
+  // Click the heading on a scene card to rename it without leaving the
+  // grid. Commits on Enter / blur; Escape reverts. Writes the new text
+  // back into the underlying scene_heading node so the editor view
+  // sees the same value.
+  let editingHeadingFor = $state<number | null>(null);
+  let headingDraft = $state('');
+
+  function beginHeadingEdit(sceneNumber: number, current: string) {
+    editingHeadingFor = sceneNumber;
+    headingDraft = current;
+  }
+
+  function cancelHeadingEdit() {
+    editingHeadingFor = null;
+    headingDraft = '';
+  }
+
+  function commitHeadingEdit(sceneNumber: number) {
+    if (editingHeadingFor !== sceneNumber) return;
+    const next = headingDraft.trim().toUpperCase();
+    writeSceneHeading(sceneNumber, next);
+    editingHeadingFor = null;
+    headingDraft = '';
+  }
+
+  /** Replace the Nth scene_heading's text content with `newText`.
+   *  Mirrors how the editor's autoUppercase plugin treats the heading
+   *  — uppercase on commit. Empty string is allowed (writer wants to
+   *  re-author it). */
+  function writeSceneHeading(sceneNumber: number, newText: string) {
+    const view = editorStore.view;
+    if (!view) return;
+    const doc = view.state.doc;
+    let count = 0;
+    let targetPos = -1;
+    let targetSize = 0;
+    doc.forEach((node, offset) => {
+      if (node.type.name === 'scene_heading') {
+        count++;
+        if (count === sceneNumber) {
+          targetPos = offset;
+          targetSize = node.content.size;
+        }
+      }
+    });
+    if (targetPos < 0) return;
+    const startPos = targetPos + 1; // inside the node
+    const endPos = startPos + targetSize;
+    const tr = view.state.tr;
+    if (newText) {
+      tr.replaceWith(startPos, endPos, view.state.schema.text(newText));
+    } else {
+      tr.delete(startPos, endPos);
+    }
+    view.dispatch(tr);
+    documentStore.setContent(view.state.doc.toJSON());
+    documentStore.markDirty();
+  }
+
+  function handleHeadingKeydown(event: KeyboardEvent, sceneNumber: number) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      commitHeadingEdit(sceneNumber);
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      cancelHeadingEdit();
+    }
+  }
+
   /** Add a new empty scene at the end of the ProseMirror document */
   function addScene() {
     const view = editorStore.view;
@@ -865,7 +935,24 @@
               {cardSetting === 'INT' ? 'I' : cardSetting === 'EXT' ? 'E' : 'I/E'}
             </span>
           {/if}
-          <span class="card-heading">{headingUpper}</span>
+          {#if editingHeadingFor === card.sceneNumber}
+            <!-- svelte-ignore a11y_autofocus -->
+            <input
+              class="card-heading-input"
+              bind:value={headingDraft}
+              onblur={() => commitHeadingEdit(card.sceneNumber)}
+              onkeydown={(e) => handleHeadingKeydown(e, card.sceneNumber)}
+              placeholder="INT. LOCATION — TIME"
+              autofocus
+            />
+          {:else}
+            <button
+              class="card-heading"
+              type="button"
+              onclick={() => beginHeadingEdit(card.sceneNumber, card.heading)}
+              title="Click to rename"
+            >{headingUpper || '(empty)'}</button>
+          {/if}
           <div class="card-actions-cluster">
             <button
               class="card-delete"
@@ -1541,18 +1628,49 @@
   }
 
   /* Scene heading on a card — Courier Prime bold, tracking matches the
-     editor's scene-heading style so cards and pages read as the same system. */
+     editor's scene-heading style so cards and pages read as the same
+     system. The heading is now a button: click to inline-edit. Hover
+     reveals a soft surface so the click affordance is discoverable. */
   .card-heading {
+    flex: 1;
+    min-width: 0;
+    padding: 2px 6px;
+    margin: 0 -4px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
     font-family: var(--editor-font-en), var(--editor-font-ml), ui-monospace, monospace;
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.04em;
     color: var(--text-primary);
+    text-align: left;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    cursor: text;
+    transition: background var(--motion-fast, 100ms) ease;
+  }
+
+  .card-heading:hover {
+    background: var(--surface-hover);
+  }
+
+  .card-heading-input {
     flex: 1;
     min-width: 0;
+    padding: 2px 6px;
+    margin: 0 -4px;
+    background: var(--surface-base);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    font-family: var(--editor-font-en), var(--editor-font-ml), ui-monospace, monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    outline: none;
   }
 
   /* Cluster for the duplicate / delete buttons in the card header

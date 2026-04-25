@@ -37,6 +37,24 @@
     return n;
   }
 
+  /** First N scene headings as plain strings. Renders into the card's
+   *  scene-peek list so the writer can scan what's inside each episode
+   *  without drilling in (#152). */
+  function sceneHeadingsFor(ep: Episode, limit: number): string[] {
+    const content = ep.content as {
+      content?: Array<{ type?: string; content?: Array<{ text?: string }> }>;
+    } | null;
+    if (!content?.content) return [];
+    const out: string[] = [];
+    for (const node of content.content) {
+      if (node.type !== 'scene_heading') continue;
+      const text = (node.content ?? []).map((c) => c.text ?? '').join('').trim();
+      out.push(text || '(empty)');
+      if (out.length >= limit) break;
+    }
+    return out;
+  }
+
   /** Rough page estimate using the same 3000-char-per-page heuristic the
    *  scene cards use. Sums all text length across the episode. */
   function pageEstimateFor(ep: Episode): string {
@@ -159,6 +177,8 @@
     {@const sceneCount = sceneCountFor(ep)}
     {@const pages = pageEstimateFor(ep)}
     {@const idea = ep.story?.idea ?? ''}
+    {@const peekHeadings = sceneHeadingsFor(ep, 3)}
+    {@const hiddenCount = sceneCount - peekHeadings.length}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -247,6 +267,30 @@
           value={idea}
           oninput={(e) => updateIdea(index, (e.target as HTMLTextAreaElement).value)}
         ></textarea>
+
+        <!-- Scene peek (#152) — first three scene headings so the writer
+             can scan progress without drilling in. Empty episodes show a
+             single muted line rather than collapsing the section. -->
+        <div class="ep-peek">
+          <span class="ep-field-label">Scenes</span>
+          {#if peekHeadings.length === 0}
+            <p class="ep-peek-empty">No scenes yet — drill in to start outlining.</p>
+          {:else}
+            <ol class="ep-peek-list">
+              {#each peekHeadings as heading, i}
+                <li class="ep-peek-row">
+                  <span class="ep-peek-num">{String(i + 1).padStart(2, '0')}</span>
+                  <span class="ep-peek-heading">{heading.toUpperCase()}</span>
+                </li>
+              {/each}
+              {#if hiddenCount > 0}
+                <li class="ep-peek-row ep-peek-more">
+                  …and {hiddenCount} more
+                </li>
+              {/if}
+            </ol>
+          {/if}
+        </div>
       </div>
 
       <footer class="ep-footer">
@@ -527,6 +571,68 @@
   .ep-textarea::placeholder {
     color: var(--text-muted);
     font-style: italic;
+  }
+
+  /* ─── Scene peek (#152) ─── */
+  .ep-peek {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 4px;
+  }
+
+  .ep-peek-empty {
+    margin: 0;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-style: italic;
+    line-height: 1.4;
+  }
+
+  .ep-peek-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .ep-peek-row {
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    align-items: baseline;
+    gap: 6px;
+    font-family: var(--editor-font-en), var(--editor-font-ml), ui-monospace, monospace;
+    font-size: 10.5px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+
+  .ep-peek-num {
+    color: var(--text-muted);
+    font-size: 9.5px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+    text-align: right;
+  }
+
+  .ep-peek-heading {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+  }
+
+  .ep-peek-more {
+    color: var(--text-muted);
+    font-style: italic;
+    font-family: var(--ui-font);
+    grid-column: 1 / -1;
+    text-align: left;
+    padding-left: 28px;
+    font-size: 10.5px;
   }
 
   /* ─── Footer ─── */

@@ -15,6 +15,16 @@
   let triggerEl = $state<HTMLButtonElement | null>(null);
   let popoverEl = $state<HTMLDivElement | null>(null);
 
+  /** Open direction — 'down' (default) or 'up' if there isn't room below
+   *  the trigger for the calendar. Flipped on open before the popover paints
+   *  so the writer never sees a misplaced calendar. */
+  let direction = $state<'down' | 'up'>('down');
+  /** Approx popover height — used for the flip decision. The actual rendered
+   *  height varies (footer changes when a date is set), so we use a generous
+   *  upper bound so a near-edge placement still flips correctly. */
+  const POPOVER_HEIGHT_GUESS = 320;
+  const POPOVER_GAP = 6;
+
   // The calendar's "viewing" month — independent of `value` so the writer
   // can flip months without committing a date. Seeds from the value if set,
   // today otherwise.
@@ -27,10 +37,25 @@
   let valueDate = $derived(parseISO(value));
 
   // Re-seed view when the modal re-opens with a different value (the parent
-  // form re-binds when the writer switches episodes etc.).
+  // form re-binds when the writer switches episodes etc.). Also decide which
+  // direction to open in based on viewport space — we flip the calendar
+  // upward when there isn't enough room below the trigger so it never lands
+  // off-screen (writer otherwise has to scroll the modal to see it).
   $effect(() => {
     if (!open) return;
     view = initialView();
+    if (triggerEl) {
+      const r = triggerEl.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - r.bottom;
+      const spaceAbove = r.top;
+      // Flip up if below doesn't fit AND above has more room. Default to
+      // down on a tie so the position is predictable.
+      direction = spaceBelow < POPOVER_HEIGHT_GUESS + POPOVER_GAP && spaceAbove > spaceBelow
+        ? 'up'
+        : 'down';
+    } else {
+      direction = 'down';
+    }
   });
 
   function parseISO(s: string): Date | null {
@@ -178,6 +203,7 @@
   {#if open}
     <div
       class="dp-popover"
+      class:up={direction === 'up'}
       role="dialog"
       aria-label="Pick a date"
       bind:this={popoverEl}
@@ -299,6 +325,10 @@
   }
 
   /* ─── Popover ─── */
+  /* Default opens DOWN (top: 100% + gap). When the trigger sits low in the
+     viewport, `.up` flips the popover above the trigger so it can't land
+     off-screen — the writer otherwise had to scroll the modal to see the
+     calendar (the original bug from the screenshot). */
   .dp-popover {
     position: absolute;
     z-index: 20;
@@ -316,8 +346,19 @@
     font-family: var(--ui-font);
   }
 
+  .dp-popover.up {
+    top: auto;
+    bottom: calc(100% + 6px);
+    animation: dp-in-up 120ms ease-out;
+  }
+
   @keyframes dp-in {
     from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes dp-in-up {
+    from { opacity: 0; transform: translateY(4px); }
     to   { opacity: 1; transform: translateY(0); }
   }
 

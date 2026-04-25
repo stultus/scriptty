@@ -139,10 +139,13 @@
 
       <div class="meta-body">
         <!-- ── Form column ────────────────────────────────────── -->
-        <section class="meta-form" aria-labelledby="form-heading">
+        <section class="meta-form" aria-label="Metadata fields">
+          <!-- Identity section — no heading. The first group is implicit
+               (the modal's own title already says "Metadata · Title page"),
+               so a redundant "Identity" label was just stealing vertical
+               room a 13" laptop didn't have. Production gets the only
+               heading because it's a clear shift in intent. -->
           <div class="form-group">
-            <h3 id="form-heading" class="form-section-heading">Identity</h3>
-
             <div class="field">
               <label for="meta-title">
                 <span class="field-name">Title</span>
@@ -211,7 +214,7 @@
                 <span class="field-name">Contact</span>
                 <span class="field-meta">Address · phone · email</span>
               </label>
-              <textarea id="meta-contact" rows="3" bind:value={contact} placeholder="Bottom-left of the title page"></textarea>
+              <textarea id="meta-contact" rows="2" bind:value={contact} placeholder="Bottom-left of the title page"></textarea>
             </div>
 
             <div class="field-row">
@@ -462,10 +465,21 @@
   .meta-form {
     min-height: 0;
     overflow-y: auto;
-    padding: 26px 32px 28px;
+    padding: 20px 28px 22px;
     display: flex;
     flex-direction: column;
-    gap: 22px;
+    gap: 14px;
+  }
+
+  /* Scrollbar styled so it visually disappears unless actively scrolling.
+     The modal was sized to fit on a normal viewport without needing it,
+     but if the writer's screen is short or the form gets new fields, this
+     is the gentle fallback. */
+  .meta-form::-webkit-scrollbar { width: 6px; }
+  .meta-form::-webkit-scrollbar-track { background: transparent; }
+  .meta-form::-webkit-scrollbar-thumb {
+    background: var(--border-medium);
+    border-radius: 3px;
   }
 
   /* Section group — heading + fields cluster, with a soft divider between
@@ -530,7 +544,7 @@
   .field input,
   .field textarea {
     width: 100%;
-    padding: 10px 12px;
+    padding: 8px 11px;
     font-size: 12.5px;
     color: var(--text-primary);
     background: var(--surface-base);
@@ -557,8 +571,20 @@
 
   .field textarea {
     resize: vertical;
-    line-height: 1.5;
-    min-height: 84px;
+    line-height: 1.45;
+    min-height: 64px;
+  }
+
+  /* The Footnote textarea is the shortest in the form — keep it small so
+     the whole form fits without scrolling on a 13" laptop viewport. */
+  #meta-footnote {
+    min-height: 52px;
+  }
+
+  /* Contact textarea slightly taller than other prose — it commonly
+     holds 3-4 short address lines. */
+  #meta-contact {
+    min-height: 70px;
   }
 
   .field input[type='number'] {
@@ -581,7 +607,7 @@
   .form-group {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 11px;
   }
 
   /* ─── Live title-page preview ─── */

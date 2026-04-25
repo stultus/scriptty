@@ -185,6 +185,22 @@
     pointer-events: none;
   }
 
+  /* ─── Global focus-visible ring ───
+     Keyboard users tabbing through chrome buttons (TitleBar, StatusBar,
+     CommandPalette, SeriesEpisodeList, etc.) need a visible focus indicator.
+     `:focus-visible` only triggers on keyboard focus, so mouse clicks don't
+     get an outline (matching native browser behavior). `border-radius: inherit`
+     keeps the ring shaped like the button. Components can opt out with
+     `outline: none` on focus-visible if they own a richer indicator. */
+  :global(button:focus-visible),
+  :global([role='button']:focus-visible),
+  :global([role='tab']:focus-visible),
+  :global([role='option']:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: inherit;
+  }
+
   /* ─── Scrollbar styling ─── */
   :global(::-webkit-scrollbar) {
     width: 6px;

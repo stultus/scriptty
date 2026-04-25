@@ -10,6 +10,7 @@
   import { screenplaySchema } from '$lib/editor/schema';
   import { InputModeManager } from '$lib/editor/input/InputModeManager';
   import StatusBar from '$lib/components/StatusBar.svelte';
+  import EpisodeCardsView from '$lib/components/EpisodeCardsView.svelte';
 
   // Map the font setting slug to a CSS font-family name
   let fontFamily = $derived(
@@ -17,6 +18,57 @@
   );
 
   const inputManager = InputModeManager.getInstance();
+
+  // ─── Card view level (#134) ───────────────────────────────────────
+  // For series projects, the Card View opens at the Episode level by
+  // default — episodes-first matches how writers plan top-down. Clicking
+  // an episode card drills into the per-episode scene grid; the
+  // breadcrumb up top hands the writer back. For non-series projects we
+  // skip the level entirely (always 'scenes').
+  type CardLevel = 'episodes' | 'scenes';
+
+  /** Storage key — per-project so each script remembers its own drill state.
+   *  Untitled docs share one key; that's a small UX compromise but avoids
+   *  losing state across launches for the dominant case. */
+  function storageKey(): string {
+    const path = documentStore.currentPath ?? '__untitled__';
+    return `scriptty-card-level:${path}`;
+  }
+
+  function initialLevel(): CardLevel {
+    if (!documentStore.isSeries) return 'scenes';
+    if (typeof localStorage === 'undefined') return 'episodes';
+    const stored = localStorage.getItem(storageKey());
+    return stored === 'scenes' ? 'scenes' : 'episodes';
+  }
+
+  let cardLevel = $state<CardLevel>(initialLevel());
+
+  /** Reset the level when the document changes (open / new). The path
+   *  changes on those flows, so re-seeding from localStorage gives the
+   *  newly-loaded project its own remembered drill state. */
+  $effect(() => {
+    documentStore.currentPath; // dependency
+    documentStore.isSeries;    // dependency
+    cardLevel = initialLevel();
+  });
+
+  /** Persist on change. */
+  $effect(() => {
+    if (typeof localStorage === 'undefined') return;
+    if (documentStore.isSeries) {
+      localStorage.setItem(storageKey(), cardLevel);
+    }
+  });
+
+  function openEpisode(index: number) {
+    documentStore.setActiveEpisode(index);
+    cardLevel = 'scenes';
+  }
+
+  function backToEpisodes() {
+    cardLevel = 'episodes';
+  }
 
   /** Handle Malayalam input in card textareas */
   function handleKeydown(event: KeyboardEvent) {
@@ -584,14 +636,60 @@
 </script>
 
 <div class="scene-cards-view" style="--editor-font-ml: '{fontFamily}'">
-  <div class="cards-toolbar">
-    <span class="toolbar-count">{cards.length} {cards.length === 1 ? 'scene' : 'scenes'}</span>
-    <div class="toolbar-spacer"></div>
-    <label class="toolbar-toggle" title="Cluster cards by their Location group, then by Shoot date">
-      <input type="checkbox" bind:checked={groupByLocation} />
-      <span>Group by location</span>
-    </label>
-  </div>
+  {#if documentStore.isSeries && cardLevel === 'episodes'}
+    <!-- Episode level: top toolbar shows the series title + episode count.
+         No "Group by location" here — that toggle is scene-scoped. -->
+    <div class="cards-toolbar">
+      <div class="toolbar-crumb">
+        <span class="toolbar-eyebrow">Series</span>
+        <span class="toolbar-title">{documentStore.document?.series?.title || 'Untitled Series'}</span>
+      </div>
+      <div class="toolbar-spacer"></div>
+      <span class="toolbar-count">
+        {(documentStore.document?.series?.episodes?.length ?? 0)}
+        {(documentStore.document?.series?.episodes?.length ?? 0) === 1 ? 'episode' : 'episodes'}
+      </span>
+    </div>
+  {:else if documentStore.isSeries && cardLevel === 'scenes'}
+    <!-- Drilled-in: breadcrumb back to episodes + the active episode title. -->
+    <div class="cards-toolbar with-breadcrumb">
+      <button class="crumb-back" type="button" onclick={backToEpisodes} title="Back to episodes">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 18 L9 12 L15 6"/>
+        </svg>
+        <span>Episodes</span>
+      </button>
+      <span class="crumb-sep" aria-hidden="true">/</span>
+      <div class="toolbar-crumb">
+        <span class="toolbar-eyebrow">Episode {documentStore.activeEpisode?.number ?? ''}</span>
+        <span class="toolbar-title">{documentStore.activeEpisode?.title?.trim() || 'Untitled'}</span>
+      </div>
+      <div class="toolbar-spacer"></div>
+      <span class="toolbar-count">{cards.length} {cards.length === 1 ? 'scene' : 'scenes'}</span>
+      <label class="toolbar-toggle" title="Cluster cards by their Location group, then by Shoot date">
+        <input type="checkbox" bind:checked={groupByLocation} />
+        <span>Group by location</span>
+      </label>
+    </div>
+  {:else}
+    <!-- Film project — no series, no breadcrumb, original toolbar shape. -->
+    <div class="cards-toolbar">
+      <span class="toolbar-count">{cards.length} {cards.length === 1 ? 'scene' : 'scenes'}</span>
+      <div class="toolbar-spacer"></div>
+      <label class="toolbar-toggle" title="Cluster cards by their Location group, then by Shoot date">
+        <input type="checkbox" bind:checked={groupByLocation} />
+        <span>Group by location</span>
+      </label>
+    </div>
+  {/if}
+
+  {#if documentStore.isSeries && cardLevel === 'episodes'}
+    <!-- Episode-level grid (#134). The inner component handles its own
+         drag-reorder, rename, delete, and add. Drilling is via callback. -->
+    <div class="episodes-pane">
+      <EpisodeCardsView onOpenEpisode={openEpisode} />
+    </div>
+  {:else}
   <div class="cards-grid" bind:this={gridEl}>
     {#each displayCards as card (card.key)}
       <div
@@ -719,6 +817,7 @@
     style="width: {ghostW}px; height: {ghostH}px; transform: translate({ghostX}px, {ghostY}px);"
     aria-hidden="true"
   ></div>
+  {/if}
 </div>
 
 <style>
@@ -764,6 +863,73 @@
   .toolbar-toggle input[type='checkbox'] {
     accent-color: var(--accent);
     cursor: pointer;
+  }
+
+  /* ─── Breadcrumb / drilled-in toolbar (#134) ─── */
+  .cards-toolbar.with-breadcrumb {
+    margin-bottom: 18px;
+  }
+
+  .crumb-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px 4px 6px;
+    border-radius: 6px;
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-base);
+    color: var(--text-secondary);
+    font-family: var(--ui-font);
+    font-size: 11.5px;
+    cursor: pointer;
+    transition: background var(--motion-fast, 100ms) ease,
+                color var(--motion-fast, 100ms) ease,
+                border-color var(--motion-fast, 100ms) ease;
+  }
+
+  .crumb-back:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+    border-color: var(--border-medium);
+  }
+
+  .crumb-sep {
+    color: var(--text-muted);
+    font-size: 12px;
+    opacity: 0.5;
+  }
+
+  .toolbar-crumb {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .toolbar-eyebrow {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .toolbar-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    max-width: 280px;
+  }
+
+  /* Episode-cards pane just provides the same scrollable container as the
+     scene grid; the inner EpisodeCardsView owns its own grid layout. */
+  .episodes-pane {
+    flex: 1;
+    min-height: 0;
   }
 
   /* Drag handle becomes visually disabled while Group by location is on,

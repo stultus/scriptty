@@ -14,22 +14,37 @@ Built with Tauri 2, SvelteKit, TypeScript, ProseMirror, and Typst.
 
 ## Features
 
-- Hollywood single-column and Indian two-column PDF export
-- Malayalam input — Mozhi, Inscript 1, and Inscript 2 schemes
+- **Film and web series projects** — one `.screenplay` file holds either a single
+  screenplay or an entire series with multiple episodes
+- Hollywood single-column and Indian two-column PDF export with auto-generated
+  title pages (smart "Written and Directed by" credits)
+- Fountain and plain-text export for interoperability
+- Malayalam input — Mozhi, Inscript 1, and Inscript 2 schemes; `Ctrl+Space`
+  toggles English/Malayalam mid-line
 - Mixed-script writing — Malayalam and English in the same document
-- Scene navigator with click-to-jump and auto-numbering
-- Bundled fonts — Noto Sans Malayalam and Manjari
-- Fully offline — no cloud, no telemetry, no subscription
-- .screenplay file format — plain JSON, version-control friendly
+- ⌘K Command palette — fuzzy-search every command and scene heading
+- Scene Navigator — click-to-jump, auto-numbering, drag-to-reorder, INT/EXT/DAY/NIGHT signals
+- Outline Peek — bottom strip showing scene context as you write
+- Story panel + full-screen Story Mode — idea, synopsis, treatment, narrative
+- Scene Cards — per-scene shoot-planning grid with auto-detected characters
+- Find & replace, statistics (page/scene/word/dialogue counts), character autocomplete
+- Bundled fonts — Manjari (default), Noto Sans Malayalam, Courier Prime
+- Warm Kerala-rooted theme — dark and light modes
+- Fully offline — no cloud, no telemetry, no subscription, no account
+- `.screenplay` file format — plain JSON, version-control friendly
 
 ## Supported Platforms
 
-- macOS (primary)
-- Windows and Linux (Tauri 2 supported, untested)
+Signed installers shipped for every release (see [Releases](https://github.com/stultus/scriptty/releases)):
+
+- macOS — Apple Silicon and Intel `.dmg`
+- Windows — `.exe` and `.msi`
+- Linux — `.deb`, `.AppImage`, and `.rpm`
 
 ## Development Setup
 
-Prerequisites: Rust 1.70+, Node.js 18+, npm
+Prerequisites: Rust 1.77+, Node.js 22, npm
+
 ```bash
 git clone https://github.com/stultus/scriptty.git
 cd scriptty
@@ -42,14 +57,14 @@ npx tauri dev
 npx tauri build
 ```
 
-Output: src-tauri/target/release/bundle/
+Output: `src-tauri/target/release/bundle/`
 
 ## Tech Stack
 
-- Frontend: SvelteKit + TypeScript + ProseMirror
+- Frontend: SvelteKit + Svelte 5 (runes) + TypeScript + ProseMirror
 - Backend: Tauri 2 + Rust
 - PDF: Typst (in-memory compilation, no temp files)
-- Fonts: Noto Sans Malayalam, Manjari (SIL OFL 1.1)
+- Fonts: Manjari, Noto Sans Malayalam, Courier Prime (all SIL OFL 1.1)
 
 ## License
 

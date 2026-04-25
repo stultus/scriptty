@@ -48,30 +48,46 @@ scriptty/
 ├── src/                          # Svelte frontend
 │   ├── lib/
 │   │   ├── editor/               # ProseMirror screenplay editor
-│   │   │   ├── schema.ts         # Screenplay element schema
-│   │   │   ├── keymap.ts         # Tab/Enter navigation
-│   │   │   ├── autoUppercase.ts  # Auto-uppercase plugin for scene headings/characters
-│   │   │   └── input/            # Malayalam input engine
+│   │   │   ├── schema.ts             # Screenplay element schema
+│   │   │   ├── keymap.ts             # Tab/Enter navigation
+│   │   │   ├── autoUppercase.ts      # Auto-uppercase plugin for scene headings/characters
+│   │   │   ├── characterAutocomplete.ts  # Character-name suggestion plugin
+│   │   │   ├── characterList.ts      # Per-scene character extraction
+│   │   │   ├── findReplace.ts        # Find/replace plugin with DecorationSet
+│   │   │   └── input/                # Malayalam input engine
 │   │   │       ├── InputModeManager.ts
 │   │   │       ├── mozhi.ts
 │   │   │       ├── inscript1.ts
 │   │   │       └── inscript2.ts
 │   │   ├── stores/               # Svelte stores (app state)
-│   │   │   ├── documentStore.svelte.ts  # Document state (content, meta, settings, dirty)
+│   │   │   ├── documentStore.svelte.ts  # Document state + active-episode accessors
 │   │   │   ├── editorStore.svelte.ts    # Shared EditorView reference
-│   │   │   └── themeStore.svelte.ts     # Dark/light theme toggle with localStorage
+│   │   │   ├── themeStore.svelte.ts     # Dark/light theme toggle with localStorage
+│   │   │   └── updateStore.svelte.ts    # In-app update check state
+│   │   ├── actions/              # Svelte actions
+│   │   │   └── focusTrap.ts          # Modal focus trap + restoration
 │   │   └── components/           # UI components
-│   │       ├── Editor.svelte          # ProseMirror editor + status bar
-│   │       ├── TitleBar.svelte        # Top bar: actions, title, font/theme controls
-│   │       ├── LeftPanel.svelte       # Scene navigator sidebar
-│   │       ├── SceneNavigator.svelte  # Scene list with click-to-jump
-│   │       ├── SceneCardsView.svelte  # Full-panel grid of scene breakdown cards
-│   │       ├── StoryModeView.svelte  # Full-screen narrative writing view
-│   │       ├── MetadataModal.svelte   # Screenplay metadata editor
-│   │       ├── ExportModal.svelte     # Combined PDF export with section selection
-│   │       ├── SettingsModal.svelte    # Consolidated settings (language, scheme, font, theme)
-│   │       ├── HelpModal.svelte       # User guide with keyboard shortcuts
-│   │       └── AboutModal.svelte      # App info, credits, version
+│   │       ├── WelcomeScreen.svelte    # Landing screen — new film, new series, open
+│   │       ├── Editor.svelte           # ProseMirror editor + scene number gutter
+│   │       ├── TitleBar.svelte         # Top bar: actions, title, view switcher
+│   │       ├── StatusBar.svelte        # Bottom bar: language, scheme, save state, gear
+│   │       ├── LeftPanel.svelte        # Sidebar wrapper (scene navigator OR episode list)
+│   │       ├── SceneNavigator.svelte   # Scene list — click-to-jump, drag-to-reorder
+│   │       ├── SeriesEpisodeList.svelte # Episode tree for Series projects
+│   │       ├── SeriesTitleDialog.svelte # New-series title prompt
+│   │       ├── SceneCardsView.svelte   # Full-panel grid of scene breakdown cards
+│   │       ├── StoryModeView.svelte    # Full-screen narrative writing view
+│   │       ├── OutlinePeek.svelte      # Bottom strip showing current scene context
+│   │       ├── CommandPalette.svelte   # ⌘K palette — commands + scene jump
+│   │       ├── FormatBubble.svelte     # Floating B/I/U bubble above selection
+│   │       ├── FindReplaceBar.svelte   # Inline find/replace UI (Cmd+F, Cmd+Shift+H)
+│   │       ├── MetadataModal.svelte    # Screenplay metadata editor
+│   │       ├── ExportModal.svelte      # Combined PDF/Fountain/text export
+│   │       ├── SettingsModal.svelte    # Consolidated settings popover
+│   │       ├── StatisticsModal.svelte  # Page/scene/word/dialogue statistics
+│   │       ├── HelpModal.svelte        # User guide with keyboard shortcuts
+│   │       ├── AboutModal.svelte       # App info, credits, version
+│   │       └── UpdateToast.svelte      # Non-intrusive new-version toast
 │   └── routes/                   # SvelteKit pages
 │       ├── +layout.svelte        # Global reset, CSS variables, theme system
 │       └── +page.svelte          # Main app page, keyboard shortcuts, menu events
@@ -81,18 +97,24 @@ scriptty/
 │   │   ├── lib.rs                # App builder, native menu setup
 │   │   ├── commands/             # Tauri commands (called from frontend)
 │   │   │   ├── mod.rs
-│   │   │   ├── file.rs           # save/open .screenplay files
-│   │   │   └── export.rs         # PDF, Fountain, plain text export
+│   │   │   ├── file.rs               # save/open/new .screenplay files
+│   │   │   └── export.rs             # PDF, Fountain, plain text export
 │   │   ├── screenplay/           # Document model and business logic
 │   │   │   ├── mod.rs
-│   │   │   ├── document.rs       # .screenplay JSON schema
-│   │   │   └── pdf.rs            # Typst PDF generation
+│   │   │   ├── document.rs           # .screenplay JSON schema (incl. series)
+│   │   │   ├── pdf.rs                # Typst PDF generation
+│   │   │   ├── fountain.rs           # Fountain export
+│   │   │   └── plaintext.rs          # Plain text export
 │   │   └── fonts/                # Font loading for Typst
-│   ├── fonts/                    # Bundled .ttf files (Noto Sans Malayalam, Manjari)
+│   ├── fonts/                    # Fonts embedded in PDFs (Noto Sans Malayalam, Manjari)
 │   ├── Cargo.toml
 │   └── tauri.conf.json
 ├── static/
-│   └── fonts/                    # Fonts served to the Svelte UI
+│   └── fonts/                    # Fonts served to the Svelte UI (incl. Courier Prime)
+├── docs/                         # GitHub Pages site (scriptty.app)
+│   ├── index.html
+│   └── downloads.json            # Auto-updated on each release
+├── .github/workflows/            # CI: cross-platform build + release tagging
 ├── .claude/                      # Claude Code configuration
 │   ├── CLAUDE.md                 # This file
 │   ├── PROGRESS.md               # Development progress tracker
@@ -148,13 +170,17 @@ These are final. Do not suggest alternatives unless explicitly asked.
 
 ### Fonts
 
-- Bundled fonts: Noto Sans Malayalam (default), Manjari (alternative)
-- Both fonts licensed SIL OFL 1.1 — safe to bundle in commercial software
-- Single font applies to ALL text — Malayalam and English both use the same font
+- Bundled fonts (PDF + UI): **Manjari** (default), **Noto Sans Malayalam**
+- UI-only font: **Courier Prime** — used by the editor for the classic screenplay
+  monospace look on Latin text; not embedded in PDFs
+- All fonts licensed SIL OFL 1.1 — safe to bundle in commercial software
+- One selected font applies to all editor text — Malayalam and English both use it
 - Font files live in two places:
-  - `src-tauri/fonts/` — for Typst PDF embedding
-  - `static/fonts/` — for the Svelte UI via CSS
+  - `src-tauri/fonts/` — embedded in PDFs at export time (Manjari, Noto only)
+  - `static/fonts/` — served to the Svelte UI via CSS (Manjari, Noto, Courier Prime)
 - No system font dependency — app works on a fresh OS install
+- Default font slug is the constant `DEFAULT_FONT` in `src-tauri/src/screenplay/document.rs`
+  (currently `"manjari"`); both `default_font()` and `ScreenplaySettings::default()` reference it
 
 ### PDF Export
 
@@ -167,15 +193,22 @@ These are final. Do not suggest alternatives unless explicitly asked.
 
 ### File Format (.screenplay)
 
-JSON with top-level keys:
+JSON. Two top-level shapes — Film (default) and Series — distinguished by the
+`type` field. Films use the top-level meta/settings/story/content/scene_cards
+directly. Series files put real data inside `series.episodes[]` and the
+top-level fields are placeholders.
 
 ```json
 {
+  "type": "film",
   "content": {},
   "meta": {
     "title": "",
     "author": "",
     "director": "",
+    "tagline": "",
+    "registration_number": "",
+    "footnote": "",
     "contact": "",
     "draft_number": 1,
     "draft_date": "",
@@ -183,10 +216,11 @@ JSON with top-level keys:
     "updated_at": ""
   },
   "settings": {
-    "font": "noto-sans-malayalam",
+    "font": "manjari",
     "default_language": "malayalam",
     "input_scheme": "mozhi",
-    "scene_number_start": 1
+    "scene_number_start": 1,
+    "show_characters_below_header": false
   },
   "story": {
     "idea": "",
@@ -198,10 +232,44 @@ JSON with top-level keys:
 }
 ```
 
-`content` is the ProseMirror document JSON serialization.
-`meta` includes `director` field (added with `#[serde(default)]` for backward compat).
-`story` holds Story view text sections (idea, synopsis, treatment, narrative).
-`scene_cards` holds per-scene descriptions and shoot notes.
+Series file shape:
+
+```json
+{
+  "type": "series",
+  "series": {
+    "title": "The Return",
+    "episodes": [
+      {
+        "id": "uuid-...",
+        "number": 1,
+        "title": "Pilot",
+        "content": {},
+        "meta": { ... },
+        "settings": { ... },
+        "story": { ... },
+        "scene_cards": []
+      }
+    ]
+  }
+}
+```
+
+Notes:
+- `type` defaults to `"film"` when missing — every legacy file loads unchanged.
+- Every meta/settings field is `#[serde(default)]`, so slim or hand-authored
+  files (and series episodes that omit timestamps) deserialize without error.
+- `meta` carries optional `tagline`, `registration_number`, and `footnote` fields
+  for the title page.
+- `settings.scene_number_start` is clamped to 1..=9999 on deserialize.
+- `settings.show_characters_below_header` toggles the auto-generated character
+  line under each scene heading in the editor.
+- `scene_cards[].extra_characters` is a comma-separated list of background /
+  silent characters merged with auto-detected speakers.
+- `scene_cards[].scene_index` is a 0-based pointer into the flat ordered list
+  of scene_heading nodes — not a stable ID. For series, the frontend's
+  `buildSeriesExportDocument` flattens episode cards into a single list before
+  the backend sees them; the PDF generator relies on that flattening.
 
 Full format spec: see `SCREENPLAY_FORMAT.md` at project root.
 
@@ -232,12 +300,58 @@ Full format spec: see `SCREENPLAY_FORMAT.md` at project root.
 ### Scene Navigator
 
 - Collapsible left panel, toggle with Ctrl+B
-- Shows: auto-computed scene number + scene heading text
+- Shows: auto-computed scene number + scene heading text + visual signals
+  (INT/EXT, DAY/NIGHT, notes presence)
 - Scene numbers derived from document order, offset by `scene_number_start` setting
 - `scene_number_start` is a per-document setting (default 1), configurable in Settings modal
 - Useful for co-writing: each writer's file can start numbering from their assigned range
 - Drag to rearrange scenes triggers auto-renumber
 - Click to jump to scene
+- For Series projects, `LeftPanel` shows `SeriesEpisodeList` instead — episodes
+  expand to reveal their own `SceneNavigator` for the active episode
+
+### Series Mode
+
+- Activated when `document.type === "series"` (or via "New Series" on the
+  Welcome screen / File menu)
+- Series have a top-level title plus an ordered list of episodes; each
+  episode is a complete screenplay (own meta/settings/story/content/scene_cards)
+- `documentStore` exposes active-* accessors (`activeContent`, `activeMeta`,
+  `activeSettings`, `activeStory`, `activeSceneCards`, `activeEpisode`,
+  `activeEpisodeIndex`) that multiplex film vs. series data — UI components
+  read these instead of branching on project type
+- Active episode auto-expands in the navigator; switching slides smoothly
+- Series export generates a series-level title page; episode cards are
+  flattened into a single 0-based scene list before the backend renders
+  (see `buildSeriesExportDocument` in `ExportModal.svelte`)
+- Synthetic `episode_boundary` ProseMirror node carries pagebreaks between
+  episodes during series PDF export
+
+### Command Palette
+
+- ⌘K opens a fuzzy-search palette listing every command and every scene heading
+- Keyboard-first: arrow keys navigate, Enter activates, Escape dismisses
+- Replaces several status bar / menu lookups for power-user flow
+
+### Outline Peek
+
+- Bottom strip in the editor showing the current scene in context
+- Displays scene heading, position ("Scene 7 of 42"), and adjacent scene previews
+- Off by default; toggleable from Settings or View menu
+
+### Find & Replace
+
+- ProseMirror plugin with DecorationSet for search highlighting
+- `Cmd+F` opens find, `Cmd+Shift+H` opens find-and-replace
+- Case sensitivity toggle, prev/next match navigation
+- Replace-all is a single ProseMirror transaction (one undo step)
+
+### Update Notifications
+
+- `Help → Check for Updates` performs an in-app version check
+- Non-intrusive `UpdateToast` shown when a newer version is available
+- Powered by `updateStore.svelte.ts`; never blocks startup or writes
+  localStorage nags
 
 ### Theme System
 
@@ -347,9 +461,12 @@ cargo tauri build
   types and structs
 - Never use `unwrap()` in Tauri command handlers — always use `?` or match on errors
 - All public functions must have a doc comment (`///`)
-- Return `Result<T, String>` from all Tauri commands so errors surface cleanly to the
-  frontend
+- Return `Result<T, String>` from Tauri commands that can fail. For genuinely
+  infallible commands, return `T` directly — don't fake a `Result` (see #91 / commit
+  3f6d516 dropping `Result` from `new_screenplay`)
 - Use `serde` for all JSON serialization/deserialization
+- Keep `cargo clippy` and `npx svelte-check` at zero warnings — both are gates
+  before any commit
 
 ---
 
@@ -369,9 +486,11 @@ This means:
 
 ### Parenthetical Elements
 
-- Auto-parentheses via CSS `::before`/`::after` pseudo-elements — parens are visual only, not stored in content
-- All export formats (PDF, Fountain, plain text) defensively wrap in parens if not already present
-- ProseMirror trailing `<br>` hidden in empty parentheticals to keep `()` on one line
+- Parentheses are stored **in content** (commit 27a126f / issue #59) — not via
+  CSS pseudo-elements. Copy/paste, Fountain export, and external editors all see
+  the literal `( )` characters.
+- Empty parentheticals still render `()` on one line (trailing `<br>` hidden).
+- All export formats defensively wrap in parens if the content somehow lacks them.
 
 ## Remaining Work
 
@@ -382,7 +501,6 @@ This means:
 ## Deferred (Do Not Implement Yet)
 
 - FDX (Final Draft XML) export
-- Courier font / Hollywood submission mode
 - Rachana font / traditional Malayalam orthography
 - Import from Final Draft / Fountain
 - Real-time collaboration

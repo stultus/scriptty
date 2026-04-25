@@ -1,6 +1,6 @@
 # Scriptty — Development Progress
 
-## Status: Phase 5 Complete — Continuous page view, settings modal, menu bar cleanup
+## Status: v0.7.0 shipped — Web series support, command palette, outline peek, Kerala palette
 
 ---
 
@@ -246,6 +246,81 @@
 
 ---
 
+## Phase 6 — Completed (v0.6.x → v0.7.0)
+
+### 22. In-app Updates
+- [x] `Help → Check for Updates` menu item with non-intrusive `UpdateToast`
+- [x] `updateStore.svelte.ts` performs the version check on demand
+- [x] Toast z-index lowered below modals (#56)
+
+### 23. Theme & Typography
+- [x] Kerala palette — teal accent, amber dirty-indicator, oxblood error tones (#69)
+- [x] Courier Prime + new typography hierarchy (#66, #70) — UI font, not embedded in PDFs
+- [x] Subtle fractal grain on the screenplay page (#68)
+- [x] Cool find-match highlight, raised page depth, SVG drag handle (#62, #64, #65)
+
+### 24. Editor Polish
+- [x] Floating B/I/U bubble above selection (`FormatBubble.svelte`, #71)
+- [x] Visual signals in Scene Navigator — INT/EXT, DAY/NIGHT, notes (#72)
+- [x] Signature scene-number gutter (#67)
+- [x] Outline Peek strip at the bottom of the editor (#75)
+- [x] Mid-scene transitions — Enter after Transition creates Action (montage support)
+- [x] Parenthetical parens stored in content, not CSS (#59 / commit 27a126f)
+- [x] Required title validation in MetadataModal (#61)
+- [x] Document Properties moved from View → File menu (#77)
+
+### 25. Command Palette & Status Bar
+- [x] ⌘K Command Palette with fuzzy search (#76)
+- [x] Quieter status bar (#76) — view-switcher shortcuts on hover (#74)
+- [x] "Saved N min ago" indicator (#73)
+- [x] Symmetric view-switcher tabs
+
+### 26. Performance
+- [x] Consolidated gutter RAF chain + resize observer (#63)
+- [x] Event-driven input mode (replaced 200ms polling, #60)
+
+### 27. Web Series Support
+- [x] Series data model + `ProjectType::Film | Series` enum
+- [x] Active-episode accessors on `documentStore` — `activeContent`, `activeMeta`,
+      `activeSettings`, `activeStory`, `activeSceneCards`, `activeEpisode`,
+      `activeEpisodeIndex`
+- [x] `SeriesEpisodeList.svelte` — episode tree with rename/reorder/delete
+- [x] `SeriesTitleDialog.svelte` — new-series prompt
+- [x] Series-aware: Statistics, OutlinePeek, MetadataModal, ExportModal
+- [x] Series-level title page in exports
+- [x] Synthetic `episode_boundary` ProseMirror node for inter-episode pagebreaks
+- [x] Smooth slide animation when switching active episode
+- [x] Scene-card character extras keyed by flat `scene_index` across episodes
+
+### 28. Issue-review batch (#78–#97)
+- [x] Series export in backend commands (#78)
+- [x] StatisticsModal / OutlinePeek read activeContent (#79, #80)
+- [x] Scene-card extras keying in series PDF (#81)
+- [x] Hardcoded colors → theme tokens for light theme (#82)
+- [x] Listener leak on mount error (#83)
+- [x] ExportModal episode breadcrumb (#84)
+- [x] MetadataModal live-resync on episode switch (#85)
+- [x] Series-level title page (#86)
+- [x] New episode inherits current font (#87)
+- [x] Modal focus restoration (#88)
+- [x] Modal close-button spec unified (#89)
+- [x] AboutModal error handling (#90)
+- [x] Drop `Result` from infallible `new_screenplay` (#91)
+- [x] PDF renderer logs unknown elements (#92)
+- [x] `SceneCard.scene_index` semantics documented on Rust + TS sides (#93)
+- [x] SceneNavigator icon-button aria-labels (#94)
+- [x] Episode label width in TitleBar (#95)
+- [x] Clippy pedantic warnings in pdf.rs (#96)
+- [x] Single `DEFAULT_FONT` const (#97)
+
+### 29. Release engineering
+- [x] All four platforms ship signed/notarized installers (macOS arm64, macOS x64,
+      Windows, Linux deb/AppImage/rpm) via tauri-action matrix build
+- [x] `update-downloads.yml` workflow auto-refreshes `docs/downloads.json` on release
+- [x] `cargo clippy` + `npx svelte-check` at zero warnings (gate)
+
+---
+
 ## Remaining Work
 
 ### Medium Term
@@ -257,7 +332,6 @@
 ## Deferred (Do Not Implement Yet)
 
 - FDX (Final Draft XML) export
-- Courier font / Hollywood submission mode
 - Rachana font / traditional Malayalam orthography
 - Import from Final Draft / Fountain
 - Real-time collaboration

@@ -1,5 +1,7 @@
 <script lang="ts">
   import { untrack } from 'svelte';
+  import { save } from '@tauri-apps/plugin-dialog';
+  import { writeFile } from '@tauri-apps/plugin-fs';
   import { documentStore } from '$lib/stores/documentStore.svelte';
   import { focusTrap } from '$lib/actions/focusTrap';
 
@@ -201,6 +203,93 @@
     if (eighths === 0) return '';
     const pages = (eighths / 8).toFixed(1);
     return `${eighths} eighth${eighths === 1 ? '' : 's'} · ~${pages} pages`;
+  }
+
+  // ─── CSV export (#137) ──────────────────────────────────────────────
+  // RFC 4180-compliant: comma-separated, fields with commas/quotes/
+  // newlines double-quoted, embedded quotes doubled. UTF-8 BOM prepended
+  // so Excel decodes Malayalam columns correctly.
+  function csvEscape(value: string | number): string {
+    const s = String(value);
+    if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+
+  function buildCsv(rows: Array<Array<string | number>>): string {
+    return '﻿' + rows.map((r) => r.map(csvEscape).join(',')).join('\r\n');
+  }
+
+  /** Sanitize the project title into a filename-safe stem. Falls back
+   *  to "screenplay" if the title is empty. */
+  function fileStem(): string {
+    const t = (documentStore.activeMeta?.title ?? '').trim();
+    if (!t) return 'screenplay';
+    return t.replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, ' ').trim() || 'screenplay';
+  }
+
+  async function saveCsv(suffix: string, csv: string) {
+    const path = await save({
+      defaultPath: `${fileStem()}-${suffix}.csv`,
+      filters: [{ name: 'CSV', extensions: ['csv'] }],
+    });
+    if (!path) return;
+    const encoder = new TextEncoder();
+    await writeFile(path, encoder.encode(csv));
+  }
+
+  async function exportCharactersCsv() {
+    const rows: Array<Array<string | number>> = [
+      ['Rank', 'Character', 'Scenes', 'Dialogue', 'Share %'],
+    ];
+    sortedCharacters.forEach((c, i) => {
+      rows.push([i + 1, c.name, c.scenes, c.dialogueBlocks, c.percentage]);
+    });
+    await saveCsv('characters', buildCsv(rows));
+  }
+
+  async function exportLocationsCsv() {
+    const rows: Array<Array<string | number>> = [
+      ['Rank', 'Location', 'Scenes', 'Setting'],
+    ];
+    sortedLocations.forEach((l, i) => {
+      rows.push([i + 1, l.name, l.scenes, l.setting]);
+    });
+    await saveCsv('locations', buildCsv(rows));
+  }
+
+  async function exportScheduleCsv() {
+    const rows: Array<Array<string | number>> = [
+      ['#', 'Setting', 'Location', 'Time', 'Cast', 'Group', 'Day', 'Eighths'],
+    ];
+    // Mirror what's on screen: when sorting is active, export the
+    // sorted view; otherwise export the grouped view in its rendered
+    // order (date-grouped, with unscheduled last).
+    const source = schedSortKey === null
+      ? groupedSchedule.flatMap((g) => g.rows)
+      : sortedSchedule;
+    for (const r of source) {
+      rows.push([
+        r.sceneNumber,
+        r.setting,
+        r.location,
+        r.time,
+        r.characterCount,
+        r.locationGroup,
+        r.scheduledDate,
+        r.eighths,
+      ]);
+    }
+    await saveCsv('schedule', buildCsv(rows));
+  }
+
+  let canExportCsv = $derived(
+    activeTab === 'characters' || activeTab === 'locations' || activeTab === 'schedule',
+  );
+
+  async function exportActiveCsv() {
+    if (activeTab === 'characters') await exportCharactersCsv();
+    else if (activeTab === 'locations') await exportLocationsCsv();
+    else if (activeTab === 'schedule') await exportScheduleCsv();
   }
 
   let groupedSchedule = $derived.by<ScheduleGroup[]>(() => {
@@ -586,7 +675,24 @@
             <span class="pane-eyebrow">{activeTabLabel.eyebrow}</span>
             <h3 class="pane-title">{activeTabLabel.title}</h3>
           </div>
-          <button class="btn-close" onclick={() => { open = false; }} aria-label="Close statistics">&times;</button>
+          <div class="pane-actions">
+            {#if canExportCsv}
+              <button
+                class="btn-csv"
+                type="button"
+                onclick={exportActiveCsv}
+                title="Export this report as CSV"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 3 V15"/>
+                  <path d="M7 10 L12 15 L17 10"/>
+                  <path d="M5 21 H19"/>
+                </svg>
+                <span>Export CSV</span>
+              </button>
+            {/if}
+            <button class="btn-close" onclick={() => { open = false; }} aria-label="Close statistics">&times;</button>
+          </div>
         </header>
 
         <div class="pane-content">
@@ -1052,6 +1158,39 @@
     font-weight: 600;
     color: var(--text-primary);
     line-height: 1.2;
+  }
+
+  .pane-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  /* Export CSV — secondary affordance, sits next to close. Subtle by
+     default (matches the rail-action footer style) so the eye still
+     lands on the title block first. (#137) */
+  .btn-csv {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 11px;
+    border: 1px solid var(--border-medium);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: var(--ui-font);
+    font-size: 11.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+  }
+
+  .btn-csv:hover {
+    background: var(--accent-muted);
+    border-color: var(--accent);
+    color: var(--accent);
   }
 
   .btn-close {

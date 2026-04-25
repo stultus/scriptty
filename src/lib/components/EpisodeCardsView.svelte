@@ -159,12 +159,24 @@
     {@const sceneCount = sceneCountFor(ep)}
     {@const pages = pageEstimateFor(ep)}
     {@const idea = ep.story?.idea ?? ''}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <article
       class="ep-card"
       class:active={index === documentStore.activeEpisodeIndex}
       class:dragging={dragFrom === index}
       class:drop-target={dropTarget === index && dragFrom !== null && dragFrom !== index}
       animate:flip={{ duration: 350, easing: cubicInOut }}
+      onclick={(e) => {
+        // Click anywhere on the card body drills into scenes (#154) —
+        // editable controls (textarea, input, buttons) opt out via
+        // closest() so the writer doesn't drill while editing the
+        // logline or renaming the episode.
+        const t = e.target as HTMLElement;
+        if (t.closest('input, textarea, button, [role="button"]')) return;
+        openEpisode(index);
+      }}
     >
       <header class="ep-header">
         <span
@@ -289,6 +301,10 @@
     box-shadow: 0 1px 2px var(--shadow-soft);
     overflow: hidden;
     min-height: 240px;
+    /* Cursor on the body signals "click to drill in" (#154); editable
+       controls inside the card override back to default via specific
+       selectors below so they read as "type here, not navigate." */
+    cursor: pointer;
     transition: border-color var(--motion-fast, 100ms) ease,
                 box-shadow var(--motion-fast, 100ms) ease,
                 transform var(--motion-fast, 100ms) ease;
@@ -297,6 +313,21 @@
   .ep-card:hover {
     border-color: var(--border-medium);
     box-shadow: 0 2px 8px var(--shadow-soft);
+  }
+
+  /* Restore the default cursor on regions that aren't navigation. */
+  .ep-card :is(input, textarea, button, [role='button']) {
+    cursor: auto;
+  }
+  .ep-card .ep-textarea,
+  .ep-card .ep-title-input {
+    cursor: text;
+  }
+  .ep-card :is(.ep-icon-btn, .ep-open) {
+    cursor: pointer;
+  }
+  .ep-card .ep-number {
+    cursor: grab;
   }
 
   .ep-card.dragging {

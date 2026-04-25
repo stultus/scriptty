@@ -25,6 +25,31 @@
   /** Daily Shoot List PDF section (#124) — only meaningful when at least
    *  one scene card has a `scheduled_date`. */
   let includeShootList = $state(false);
+
+  /** Bulk-select / clear for the section tile group (#142). "All" turns
+   *  on every tile that's actually available — Synopsis / Treatment /
+   *  Narrative are skipped when the Story panel is empty (their tiles
+   *  are disabled in the UI), and Daily Shoot List is skipped when no
+   *  scene has a scheduled date. */
+  function selectAllSections() {
+    includeTitlePage = true;
+    includeScreenplay = true;
+    includeSceneCards = true;
+    if (hasSynopsis) includeSynopsis = true;
+    if (hasTreatment) includeTreatment = true;
+    if (hasNarrative) includeNarrative = true;
+    if (hasScheduledScenes) includeShootList = true;
+  }
+
+  function clearAllSections() {
+    includeTitlePage = false;
+    includeSynopsis = false;
+    includeTreatment = false;
+    includeScreenplay = false;
+    includeNarrative = false;
+    includeSceneCards = false;
+    includeShootList = false;
+  }
   let format = $state<'hollywood' | 'indian'>('hollywood');
   let pageBreakAfterScene = $state(false);
   // Page numbering is off by default — opt in per export.
@@ -651,9 +676,19 @@
         <section class="col-sections" aria-labelledby="sections-heading">
           <div class="col-heading">
             <h3 id="sections-heading">Sections</h3>
-            <button type="button" class="inline-link" onclick={onEditMetadata} disabled={anyExporting}>
-              Edit metadata
-            </button>
+            <div class="col-heading-actions">
+              <button type="button" class="inline-link" onclick={selectAllSections} disabled={anyExporting} title="Turn on every available section">
+                All
+              </button>
+              <span class="inline-link-sep" aria-hidden="true">·</span>
+              <button type="button" class="inline-link" onclick={clearAllSections} disabled={anyExporting} title="Turn off every section">
+                None
+              </button>
+              <span class="inline-link-sep" aria-hidden="true">·</span>
+              <button type="button" class="inline-link" onclick={onEditMetadata} disabled={anyExporting}>
+                Edit metadata
+              </button>
+            </div>
           </div>
 
           <div class="section-grid">
@@ -1283,6 +1318,18 @@
     cursor: pointer;
     text-transform: none;
     letter-spacing: 0;
+  }
+
+  .col-heading-actions {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  .inline-link-sep {
+    color: var(--text-muted);
+    opacity: 0.5;
+    font-size: 11px;
   }
 
   .inline-link:hover { text-decoration: underline; }

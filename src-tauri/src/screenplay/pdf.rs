@@ -2095,6 +2095,11 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
                 let description = card.get("description").and_then(|v| v.as_str()).unwrap_or("");
                 let shoot_notes = card.get("shoot_notes").and_then(|v| v.as_str()).unwrap_or("");
                 let page_estimate = card.get("page_estimate").and_then(|v| v.as_str()).unwrap_or("");
+                // Production-planning fields — only rendered on the
+                // card when the writer has actually filled them in.
+                // Empty string is the "not set" sentinel for both.
+                let scheduled_date = card.get("scheduled_date").and_then(|v| v.as_str()).unwrap_or("").trim();
+                let location_group = card.get("location_group").and_then(|v| v.as_str()).unwrap_or("").trim();
 
                 // Parse setting + time from the heading so the card
                 // eyebrow renders "INTERIOR · DAY" / "EXTERIOR · NIGHT"
@@ -2141,12 +2146,23 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
                     number_color, scene_num,
                 ));
 
-                // Eyebrow (INTERIOR · DAY)
-                if !eyebrow_text.is_empty() {
-                    markup.push_str(&format!(
-                        "        #text(size: 7pt, weight: \"bold\", tracking: 0.2em, fill: luma(135))[{}]\n        #v(2pt)\n",
-                        escape_typst(&eyebrow_text)
-                    ));
+                // Eyebrow row — "INTERIOR · DAY" on the left,
+                // scheduled-date stamp on the right when set. Both
+                // share the same tracked-caps register so the row
+                // reads as one band of metadata.
+                if !eyebrow_text.is_empty() || !scheduled_date.is_empty() {
+                    if !scheduled_date.is_empty() {
+                        markup.push_str(&format!(
+                            "        #grid(columns: (1fr, auto), align: (left, right))[\n          #text(size: 7pt, weight: \"bold\", tracking: 0.2em, fill: luma(135))[{}]\n        ][\n          #text(font: \"Courier Prime\", size: 7pt, weight: \"bold\", tracking: 0.12em, fill: luma(135))[{}]\n        ]\n        #v(2pt)\n",
+                            escape_typst(&eyebrow_text),
+                            escape_typst(scheduled_date)
+                        ));
+                    } else {
+                        markup.push_str(&format!(
+                            "        #text(size: 7pt, weight: \"bold\", tracking: 0.2em, fill: luma(135))[{}]\n        #v(2pt)\n",
+                            escape_typst(&eyebrow_text)
+                        ));
+                    }
                 }
 
                 // Slug (the heading text, Courier bold)
@@ -2154,6 +2170,21 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
                     markup.push_str(&format!(
                         "        #text(font: \"Courier Prime\", size: 9.5pt, weight: \"bold\", tracking: 0.03em)[{}]\n",
                         escape_typst(heading.trim())
+                    ));
+                }
+
+                // Location group — the production-unit cluster
+                // tag the writer assigns in the editor (e.g.
+                // "STAGE-3" or "VILLAGE-EAST"). Sits right under
+                // the slug so the AD reads "this slug, in THIS
+                // production cluster". Prefix matches the on-screen
+                // card's "Location group" label, abbreviated to
+                // "LOC" so the line stays readable on a half-column
+                // card.
+                if !location_group.is_empty() {
+                    markup.push_str(&format!(
+                        "        #v(3pt)\n        #text(size: 8pt, fill: luma(110))[#text(font: \"Courier Prime\", weight: \"bold\", tracking: 0.1em, fill: luma(140))[LOC] #text(font: \"Courier Prime\", weight: \"bold\", tracking: 0.04em)[{}]]\n",
+                        escape_typst(&location_group.to_uppercase())
                     ));
                 }
 
@@ -2179,6 +2210,17 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
                         "        #v(6pt)\n        #text(size: 8.5pt, style: \"italic\", fill: luma(110))[{}]\n",
                         escape_typst(shoot_notes)
                     ));
+                }
+
+                // Empty-state placeholder — when the writer has not
+                // yet filled in description or shoot notes, drop a
+                // muted em-dash so the card reads as "intentionally
+                // pending" rather than as a layout gap. Keeps every
+                // card visually anchored to the same body register.
+                if description.is_empty() && shoot_notes.is_empty() {
+                    markup.push_str(
+                        "        #v(6pt)\n        #text(size: 9.5pt, fill: luma(180))[—]\n",
+                    );
                 }
 
                 // Page estimate as a small Courier corner footer.

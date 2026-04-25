@@ -204,6 +204,11 @@
           page_estimate: '',
           description: manualCard?.description ?? '',
           shoot_notes: manualCard?.shoot_notes ?? '',
+          // Production-planning fields surfaced on the printed
+          // breakdown card. Empty strings are normal — the PDF
+          // template only renders the line when the field is set.
+          scheduled_date: manualCard?.scheduled_date ?? '',
+          location_group: manualCard?.location_group ?? '',
         });
       } else if (node.type === 'character') {
         const charName = (node.content ?? []).map((c) => c.text ?? '').join('').trim();

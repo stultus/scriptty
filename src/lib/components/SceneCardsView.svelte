@@ -758,11 +758,21 @@
           : headingUpper.startsWith('EXT.') || headingUpper.startsWith('EXT ')
             ? 'EXT'
             : ''}
+      <!-- A card with no authored content (no description, no notes, no
+           extras, no schedule) reads as a "skeleton" so the writer can
+           tell at a glance which scenes are outlined vs untouched (#162).
+           Adding any field makes it a real card. -->
+      {@const isSkeleton = !card.description.trim()
+        && !card.shootNotes.trim()
+        && !card.extraCharacters.trim()
+        && !card.scheduledDate.trim()
+        && !card.locationGroup.trim()}
       <div
         class="card scene-card"
         class:active={card.sceneOrder === editorStore.currentSceneIndex}
         class:dragging={dragFromScene === card.sceneNumber}
         class:drop-target={dropTargetScene === card.sceneNumber}
+        class:skeleton={isSkeleton}
         animate:flip={{ duration: 450, easing: cubicInOut }}
       >
         <!-- Time-of-day stripe — full-height bar at the very left edge.
@@ -1277,6 +1287,29 @@
     /* Mask the interior so the empty slot hints where the card came from
        without competing visually with the floating ghost. */
     filter: grayscale(0.4);
+  }
+
+  /* Skeleton cards (#162) — no authored content yet. Visually thinner
+     than full cards so the writer scanning the grid can tell which
+     scenes are outlined vs still untouched. Border becomes dashed
+     (echoes the Add-scene placeholder), surface dims down, content
+     dims slightly. The first focus on any field flips the card back
+     to a regular card automatically (because the field gains content). */
+  .card.skeleton {
+    background: transparent;
+    border-style: dashed;
+    border-color: var(--border-medium);
+    box-shadow: none;
+  }
+
+  .card.skeleton .card-textarea,
+  .card.skeleton .card-input {
+    background: transparent;
+  }
+
+  .card.skeleton .card-textarea::placeholder,
+  .card.skeleton .card-input::placeholder {
+    font-style: italic;
   }
 
   /* Active scene — the card whose underlying scene_heading the editor's

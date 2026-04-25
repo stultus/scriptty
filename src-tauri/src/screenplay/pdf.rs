@@ -91,7 +91,7 @@ enum ScreenplayGroup {
 ///
 /// Uses a manual index loop so we can "consume" (skip) elements that get absorbed
 /// into a group, preventing them from being processed twice.
-fn group_elements(elements: Vec<ScreenplayElement>, scene_number_start: u32) -> Vec<ScreenplayGroup> {
+fn group_elements(mut elements: Vec<ScreenplayElement>, scene_number_start: u32) -> Vec<ScreenplayGroup> {
     let mut groups: Vec<ScreenplayGroup> = Vec::new();
     // Manual index so we can skip elements that get consumed into groups.
     // A for-each loop wouldn't let us advance past consumed elements.
@@ -108,12 +108,18 @@ fn group_elements(elements: Vec<ScreenplayElement>, scene_number_start: u32) -> 
     // `elements.len()` returns the number of items. We use `while i < len`
     // instead of `for` so we can increment `i` by more than 1 when consuming.
     while i < elements.len() {
-        match elements[i].element_type.as_str() {
+        // Move the element_type out so we can mem::take the other fields
+        // below without holding an immutable borrow across the match. The
+        // type string is the shortest field on each element so its clone /
+        // move is the cheapest of the three (#103: avoid cloning ~mb of
+        // `text` / `typst_inline` strings into the group vec).
+        let element_type = std::mem::take(&mut elements[i].element_type);
+        match element_type.as_str() {
             "scene_heading" => {
                 scene_number += 1;
                 let this_scene_index = scene_index;
                 scene_index += 1;
-                let heading_text = elements[i].text.clone();
+                let heading_text = std::mem::take(&mut elements[i].text);
 
                 // Peek at the next element — if it's an action, consume it
                 // into the SceneBlock so they stay on the same page.
@@ -121,7 +127,7 @@ fn group_elements(elements: Vec<ScreenplayElement>, scene_number_start: u32) -> 
                     && elements[i + 1].element_type == "action"
                 {
                     i += 1; // Skip the next element since we're consuming it
-                    Some(elements[i].typst_inline.clone())
+                    Some(std::mem::take(&mut elements[i].typst_inline))
                 } else {
                     None
                 };
@@ -140,13 +146,13 @@ fn group_elements(elements: Vec<ScreenplayElement>, scene_number_start: u32) -> 
                 // the next episode starts fresh at `scene_number_start`.
                 scene_number = scene_number_start - 1;
                 groups.push(ScreenplayGroup::Standalone(ScreenplayElement {
-                    element_type: elements[i].element_type.clone(),
-                    text: elements[i].text.clone(),
-                    typst_inline: elements[i].typst_inline.clone(),
+                    element_type,
+                    text: std::mem::take(&mut elements[i].text),
+                    typst_inline: std::mem::take(&mut elements[i].typst_inline),
                 }));
             }
             "character" => {
-                let name = elements[i].text.clone();
+                let name = std::mem::take(&mut elements[i].text);
                 let mut lines: Vec<DialogueLine> = Vec::new();
 
                 // Collect only consecutive parenthetical and dialogue elements.
@@ -162,15 +168,15 @@ fn group_elements(elements: Vec<ScreenplayElement>, scene_number_start: u32) -> 
                         "parenthetical" => {
                             i += 1;
                             lines.push(DialogueLine::Parenthetical(
-                                elements[i].text.clone(),
-                                elements[i].typst_inline.clone(),
+                                std::mem::take(&mut elements[i].text),
+                                std::mem::take(&mut elements[i].typst_inline),
                             ));
                         }
                         "dialogue" => {
                             i += 1;
                             lines.push(DialogueLine::Dialogue(
-                                elements[i].text.clone(),
-                                elements[i].typst_inline.clone(),
+                                std::mem::take(&mut elements[i].text),
+                                std::mem::take(&mut elements[i].typst_inline),
                             ));
                         }
                         // Stop collecting on ANY non-dialogue/non-parenthetical element.
@@ -184,12 +190,10 @@ fn group_elements(elements: Vec<ScreenplayElement>, scene_number_start: u32) -> 
             }
             _ => {
                 // Everything else (action, transition, unknown types) stays standalone.
-                // We need to move the element out of the vector — but since we're
-                // iterating by index over an owned Vec, we reconstruct it here.
                 groups.push(ScreenplayGroup::Standalone(ScreenplayElement {
-                    element_type: elements[i].element_type.clone(),
-                    text: elements[i].text.clone(),
-                    typst_inline: elements[i].typst_inline.clone(),
+                    element_type,
+                    text: std::mem::take(&mut elements[i].text),
+                    typst_inline: std::mem::take(&mut elements[i].typst_inline),
                 }));
             }
         }

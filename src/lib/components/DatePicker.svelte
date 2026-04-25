@@ -6,13 +6,17 @@
   // as before, but the writer interacts with a calendar grid instead of
   // OS-default segmented digits.
 
-  let { value = $bindable(''), placeholder = 'Pick a date', onChange } = $props<{
+  let { value = $bindable(''), placeholder = 'Pick a date', onChange, compact = false } = $props<{
     value: string;
     placeholder?: string;
     /** Optional callback fired when the value changes — useful when the
      *  caller can't pass a bindable (e.g. a date stored on a derived
      *  array element). Receives the new ISO string (or '' for clear). */
     onChange?: (v: string) => void;
+    /** Render the trigger at a smaller height (32px vs 38px). Used by
+     *  the scene-card production area where the trigger sits next to
+     *  short bordered inputs and needs to match. */
+    compact?: boolean;
   }>();
 
   let open = $state(false);
@@ -351,6 +355,7 @@
     type="button"
     class="dp-trigger"
     class:placeholder={!displayValue}
+    class:compact
     bind:this={triggerEl}
     onclick={() => { open = !open; }}
     onkeydown={handleTriggerKey}
@@ -460,6 +465,22 @@
     cursor: pointer;
     transition: border-color var(--motion-fast, 100ms) ease,
                 background var(--motion-fast, 100ms) ease;
+  }
+
+  /* Compact variant — used by the scene-card production area where
+     the trigger sits next to short bordered inputs (32px) and needs
+     to match. Smaller padding + font + icon scaling so the icon and
+     text still breathe at the smaller height. */
+  .dp-trigger.compact {
+    padding: 6px 9px;
+    font-size: 11.5px;
+    border-radius: 5px;
+    min-height: 32px;
+  }
+
+  .dp-trigger.compact .dp-icon {
+    width: 12px;
+    height: 12px;
   }
 
   .dp-trigger:hover {

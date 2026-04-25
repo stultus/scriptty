@@ -1067,6 +1067,7 @@
                       value={card.scheduledDate}
                       onChange={(v: string) => updateScheduledDate(card.sceneOrder, v)}
                       placeholder="Pick a date"
+                      compact={true}
                     />
                   </div>
                 </div>
@@ -1848,7 +1849,7 @@
 
   .prod-input {
     width: 100%;
-    height: 28px;
+    height: 32px;
     padding: 0 9px;
     font-size: 11.5px;
     line-height: 1.3;
@@ -1877,16 +1878,6 @@
     opacity: 0.7;
   }
 
-  /* Match the DatePicker trigger height to the prod-input height so
-     the schedule row reads as a single typographic register. The
-     DatePicker styles its own trigger; this is just an override
-     wrapper for the same row. */
-  .prod-field :global(.dp-trigger) {
-    height: 28px;
-    padding: 0 9px;
-    font-size: 11.5px;
-    border-radius: 5px;
-  }
 
   /* Textareas + inputs: notepad treatment. No border at rest — a soft
      lower hairline reads as a ruled writing line. Hover lifts the

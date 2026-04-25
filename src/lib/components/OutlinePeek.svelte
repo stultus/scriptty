@@ -120,14 +120,18 @@
 {/if}
 
 <style>
+  /* Sits over the editor canvas (--surface-base) without its own
+     border-top, so OutlinePeek reads as part of the editor area rather
+     than as a duplicate chrome strip stacked on the StatusBar (#111).
+     The StatusBar below carries the only "chrome" border, providing
+     the editor → chrome boundary on its own. */
   .outline-peek {
     display: flex;
     align-items: center;
     gap: 12px;
     height: 24px;
     padding: 0 14px;
-    background: var(--surface-elevated);
-    border-top: 1px solid var(--border-subtle);
+    background: var(--surface-base);
     font-family: var(--ui-font);
     font-size: 11px;
     color: var(--text-muted);

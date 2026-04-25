@@ -12,11 +12,16 @@
 //   scene_heading   — starts with INT./EXT./INT/EXT or "I/E"
 //   transition      — all-caps Latin and ends with ":" (e.g. "CUT TO:")
 //   character       — Latin: all-caps, ≤ 60 chars, no trailing punct.
-//                   — Malayalam: short Malayalam line (< 30 chars / ≤ 5
-//                     words), no sentence-ending punctuation, AND the
-//                     next non-blank line exists and is longer (so a
-//                     stand-alone short Malayalam phrase isn't
-//                     misclassified as a speaker name).
+//                   — Malayalam: short Malayalam line (≤ 30 chars /
+//                     ≤ 4 words), no sentence-ending punctuation, AND
+//                     either ends with ":" (an explicit name marker)
+//                     or is followed by a parenthetical line. Without
+//                     a high-confidence signal we treat as action —
+//                     short dialogues like "ശരി" make any "next is
+//                     longer" rule produce false positives.
+//                   — `Name: Dialogue` on one line is also detected
+//                     and split into two nodes (common in plain-text
+//                     Malayalam drafts).
 //   parenthetical   — wholly wrapped in parentheses, only valid right
 //                     after a character or another parenthetical
 //   dialogue        — any non-blank line right after a character or
@@ -100,18 +105,33 @@ function looksLikeMalayalamNameCandidate(line: string): boolean {
 }
 
 /** Combined check used by the parser. Latin all-caps is decisive on its
- *  own; Malayalam needs the lookahead supplied by the caller. */
+ *  own; Malayalam requires a high-confidence signal because the case
+ *  trick that gives Latin its certainty doesn't exist for Malayalam.
+ *
+ *  Signals accepted for Malayalam:
+ *    1. Line ends with ":" — `രമേശ്:` is a common plain-text convention
+ *       for marking a speaker before their line of dialogue.
+ *    2. Next non-blank line is a parenthetical (`(softly)`-style) — only
+ *       a character is followed by a parenthetical in screenplay format.
+ *
+ *  We deliberately drop the earlier "next line is longer than the name"
+ *  rule — short dialogues like "ശരി" easily make a normal action line
+ *  pass that test, producing false positives. With these stricter
+ *  signals, Malayalam name detection is conservative on purpose: missed
+ *  names get fixed in the editor, but we don't sprinkle phantom
+ *  "characters" through pasted prose. */
 function looksLikeCharacterName(line: string, nextNonBlank: string | null): boolean {
   if (looksLikeLatinCharacterName(line)) return true;
-  if (looksLikeMalayalamNameCandidate(line)) {
-    // Lookahead — must be followed by a non-blank, non-scene-heading,
-    // non-transition line that's clearly content (longer than the name).
-    if (!nextNonBlank) return false;
-    if (SCENE_HEADING.test(nextNonBlank)) return false;
-    if (looksLikeTransition(nextNonBlank)) return false;
-    // Dialogue-feeling: next line is longer than the candidate name.
-    return nextNonBlank.length > line.trim().length;
-  }
+  if (!looksLikeMalayalamNameCandidate(line)) return false;
+
+  // Signal 1: explicit name marker (`:` at the end of the line). The
+  // colon is dropped at character emission so the editor sees just the
+  // name — caller handles that.
+  if (line.trim().endsWith(':')) return true;
+
+  // Signal 2: next non-blank is a parenthetical.
+  if (nextNonBlank && isParenthetical(nextNonBlank)) return true;
+
   return false;
 }
 
@@ -124,6 +144,30 @@ function looksLikeTransition(line: string): boolean {
 function isParenthetical(line: string): boolean {
   const t = line.trim();
   return t.startsWith('(') && t.endsWith(')') && t.length >= 2;
+}
+
+/** Detect the "Name: Dialogue" same-line shape and split it into two
+ *  nodes. Conservative — only the FIRST `:` counts as the separator,
+ *  the name half must be a Latin all-caps name OR a Malayalam name
+ *  candidate, and the dialogue half must be non-empty. Times-of-day
+ *  ("DAY:") are excluded because they'd already be inside a
+ *  scene_heading line, which is matched earlier in the pipeline. */
+function trySplitNameColonDialogue(line: string): { name: string; dialogue: string } | null {
+  const idx = line.indexOf(':');
+  if (idx < 1) return null;
+  const namePart = line.slice(0, idx).trim();
+  const dialoguePart = line.slice(idx + 1).trim();
+  if (namePart.length === 0 || dialoguePart.length === 0) return null;
+  // Don't trigger on URLs (`https://...`) or scene heading sub-parts.
+  if (/[/\\]/.test(namePart)) return null;
+  // Name must look like a name on its own — reuse the existing detectors.
+  if (looksLikeLatinCharacterName(namePart)) {
+    return { name: namePart, dialogue: dialoguePart };
+  }
+  if (looksLikeMalayalamNameCandidate(namePart)) {
+    return { name: namePart, dialogue: dialoguePart };
+  }
+  return null;
 }
 
 /**
@@ -202,9 +246,23 @@ export function parsePastedScript(input: string): {
       continue;
     }
 
+    // Same-line "Name: Dialogue" form — common in plain-text Malayalam
+    // (and some English) screenplay drafts. Detected here so we emit
+    // both nodes from the single source line.
+    const colonSplit = trySplitNameColonDialogue(line);
+    if (colonSplit) {
+      flushAction();
+      nodes.push(block('character', colonSplit.name));
+      nodes.push(block('dialogue', colonSplit.dialogue));
+      inDialogueBlock = true;
+      continue;
+    }
+
     if (looksLikeCharacterName(line, peekNextNonBlank(i))) {
       flushAction();
-      nodes.push(block('character', line));
+      // Strip the trailing colon (it was a marker, not part of the name).
+      const name = line.replace(/:\s*$/, '').trim();
+      nodes.push(block('character', name));
       inDialogueBlock = true;
       continue;
     }

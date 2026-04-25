@@ -82,9 +82,10 @@
       </div>
 
       <p class="hint">
-        Paste plain text and Scriptty will detect scene headings (INT./EXT.), character names
-        (ALL CAPS lines, or short Malayalam lines on their own row), dialogue, parentheticals,
-        and transitions. The preview shows what was detected — refine in the editor after.
+        Paste plain text and Scriptty detects scene headings (INT./EXT.), character names
+        (Latin ALL CAPS, or Malayalam names suffixed with <code>:</code> like
+        <code>രമേശ്:</code>), dialogue, parentheticals, and transitions. The preview shows
+        what was detected — refine in the editor after.
       </p>
 
       <div class="paste-grid">
@@ -203,6 +204,15 @@ CUT TO:`}
     font-size: 12px;
     color: var(--text-muted);
     line-height: 1.5;
+  }
+
+  .hint code {
+    font-family: var(--editor-font-en), ui-monospace, monospace;
+    font-size: 11.5px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: var(--surface-base);
+    color: var(--text-secondary);
   }
 
   .paste-grid {

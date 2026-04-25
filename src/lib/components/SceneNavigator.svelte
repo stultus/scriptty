@@ -592,17 +592,26 @@
             onfocus={() => { focusedSceneIdx = sceneArrayIdx; }}
             title="Scene {scene.number} · {scene.text.toUpperCase()} · ~{scene.pages} pages"
           >
-            <!-- Setting marker — typographic so it never reads as a
-                 checkbox affordance (#147). "I" for Interior (filled
-                 pill), "E" for Exterior (outlined pill), "I/E" for
-                 both. Pairs with the time-of-day stripe on the left
-                 edge as the second visual signal. -->
-            <span class="setting-tag setting-{(scene.setting ?? 'none').toLowerCase()}" aria-hidden="true">
-              {#if scene.setting === 'INT'}I{:else if scene.setting === 'EXT'}E{:else if scene.setting === 'INT_EXT'}I/E{:else}·{/if}
-            </span>
-            <span class="scene-number">{scene.number}</span>
+            <!-- Scene number is the row's identifying chip — tabular,
+                 zero-padded, accent-tinted on the active row. The
+                 INT/EXT typographic tag is gone (the time stripe on
+                 the left edge already signals setting via color). -->
+            <span class="scene-number">{String(scene.number).padStart(2, '0')}</span>
+            <!-- Title gets maximum real estate. -->
             <span class="scene-text">{stripSettingPrefix(scene.text).toUpperCase() || '(empty)'}</span>
-            <span class="page-pill" title="~{scene.pages} pages">{scene.pages}p</span>
+            <!-- Time-of-day glyph — sun for daytime, moon for night.
+                 Replaces the page-size pill, which wasn't useful at
+                 the navigator's narrow width. -->
+            {#if scene.time === 'DAY' || scene.time === 'MORNING' || scene.time === 'AFTERNOON' || scene.time === 'DAWN'}
+              <svg class="time-glyph time-day" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-label="Day">
+                <circle cx="12" cy="12" r="4"/>
+                <path d="M12 2 V4 M12 20 V22 M2 12 H4 M20 12 H22 M4.9 4.9 L6.3 6.3 M17.7 17.7 L19.1 19.1 M4.9 19.1 L6.3 17.7 M17.7 6.3 L19.1 4.9"/>
+              </svg>
+            {:else if scene.time === 'NIGHT' || scene.time === 'DUSK' || scene.time === 'EVENING'}
+              <svg class="time-glyph time-night" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-label="Night">
+                <path d="M21 12.8 A9 9 0 1 1 11.2 3 a7 7 0 0 0 9.8 9.8 z"/>
+              </svg>
+            {/if}
           </button>
         </li>
       {/each}
@@ -833,7 +842,7 @@
   .scene-item {
     position: relative;
     display: grid;
-    grid-template-columns: 22px 32px 1fr auto;
+    grid-template-columns: 28px 1fr 16px;
     align-items: center;
     gap: 8px;
     flex: 1;
@@ -906,96 +915,31 @@
     left: 6px;
   }
 
-  /* Setting tag — typographic (I / E / I/E) so it never gets mistaken
-     for a checkbox the way the previous square glyph did (#147). The
-     scene-item grid still reserves a 14-16px column so the tag aligns
-     with rows that don't have a recognized setting (those show a
-     centered middot at low opacity). */
-  .setting-tag {
+  /* Scene number chip — zero-padded Courier badge, mirrors the
+     EpisodeCardsView number badge so cards and rail speak the same
+     identifier system. Active row's chip picks up the accent fill. */
+  .scene-number {
+    flex-shrink: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 16px;
-    height: 14px;
-    padding: 0 3px;
-    border-radius: 3px;
+    min-width: 26px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 4px;
+    background: var(--surface-elevated);
+    color: var(--text-muted);
     font-family: var(--editor-font-en), var(--ui-font);
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 700;
+    font-variant-numeric: tabular-nums;
     letter-spacing: 0.04em;
     line-height: 1;
-    flex-shrink: 0;
-  }
-
-  .setting-int {
-    background: var(--text-muted);
-    color: var(--surface-base);
-    border: 1px solid var(--text-muted);
-  }
-
-  .setting-ext {
-    background: transparent;
-    color: var(--text-muted);
-    border: 1px solid var(--border-medium);
-  }
-
-  /* INT/EXT — half filled, half outlined; expressed via gradient so the
-     two zones meet cleanly without nesting two boxes. */
-  .setting-int_ext {
-    background: linear-gradient(90deg,
-      var(--text-muted) 0%, var(--text-muted) 50%,
-      transparent 50%, transparent 100%);
-    color: var(--text-muted);
-    border: 1px solid var(--text-muted);
-    /* The half that's filled gets the inverted text where the letters
-       cross it; cheap visual integration via mix-blend on the text. */
-    background-clip: padding-box;
-  }
-
-  /* No detected setting — a quiet middot so the column doesn't visually
-     collapse for headings that are rare-form ("FADE IN:", etc.). */
-  .setting-none {
-    background: transparent;
-    color: var(--text-muted);
-    opacity: 0.4;
-    border: none;
-  }
-
-  .scene-li.active .setting-int {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--text-on-accent);
-  }
-
-  .scene-li.active .setting-ext {
-    color: var(--accent);
-    border-color: var(--accent);
-  }
-
-  .scene-li.active .setting-int_ext {
-    background: linear-gradient(90deg,
-      var(--accent) 0%, var(--accent) 50%,
-      transparent 50%, transparent 100%);
-    color: var(--accent);
-    border-color: var(--accent);
-  }
-
-  /* Scene number — Courier Prime in tabular numerals; matches the
-     printed-on-page numbering used in the gutter. Active scene gets
-     bold + accent color. */
-  .scene-number {
-    flex-shrink: 0;
-    color: var(--text-muted);
-    font-variant-numeric: tabular-nums;
-    font-size: 11.5px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    text-align: right;
   }
 
   .scene-li.active .scene-number {
-    color: var(--accent);
-    font-weight: 700;
+    background: var(--accent);
+    color: var(--text-on-accent);
   }
 
   .scene-text {
@@ -1007,35 +951,25 @@
     line-height: 1.35;
   }
 
-  /* Page pill — compact size marker at the far right. Always visible but
-     muted at rest; brighter on hover/active so it reads as a contextual
-     metadata, not a button. */
-  .page-pill {
+  /* Time-of-day glyph — sun for daytime, moon for night. Replaces the
+     page pill: at the navigator's narrow width, page-size wasn't the
+     useful signal; day vs night is. */
+  .time-glyph {
     flex-shrink: 0;
-    padding: 1px 6px;
-    border-radius: 8px;
     color: var(--text-muted);
-    font-family: var(--ui-font);
-    font-size: 9.5px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.04em;
-    background: transparent;
-    border: 1px solid transparent;
-    transition: background var(--motion-fast, 100ms) ease,
-                color var(--motion-fast, 100ms) ease,
-                border-color var(--motion-fast, 100ms) ease;
+    transition: color var(--motion-fast, 100ms) ease;
   }
 
-  .scene-item:hover .page-pill {
-    color: var(--text-secondary);
-    border-color: var(--border-subtle);
+  .time-glyph.time-day {
+    color: var(--accent-warm, #d6a14a);
   }
 
-  .scene-li.active .page-pill {
+  .time-glyph.time-night {
+    color: var(--accent-deep, #2a4d5c);
+  }
+
+  .scene-li.active .time-glyph {
     color: var(--accent);
-    background: var(--surface-float);
-    border-color: var(--accent-muted);
   }
 
 </style>

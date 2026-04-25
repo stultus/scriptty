@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { documentStore } from '$lib/stores/documentStore.svelte';
   import { focusTrap } from '$lib/actions/focusTrap';
 
@@ -24,12 +25,17 @@
     characters: CharacterStat[];
   }
 
-  let stats = $state<Stats>(computeStats());
+  let stats = $state<Stats>(untrack(() => computeStats()));
 
-  // Recompute stats whenever the modal opens
+  // Recompute stats only when the modal opens — not on every keystroke while
+  // it's open. The $effect previously read `documentStore.activeContent`
+  // transitively through computeStats(), which tracked it as a dependency
+  // and re-ran the full ~2000-node walk on every typed character. Wrapping
+  // the call in untrack() ensures the only reactive dep is `open` (#100).
+  // The Refresh button gives the writer an explicit way to re-snapshot.
   $effect(() => {
     if (open) {
-      stats = computeStats();
+      untrack(() => { stats = computeStats(); });
     }
   });
 

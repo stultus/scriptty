@@ -30,10 +30,27 @@
   import { toggleMark } from 'prosemirror-commands';
   import { screenplaySchema } from '$lib/editor/schema';
 
-  let panelOpen = $state(false);
   let showAbout = $state(false);
   let showHelp = $state(false);
   let activeView = $state<'writing' | 'cards' | 'story'>('writing');
+
+  // Per-view sidebar state. Writing remembers its open/closed across
+  // toggles; Cards and Story default closed and don't pollute Writing's
+  // state when the writer toggles them in those views. Click-outside
+  // closes the sidebar in Cards view only (writers in Writing want the
+  // panel pinned during long edit sessions).
+  let panelOpenByView = $state<Record<'writing' | 'cards' | 'story', boolean>>({
+    writing: false,
+    cards: false,
+    story: false,
+  });
+  let panelOpen = $derived(panelOpenByView[activeView]);
+  function togglePanel() {
+    panelOpenByView[activeView] = !panelOpenByView[activeView];
+  }
+  function closePanel() {
+    panelOpenByView[activeView] = false;
+  }
   let findReplaceOpen = $state(false);
   let findReplaceMode = $state<'find' | 'replace'>('find');
   let showStatistics = $state(false);
@@ -158,7 +175,7 @@
     { id: 'view.cards', group: 'View', label: 'Scene Cards', hint: '⌘⇧K', action: () => { activeView = activeView === 'cards' ? 'writing' : 'cards'; } },
     { id: 'view.story', group: 'View', label: 'Story Mode', hint: '⌘⇧L', action: () => { activeView = activeView === 'story' ? 'writing' : 'story'; } },
     { id: 'view.sidebar', group: 'View', label: 'Toggle Sidebar', hint: '⌘\\', keywords: 'sidebar panel scenes episodes',
-      action: () => { panelOpen = !panelOpen; } },
+      action: togglePanel },
     { id: 'view.outline', group: 'View', label: 'Toggle Outline Peek', hint: '⌘⇧O', keywords: 'timeline strip',
       action: toggleOutlinePeek },
     { id: 'view.annotations', group: 'View', label: 'Toggle Scene Annotations', hint: '⌘⇧A', keywords: 'notes comments',
@@ -328,9 +345,10 @@
         return;
       }
       // Ctrl+\ (Mac: Cmd+\) toggles left sidebar from any view (#171).
+      // Per-view state — toggling in Cards/Story doesn't change Writing's pin.
       if ((event.metaKey || event.ctrlKey) && event.key === '\\') {
         event.preventDefault();
-        panelOpen = !panelOpen;
+        togglePanel();
         return;
       }
       // Cmd+Shift+A — Toggle annotations in writing view
@@ -480,7 +498,7 @@
       }));
 
       track(await listen('menu-toggle-sidebar', () => {
-        panelOpen = !panelOpen;
+        togglePanel();
       }));
 
       track(await listen('menu-edit-meta', () => {
@@ -546,7 +564,7 @@
 {:else}
 <main>
   <TitleBar
-    onToggleSidebar={() => { panelOpen = !panelOpen; }}
+    onToggleSidebar={togglePanel}
     {activeView}
     onViewChange={(v) => { activeView = v; }}
     onShowExport={() => { showExport = true; }}
@@ -557,7 +575,22 @@
          is position:absolute and anchors to .workspace's relative box. -->
     <LeftPanel isOpen={panelOpen} />
     {#if activeView === 'cards'}
-      <SceneCardsView />
+      <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+      <div
+        class="view-host"
+        onclickcapture={(e) => {
+          // Click-outside-to-close the sidebar in Cards view. The
+          // sidebar is overlay-positioned, so clicks on the cards
+          // canvas reach this host. We close only when the panel is
+          // open and the click didn't land inside it.
+          if (!panelOpen) return;
+          const target = e.target as HTMLElement | null;
+          if (target?.closest('.left-panel')) return;
+          closePanel();
+        }}
+      >
+        <SceneCardsView />
+      </div>
     {/if}
     {#if activeView === 'story'}
       <StoryModeView />
@@ -616,6 +649,16 @@
        this the panel would resolve against the .main flex column and
        sit above the title bar / status bar. */
     position: relative;
+  }
+
+  /* Wraps the Cards view so the click-capture handler can dismiss the
+     sidebar without intercepting clicks inside the panel itself. Fills
+     the workspace exactly the way SceneCardsView did before. */
+  .view-host {
+    flex: 1;
+    display: flex;
+    min-width: 0;
+    min-height: 0;
   }
 
   .editor-area {

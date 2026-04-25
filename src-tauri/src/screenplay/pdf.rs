@@ -355,6 +355,12 @@ fn extract_elements(content: &Value) -> Vec<ScreenplayElement> {
 /// Typst uses characters like #, *, _, @ as markup syntax.
 /// User-written screenplay text may contain these characters, so we need
 /// to prefix them with backslashes so Typst treats them as literal text.
+///
+/// `[` and `]` open/close Typst content blocks — left unescaped, a
+/// crafted screenplay containing `[#set page(margin: 0pt)]` in dialogue
+/// would be parsed as a directive rather than literal text. Typst's
+/// content blocks are sandboxed (no FS / network), so the worst-case
+/// impact is a malformed PDF, but defense-in-depth wins (#117).
 fn escape_typst(text: &str) -> String {
     // Preprocessing: normalize whitespace (non-breaking spaces → regular spaces
     // so Typst can break lines properly) and normalize quotation marks.
@@ -368,6 +374,8 @@ fn escape_typst(text: &str) -> String {
         .replace('<', "\\<")
         .replace('>', "\\>")
         .replace('$', "\\$")
+        .replace('[', "\\[")
+        .replace(']', "\\]")
 }
 
 /// Normalizes whitespace in text:
@@ -1989,6 +1997,14 @@ mod tests {
         assert_eq!(escape_typst("price: $5"), "price: \\$5");
         assert_eq!(escape_typst("a < b > c"), "a \\< b \\> c");
         assert_eq!(escape_typst("no specials"), "no specials");
+        // `[` and `]` open Typst content blocks — must be escaped so a
+        // crafted screenplay can't smuggle directives into the markup
+        // (#117).
+        assert_eq!(
+            escape_typst("[#set page(margin: 0pt)]"),
+            "\\[\\#set page(margin: 0pt)\\]"
+        );
+        assert_eq!(escape_typst("see fig. [3]"), "see fig. \\[3\\]");
     }
 
     #[test]

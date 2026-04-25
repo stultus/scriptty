@@ -692,6 +692,14 @@
   {:else}
   <div class="cards-grid" bind:this={gridEl}>
     {#each displayCards as card (card.key)}
+      {@const headingUpper = card.heading.toUpperCase()}
+      {@const cardSetting = headingUpper.startsWith('INT./EXT.') || headingUpper.startsWith('INT/EXT')
+        ? 'INT_EXT'
+        : headingUpper.startsWith('INT.') || headingUpper.startsWith('INT ')
+          ? 'INT'
+          : headingUpper.startsWith('EXT.') || headingUpper.startsWith('EXT ')
+            ? 'EXT'
+            : ''}
       <div
         class="card scene-card"
         class:active={card.sceneOrder === editorStore.currentSceneIndex}
@@ -699,6 +707,10 @@
         class:drop-target={dropTargetScene === card.sceneNumber}
         animate:flip={{ duration: 450, easing: cubicInOut }}
       >
+        <!-- Time-of-day stripe — full-height bar at the very left edge.
+             Same color logic as the SceneNavigator (#158) so cards and
+             rail speak the same visual language. -->
+        <span class="card-time-stripe" data-time={card.time?.toUpperCase() ?? ''} aria-hidden="true"></span>
         <div class="card-header">
           <!-- Scene number badge is the drag handle -->
           <span
@@ -712,7 +724,13 @@
               : `Drag to reorder scene ${card.sceneNumber}`}
             title={groupByLocation ? 'Switch off "Group by location" to drag-reorder' : ''}
           >{String(card.sceneNumber).padStart(2, '0')}</span>
-          <span class="card-heading">{card.heading.toUpperCase()}</span>
+          <!-- INT/EXT tag — same typographic shape as the nav (#147). -->
+          {#if cardSetting}
+            <span class="card-setting setting-{cardSetting.toLowerCase()}" aria-hidden="true">
+              {cardSetting === 'INT' ? 'I' : cardSetting === 'EXT' ? 'E' : 'I/E'}
+            </span>
+          {/if}
+          <span class="card-heading">{headingUpper}</span>
           <button
             class="card-delete"
             type="button"
@@ -972,6 +990,7 @@
   }
 
   .card {
+    position: relative;
     background: var(--surface-elevated);
     border: 1px solid var(--border-subtle);
     border-radius: 8px;
@@ -980,6 +999,88 @@
     display: flex;
     flex-direction: column;
     min-height: 280px;
+  }
+
+  /* Time-of-day stripe — pinned to the left edge for the full height
+     of the card. Same color tokens as SceneNavigator (#158). Reads as
+     a quiet rhythm: warm dawn/day cards, cool night/dusk cards,
+     neutral default. */
+  .card-time-stripe {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 4px;
+    background: var(--border-subtle);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .card-time-stripe[data-time='DAY'],
+  .card-time-stripe[data-time='MORNING'],
+  .card-time-stripe[data-time='AFTERNOON'],
+  .card-time-stripe[data-time='DAWN'] {
+    background: var(--accent-warm, #d6a14a);
+  }
+  .card-time-stripe[data-time='NIGHT'],
+  .card-time-stripe[data-time='DUSK'],
+  .card-time-stripe[data-time='EVENING'] {
+    background: var(--accent-deep, #2a4d5c);
+  }
+  .card-time-stripe[data-time='CONTINUOUS'],
+  .card-time-stripe[data-time='LATER'] {
+    background: var(--text-muted);
+    opacity: 0.4;
+  }
+
+  /* INT/EXT tag — typographic so it doesn't read as a checkbox (#147). */
+  .card-setting {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 14px;
+    padding: 0 3px;
+    margin-right: 2px;
+    border-radius: 3px;
+    font-family: var(--editor-font-en), var(--ui-font);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1;
+  }
+  .card-setting.setting-int {
+    background: var(--text-muted);
+    color: var(--surface-base);
+    border: 1px solid var(--text-muted);
+  }
+  .card-setting.setting-ext {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border-medium);
+  }
+  .card-setting.setting-int_ext {
+    background: linear-gradient(90deg,
+      var(--text-muted) 0%, var(--text-muted) 50%,
+      transparent 50%, transparent 100%);
+    color: var(--text-muted);
+    border: 1px solid var(--text-muted);
+  }
+  .card.active .card-setting.setting-int {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--text-on-accent);
+  }
+  .card.active .card-setting.setting-ext {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  .card.active .card-setting.setting-int_ext {
+    background: linear-gradient(90deg,
+      var(--accent) 0%, var(--accent) 50%,
+      transparent 50%, transparent 100%);
+    color: var(--accent);
+    border-color: var(--accent);
   }
 
   .card.dragging {

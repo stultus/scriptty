@@ -917,13 +917,24 @@
   }
 
   /* Time-of-day glyph — sun for daytime, moon for night. The shape
-     carries the signal; warm/cool color tinting was a duplicate
-     channel that read as a separate color-code system rather than as
-     a marginal note, so the glyph stays in a single muted tone. */
+     carries the primary signal; the warm/cool tint on the icon is a
+     subtle reinforcement (sun in lamp-amber, moon in oxblood-deep)
+     that doesn't compete with the rest of the row. The previous
+     full-height colored stripe at the left edge was confusing as a
+     parallel channel; tinting only the glyph keeps the signal
+     localized to the icon itself. */
   .time-glyph {
     flex-shrink: 0;
     color: var(--text-muted);
     transition: color var(--motion-fast, 100ms) ease;
+  }
+
+  .time-glyph.time-day {
+    color: var(--accent-warm);
+  }
+
+  .time-glyph.time-night {
+    color: var(--accent-deep);
   }
 
   .scene-li.active .time-glyph {

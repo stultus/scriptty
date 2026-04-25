@@ -161,6 +161,7 @@
     {@const idea = ep.story?.idea ?? ''}
     <article
       class="ep-card"
+      class:active={index === documentStore.activeEpisodeIndex}
       class:dragging={dragFrom === index}
       class:drop-target={dropTarget === index && dragFrom !== null && dragFrom !== index}
       animate:flip={{ duration: 350, easing: cubicInOut }}
@@ -305,6 +306,20 @@
   .ep-card.drop-target {
     border-color: var(--accent);
     box-shadow: 0 0 0 2px var(--accent-muted);
+  }
+
+  /* Active episode — the one currently being edited (matches
+     activeEpisodeIndex). Picks up an inset accent left bar and an
+     accent-tinted number badge, mirroring the active scene card and
+     active sidebar row. (#151) */
+  .ep-card.active {
+    border-color: var(--accent);
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+
+  .ep-card.active .ep-number {
+    background: var(--accent);
+    color: var(--text-on-accent);
   }
 
   /* ─── Header ─── */

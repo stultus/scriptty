@@ -568,6 +568,7 @@
     {activeView}
     onViewChange={(v) => { activeView = v; }}
     onShowExport={() => { showExport = true; }}
+    onShowMetadata={() => { showMetadata = true; }}
   />
   <div class="workspace">
     <!-- Sidebar lives at the workspace level so it overlays whichever

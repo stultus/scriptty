@@ -6,12 +6,22 @@
     activeView = 'writing',
     onViewChange,
     onShowExport,
+    onShowMetadata,
   } = $props<{
     onToggleSidebar?: () => void;
     activeView?: 'writing' | 'cards' | 'story';
     onViewChange?: (view: 'writing' | 'cards' | 'story') => void;
     onShowExport?: () => void;
+    /** Open the title-page / cover-sheet metadata editor (#165). */
+    onShowMetadata?: () => void;
   }>();
+
+  /** "Untitled" state — a brand-new doc with no title yet. The metadata
+   *  button gets a small accent dot to nudge the writer to fill in the
+   *  cover sheet. (#165) */
+  let metadataIncomplete = $derived(
+    !(documentStore.activeMeta?.title?.trim()),
+  );
 
   // Derived display title — shows document title, or filename, or "Untitled"
   let displayTitle = $derived.by(() => {
@@ -155,6 +165,23 @@
   </div>
 
   <div class="btn-group right">
+    <button
+      class="btn-icon meta-btn"
+      class:incomplete={metadataIncomplete}
+      onclick={() => onShowMetadata?.()}
+      title="Document properties (cover sheet, draft info)"
+      aria-label="Document properties"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="5" y="3" width="14" height="18" rx="1.5"/>
+        <line x1="9" y1="8"  x2="15" y2="8"/>
+        <line x1="8" y1="12" x2="16" y2="12"/>
+        <line x1="9" y1="15" x2="15" y2="15"/>
+      </svg>
+      {#if metadataIncomplete}
+        <span class="incomplete-dot" aria-hidden="true"></span>
+      {/if}
+    </button>
     <button class="btn-ghost" onclick={() => onShowExport?.()} title="Export document">Export</button>
     <button
       class="btn-primary"
@@ -375,8 +402,9 @@
     border-color: var(--accent-hover);
   }
 
-  /* ─── Icon button (sidebar toggle, etc.) ─── */
+  /* ─── Icon button (sidebar toggle, metadata, etc.) ─── */
   .btn-icon {
+    position: relative;
     height: 26px;
     padding: 0 6px;
     border-radius: 5px;
@@ -387,6 +415,34 @@
     font-family: system-ui, -apple-system, sans-serif;
     cursor: pointer;
     transition: background 120ms ease, color 120ms ease;
+  }
+
+  /* Metadata button — same shape as other icon buttons but a touch
+     wider so the page glyph reads as a discrete action, not chrome (#165). */
+  .meta-btn {
+    width: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .meta-btn:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+  }
+
+  /* Incomplete-metadata nudge — small accent-warm dot in the corner of
+     the meta button when the cover sheet has no title yet. Mirrors the
+     dirty-indicator pattern (amber dot) but drives a different signal. */
+  .incomplete-dot {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-warm, var(--dirty));
+    box-shadow: 0 0 0 2px var(--surface-elevated);
   }
 
   .btn-icon:hover:not(:disabled) {

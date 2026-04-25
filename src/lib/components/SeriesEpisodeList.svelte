@@ -59,6 +59,20 @@
   let episodes = $derived(documentStore.document?.series?.episodes ?? []);
   let seriesTitle = $derived(documentStore.document?.series?.title ?? '');
 
+  /** Bilingual titles use a " / " separator (e.g. "പഴയ മുറിവുകൾ /
+   *  Old Wounds"). Splitting them lets us render the two halves on
+   *  separate lines so neither one is the truncation casualty. (#148) */
+  function splitBilingualTitle(title: string): { primary: string; secondary: string } {
+    const idx = title.indexOf(' / ');
+    if (idx > 0) {
+      return {
+        primary: title.slice(0, idx).trim(),
+        secondary: title.slice(idx + 3).trim(),
+      };
+    }
+    return { primary: title, secondary: '' };
+  }
+
   // The *active* episode's folder auto-expands so its scenes are visible.
   $effect(() => {
     const active = documentStore.activeEpisode;
@@ -249,14 +263,23 @@
               autofocus
             />
           {:else}
+            {@const halves = splitBilingualTitle(ep.title)}
             <button
               class="episode-label"
+              class:bilingual={halves.secondary !== ''}
               onclick={() => activate(index)}
               ondblclick={() => beginRename(index, ep.title)}
               title={ep.title ? `Episode ${ep.number} — ${ep.title}` : `Episode ${ep.number}`}
             >
               <span class="episode-number">{String(ep.number).padStart(2, '0')}</span>
-              <span class="episode-title">{ep.title || 'Untitled'}</span>
+              {#if halves.secondary}
+                <span class="episode-title-stack">
+                  <span class="episode-title primary">{halves.primary}</span>
+                  <span class="episode-title secondary">{halves.secondary}</span>
+                </span>
+              {:else}
+                <span class="episode-title">{ep.title || 'Untitled'}</span>
+              {/if}
             </button>
             <div class="episode-actions">
               <button class="tiny-btn" onclick={() => beginRename(index, ep.title)} title="Rename" aria-label={`Rename Episode ${ep.number}`}>
@@ -553,6 +576,17 @@
     overflow: hidden;
   }
 
+  /* Bilingual title — two stacked lines so neither half is the
+     truncation casualty. The primary half keeps full body weight; the
+     secondary line is smaller, muted, and italicised so it reads as a
+     subtitle. The row grows to ~38px to fit both lines. (#148) */
+  .episode-label.bilingual {
+    align-items: center;
+    height: auto;
+    min-height: 38px;
+    padding: 4px;
+  }
+
   /* Zero-padded Courier chip — same identifier system EpisodeCardsView
      uses (#145). Active episode's badge picks up the accent fill. */
   .episode-number {
@@ -584,6 +618,32 @@
     white-space: nowrap;
     flex: 1;
     min-width: 0;
+  }
+
+  .episode-title-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .episode-title.primary {
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  .episode-title.secondary {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    font-style: italic;
+    letter-spacing: 0.01em;
+    line-height: 1.2;
+  }
+
+  .episode-li.active .episode-title.secondary {
+    color: var(--accent);
+    opacity: 0.85;
   }
 
   .episode-title-input {

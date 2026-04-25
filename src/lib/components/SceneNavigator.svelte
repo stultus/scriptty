@@ -29,6 +29,14 @@
     return null;
   }
 
+  /** Strip the leading INT./EXT./INT./EXT. prefix from a heading. The
+   *  navigator's setting-tag glyph already encodes that information,
+   *  so duplicating it in the text just eats space the location and
+   *  time-of-day need to differentiate similar scenes. (#148) */
+  function stripSettingPrefix(heading: string): string {
+    return heading.replace(/^\s*(INT\.?\/EXT\.?|I\/E|INT\.?|EXT\.?)\s+/i, '');
+  }
+
   /** Extract time-of-day, if present, from the heading's trailing segment. */
   function parseTime(heading: string): TimeOfDay {
     // Take the last segment after the final dash-like separator.
@@ -530,7 +538,7 @@
               {#if scene.setting === 'INT'}I{:else if scene.setting === 'EXT'}E{:else if scene.setting === 'INT_EXT'}I/E{:else}·{/if}
             </span>
             <span class="scene-number">{scene.number}</span>
-            <span class="scene-text">{scene.text.toUpperCase() || '(empty)'}</span>
+            <span class="scene-text">{stripSettingPrefix(scene.text).toUpperCase() || '(empty)'}</span>
             <span class="page-pill" title="~{scene.pages} pages">{scene.pages}p</span>
           </button>
         </li>

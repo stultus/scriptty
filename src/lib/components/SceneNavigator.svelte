@@ -445,22 +445,13 @@
             onclick={() => scrollToScene(scene.index)}
             title="Scene {scene.number} · {scene.text.toUpperCase()} · ~{scene.pages} pages"
           >
-            <!-- Setting glyph — filled square (INT), hollow square (EXT),
-                 split square (INT/EXT). Reads at a glance and pairs with
-                 the time-of-day stripe on the left edge. -->
-            <span class="setting-glyph" aria-hidden="true">
-              {#if scene.setting === 'INT'}
-                <svg width="9" height="9" viewBox="0 0 9 9"><rect x="1" y="1" width="7" height="7" rx="1.2" fill="currentColor"/></svg>
-              {:else if scene.setting === 'EXT'}
-                <svg width="9" height="9" viewBox="0 0 9 9"><rect x="1.5" y="1.5" width="6" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
-              {:else if scene.setting === 'INT_EXT'}
-                <svg width="9" height="9" viewBox="0 0 9 9">
-                  <path d="M1 1 H8 V8 H1 Z" fill="none" stroke="currentColor" stroke-width="1.2"/>
-                  <path d="M4.5 1 V8 H8 V1 Z" fill="currentColor" stroke="none"/>
-                </svg>
-              {:else}
-                <span class="setting-glyph-empty" aria-hidden="true"></span>
-              {/if}
+            <!-- Setting marker — typographic so it never reads as a
+                 checkbox affordance (#147). "I" for Interior (filled
+                 pill), "E" for Exterior (outlined pill), "I/E" for
+                 both. Pairs with the time-of-day stripe on the left
+                 edge as the second visual signal. -->
+            <span class="setting-tag setting-{(scene.setting ?? 'none').toLowerCase()}" aria-hidden="true">
+              {#if scene.setting === 'INT'}I{:else if scene.setting === 'EXT'}E{:else if scene.setting === 'INT_EXT'}I/E{:else}·{/if}
             </span>
             <span class="scene-number">{scene.number}</span>
             <span class="scene-text">{scene.text.toUpperCase() || '(empty)'}</span>
@@ -688,7 +679,7 @@
   .scene-item {
     position: relative;
     display: grid;
-    grid-template-columns: 14px 32px 1fr auto;
+    grid-template-columns: 22px 32px 1fr auto;
     align-items: center;
     gap: 8px;
     flex: 1;
@@ -755,25 +746,78 @@
     left: 6px;
   }
 
-  /* Setting glyph (INT / EXT / INT_EXT) — small filled / outlined /
-     half-filled square. Reads as a quick "indoor or outdoor" cue
-     alongside the time stripe. */
-  .setting-glyph {
-    display: flex;
+  /* Setting tag — typographic (I / E / I/E) so it never gets mistaken
+     for a checkbox the way the previous square glyph did (#147). The
+     scene-item grid still reserves a 14-16px column so the tag aligns
+     with rows that don't have a recognized setting (those show a
+     centered middot at low opacity). */
+  .setting-tag {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-muted);
+    min-width: 16px;
+    height: 14px;
+    padding: 0 3px;
+    border-radius: 3px;
+    font-family: var(--editor-font-en), var(--ui-font);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1;
     flex-shrink: 0;
   }
 
-  .scene-li.active .setting-glyph {
-    color: var(--accent);
+  .setting-int {
+    background: var(--text-muted);
+    color: var(--surface-base);
+    border: 1px solid var(--text-muted);
   }
 
-  .setting-glyph-empty {
-    display: inline-block;
-    width: 9px;
-    height: 9px;
+  .setting-ext {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border-medium);
+  }
+
+  /* INT/EXT — half filled, half outlined; expressed via gradient so the
+     two zones meet cleanly without nesting two boxes. */
+  .setting-int_ext {
+    background: linear-gradient(90deg,
+      var(--text-muted) 0%, var(--text-muted) 50%,
+      transparent 50%, transparent 100%);
+    color: var(--text-muted);
+    border: 1px solid var(--text-muted);
+    /* The half that's filled gets the inverted text where the letters
+       cross it; cheap visual integration via mix-blend on the text. */
+    background-clip: padding-box;
+  }
+
+  /* No detected setting — a quiet middot so the column doesn't visually
+     collapse for headings that are rare-form ("FADE IN:", etc.). */
+  .setting-none {
+    background: transparent;
+    color: var(--text-muted);
+    opacity: 0.4;
+    border: none;
+  }
+
+  .scene-li.active .setting-int {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--text-on-accent);
+  }
+
+  .scene-li.active .setting-ext {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .scene-li.active .setting-int_ext {
+    background: linear-gradient(90deg,
+      var(--accent) 0%, var(--accent) 50%,
+      transparent 50%, transparent 100%);
+    color: var(--accent);
+    border-color: var(--accent);
   }
 
   /* Scene number — Courier Prime in tabular numerals; matches the

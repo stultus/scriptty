@@ -283,12 +283,12 @@
                   <span class="ep-peek-heading">{heading.toUpperCase()}</span>
                 </li>
               {/each}
-              {#if hiddenCount > 0}
-                <li class="ep-peek-row ep-peek-more">
-                  …and {hiddenCount} more
-                </li>
-              {/if}
             </ol>
+            {#if hiddenCount > 0}
+              <p class="ep-peek-more">
+                + {hiddenCount} more {hiddenCount === 1 ? 'scene' : 'scenes'}
+              </p>
+            {/if}
           {/if}
         </div>
       </div>
@@ -574,10 +574,15 @@
   }
 
   /* ─── Scene peek (#152) ─── */
+  /* Designed to read like a call-sheet: a slim ruled column of scene
+     headings, each row showing a Courier number flush-right against a
+     1px hairline gutter and the slugline laid out in the same monospace
+     as the editor. The footer ("+ N more scenes") sits below the list,
+     italic and de-weighted so it reads as meta rather than data. */
   .ep-peek {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     padding-top: 4px;
   }
 
@@ -595,21 +600,41 @@
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    /* Hairline divider between rows to give the list typeset rhythm
+       without visual noise. Each row also picks up a tiny hover lift. */
+    border-top: 1px solid var(--border-subtle);
   }
 
   .ep-peek-row {
     display: grid;
-    grid-template-columns: 22px 1fr;
-    align-items: baseline;
-    gap: 6px;
+    grid-template-columns: 26px 1px 1fr;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 4px 5px 0;
+    border-bottom: 1px solid var(--border-subtle);
     font-family: var(--editor-font-en), var(--editor-font-ml), ui-monospace, monospace;
     font-size: 10.5px;
     color: var(--text-secondary);
-    line-height: 1.4;
+    line-height: 1.35;
+    transition: background var(--motion-fast, 100ms) ease;
+  }
+
+  /* Synthetic vertical hairline between number column and slugline —
+     subtle architectural cue, costs nothing, makes the list feel
+     deliberately typeset rather than generic. */
+  .ep-peek-row::before {
+    content: '';
+    grid-column: 2;
+    align-self: stretch;
+    background: var(--border-subtle);
+  }
+
+  .ep-card:hover .ep-peek-row {
+    background: linear-gradient(to right, transparent, var(--surface-hover) 30%, var(--surface-hover) 100%);
   }
 
   .ep-peek-num {
+    grid-column: 1;
     color: var(--text-muted);
     font-size: 9.5px;
     font-weight: 600;
@@ -619,6 +644,7 @@
   }
 
   .ep-peek-heading {
+    grid-column: 3;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -626,13 +652,13 @@
   }
 
   .ep-peek-more {
-    color: var(--text-muted);
-    font-style: italic;
+    margin: 0;
+    padding-left: 36px;
     font-family: var(--ui-font);
-    grid-column: 1 / -1;
-    text-align: left;
-    padding-left: 28px;
     font-size: 10.5px;
+    font-style: italic;
+    color: var(--text-muted);
+    letter-spacing: 0.01em;
   }
 
   /* ─── Footer ─── */

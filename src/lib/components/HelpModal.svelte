@@ -24,6 +24,7 @@
     { id: 'getting-started', title: 'Getting Started' },
     { id: 'series', title: 'Web Series' },
     { id: 'writing', title: 'Writing in the Editor' },
+    { id: 'paste-to-script', title: 'Paste to Screenplay' },
     { id: 'malayalam', title: 'Malayalam Input' },
     { id: 'autocomplete', title: 'Character Autocomplete' },
     { id: 'formatting', title: 'Text Formatting' },
@@ -33,10 +34,11 @@
     { id: 'views', title: 'Views' },
     { id: 'annotations', title: 'Scene Annotations' },
     { id: 'cards', title: 'Scene Cards' },
+    { id: 'production', title: 'Production Planning' },
     { id: 'stats', title: 'Script Statistics' },
     { id: 'export', title: 'Exporting to PDF' },
     { id: 'fonts', title: 'Fonts' },
-    { id: 'saving', title: 'Saving Your Work' },
+    { id: 'saving', title: 'Saving & Autosave' },
     { id: 'shortcuts', title: 'Keyboard Shortcuts' },
   ];
 
@@ -198,6 +200,13 @@
             <p>Parentheticals are automatically wrapped in parentheses — just type the direction (e.g., "whispering") and the app adds <strong>(</strong> and <strong>)</strong> for you.</p>
           </section>
 
+          <section class="help-section" id="paste-to-script">
+            <h3>Paste to Screenplay</h3>
+            <p>Drop a plain-text draft into the editor and Scriptty will convert it into proper screenplay elements automatically. From the Welcome screen pick <strong>Paste Script</strong>, or use <strong>File → Import → Paste Plain Text</strong>.</p>
+            <p>The detector recognises Hollywood-style scene headings (<em>INT.</em>/<em>EXT.</em>), all-caps character cues, transitions ending in <em>TO:</em>, and bracketed parentheticals — plus a Malayalam-aware path that catches character cues when the cue line is the only line written entirely in Malayalam vowel-and-consonant patterns. Anything else becomes Action.</p>
+            <p class="hint">The result is a regular screenplay you can edit normally — you can re-run the import on a different draft any time.</p>
+          </section>
+
           <section class="help-section" id="malayalam">
             <h3>Malayalam Input</h3>
             <p>Scriptty has built-in Malayalam input — no OS keyboard setup required.</p>
@@ -277,39 +286,63 @@
 
           <section class="help-section" id="cards">
             <h3>Scene Cards</h3>
-            <p>The Cards view shows a grid of cards for planning and production notes. Each card shows the scene heading, characters, description, notes, and a page estimate.</p>
-            <p>Click <strong>Add Scene</strong> to create a new scene from the Cards view. Drag the scene number badge to reorder cards — this reorders the scenes in your screenplay. Malayalam input is supported in card textareas (<kbd>Ctrl+Space</kbd> to toggle).</p>
+            <p>The Cards view (<kbd>Cmd+Shift+K</kbd>) is laid out as a typeset shooting-script tear sheet — each scene is a card with a zero-padded number chip, INT/EXT glyph, slug, cast list, description, shoot notes, and an optional production-prep group.</p>
+            <p>Click <strong>Add Scene</strong> to create a new scene. Drag the scene number chip to reorder — this reorders the scenes in your screenplay. The number chip and gutter numeral pick up a warm or cool tint based on time-of-day (DAY scenes warm, NIGHT scenes cool). Click the heading to rename a scene inline; use the per-card <strong>Duplicate</strong> action to clone a scene's structure into a new one.</p>
+            <p><strong>Compact mode</strong> in the Cards view collapses each card to slug + cast for an at-a-glance overview; <strong>Group by location</strong> clusters cards by their location group so co-located scenes sit together. Both toggles live in the Cards view header.</p>
+            <p>Malayalam input is supported in card textareas (<kbd>Ctrl+Space</kbd> to toggle). Series projects also get an <strong>Episode breakout view</strong> — a top-level card per episode with a scene preview list; click into an episode to drill down to its scene cards.</p>
+          </section>
+
+          <section class="help-section" id="production">
+            <h3>Production Planning</h3>
+            <p>Each scene card carries optional production-prep fields the AD team uses on set:</p>
+            <ul>
+              <li><strong>Extras</strong> — comma-separated background / silent characters that don't appear as speakers. Merged with the auto-detected speaker list everywhere a cast list is shown.</li>
+              <li><strong>Location group</strong> — a free-text tag (e.g. <code>STAGE-3</code>, <code>VILLAGE-EAST</code>) that clusters scenes shot at the same physical place. The Cards view's <strong>Group by location</strong> toggle uses this.</li>
+              <li><strong>Shoot date</strong> — pick a date with the calendar popover. Scheduled scenes appear in the <strong>Daily Shoot List</strong> export and the <strong>Schedule</strong> tab of the statistics panel.</li>
+            </ul>
+            <p><strong>Daily Shoot List</strong> — turn this on in the Export modal to emit a per-day production report: scenes grouped by shoot date, sub-grouped by location group, with per-scene page-eighths (the industry-standard ⅛-page measure) and a per-day eighths total. Useful for printing and handing to the 1st AD.</p>
           </section>
 
           <section class="help-section" id="stats">
             <h3>Script Statistics</h3>
-            <p>Press <kbd>Cmd+Shift+I</kbd> or go to <strong>View → Statistics</strong> to see a breakdown of your screenplay:</p>
+            <p>Press <kbd>Cmd+Shift+I</kbd> or go to <strong>View → Statistics</strong> for a vertical-tab panel covering five views:</p>
             <ul>
-              <li>Page count, word count, scene count, dialogue blocks, estimated screen time</li>
-              <li>Interior vs. exterior and day vs. night scene counts</li>
-              <li>Per-character table showing scenes, dialogue blocks, and percentage of total dialogue</li>
+              <li><strong>Overview</strong> — page count, word count, scene count, dialogue blocks, estimated screen time, INT/EXT and day/night breakdowns</li>
+              <li><strong>Characters</strong> — per-character scenes, dialogue blocks, and percentage of total dialogue</li>
+              <li><strong>Locations</strong> — every unique slug with scene counts and INT/EXT split</li>
+              <li><strong>Schedule</strong> — scheduled scenes grouped by shoot date with per-day totals; collapses cleanly when nothing is scheduled</li>
+              <li><strong>Episodes</strong> (series only) — per-episode totals, status field, and a status pill (Outline / Draft / Revision / Final)</li>
             </ul>
+            <p>The Characters / Locations / Schedule tables have <strong>sortable columns</strong> — click a column header to sort, click again to reverse — and a <strong>CSV export</strong> button so you can hand the data to a spreadsheet for production planning.</p>
           </section>
 
           <section class="help-section" id="export">
             <h3>Exporting to PDF</h3>
-            <p>Click <strong>Export</strong> in the title bar to open the export dialog.</p>
-            <p>Choose what to include in your PDF:</p>
+            <p>Click <strong>Export</strong> in the title bar to open the export modal — a two-pane layout with iconified section tiles on the left and format / option cards on the right.</p>
+            <p>Pick the sections to include:</p>
             <ul>
-              <li><strong>Title Page</strong> — generated from your metadata (title, writer, director credits)</li>
-              <li><strong>Synopsis</strong>, <strong>Treatment</strong>, and <strong>Narrative</strong> — from the Story view</li>
-              <li><strong>Screenplay</strong> — the full script</li>
-              <li><strong>Scene Cards</strong> — production breakdown table</li>
+              <li><strong>Title Page</strong> — generated from your metadata. Tagline, registration number, and a centered footnote come along when filled in.</li>
+              <li><strong>Synopsis</strong>, <strong>Treatment</strong>, and <strong>Narrative</strong> — each renders on its own section cover (small eyebrow with flanking rules above the dominant film title).</li>
+              <li><strong>Screenplay</strong> — the full script in Hollywood single-column or Indian two-column layout.</li>
+              <li><strong>Scene Cards</strong> — full-width production cards with eyebrow, slug, cast, description, shoot notes, plus the scheduled date and location group when set.</li>
+              <li><strong>Daily Shoot List</strong> — shoot-day report grouped by date and location with per-day eighths totals (only available when at least one scene has a shoot date).</li>
             </ul>
-            <p>If the writer and director are the same person, the title page shows "Written and Directed by" automatically.</p>
+            <p>Bulk select / clear lets you pick everything at once. If the writer and director are the same person, the title page automatically reads "Written and Directed by".</p>
             <p>Pick a format:</p>
             <ul>
               <li><strong>Hollywood</strong> — standard single-column layout</li>
               <li><strong>Indian</strong> — two-column layout (dialogue left, translation right)</li>
             </ul>
-            <p>Under <strong>Layout</strong>, you can enable <strong>Page break after each scene</strong> to start every scene on a new page.</p>
+            <p>Layout options:</p>
+            <ul>
+              <li><strong>Page break per scene</strong> — every scene starts on a fresh page</li>
+              <li><strong>Characters under heading</strong> — auto-list speakers below each scene heading</li>
+              <li><strong>Page numbers</strong> — top-right of every body page; each section restarts at 1</li>
+              <li><strong>Compact card view</strong> — strips description / notes / location group from each scene card so the breakdown reads as a slug-only at-a-glance overview</li>
+              <li><strong>Scene range</strong> — export only a slice of the script (useful for sending an actor their scenes)</li>
+            </ul>
             <p><strong>Series projects</strong> show a <strong>Scope</strong> option: export just the <em>Active episode</em> or the <em>Entire series</em>. A series export starts each episode on a new page with a centered <em>EPISODE N: Title</em> header and restarts scene numbering from 1 per episode.</p>
-            <p>The selected Malayalam font (Noto Sans Malayalam or Manjari) is embedded in the PDF. Bold, italic, and underline formatting is preserved.</p>
+            <p>The selected Malayalam font (Manjari or Noto Sans Malayalam) is embedded in the PDF, and Courier Prime is always bundled alongside it for the editorial accent typography (slugs, hero numerals, credit names). Bold, italic, and underline formatting is preserved.</p>
             <p>You can also export as:</p>
             <ul>
               <li><strong>Fountain</strong> — plain-text screenwriting format, compatible with Highland, Fade In, and other tools</li>
@@ -321,20 +354,22 @@
             <h3>Fonts</h3>
             <p>English text in the editor uses <strong>Courier Prime</strong> — the Hollywood-standard screenplay face. Malayalam text renders in the font you pick under Settings (<kbd>⌘K</kbd> → Settings):</p>
             <ul>
-              <li><strong>Noto</strong> — Noto Sans Malayalam (default, clean and modern)</li>
-              <li><strong>Manjari</strong> — a lighter, more traditional feel</li>
+              <li><strong>Manjari</strong> — the default, contemporary Malayalam display face</li>
+              <li><strong>Noto</strong> — Noto Sans Malayalam, a lighter cut for a quieter feel</li>
             </ul>
-            <p>The Malayalam font you select is also embedded in exported PDFs.</p>
+            <p>The Malayalam font you pick is embedded in exported PDFs. Courier Prime is also bundled into every PDF — the templates use it for the editorial accent typography (slugs, hero numerals, credit names, scene-card eyebrow), so the on-screen vocabulary carries onto paper.</p>
+            <p>The editor's font size is adjustable from Settings — independent of the PDF body size, so you can read comfortably while writing without changing the printed output.</p>
           </section>
 
           <section class="help-section" id="saving">
-            <h3>Saving Your Work</h3>
+            <h3>Saving & Autosave</h3>
             <p>An amber dot next to the title means you have unsaved changes.</p>
             <ul>
               <li><kbd>Cmd+S</kbd> — save (or Save As on first save)</li>
               <li><kbd>Cmd+Shift+S</kbd> — Save As (pick a new location)</li>
             </ul>
             <p>If you try to create a new document, open another file, or quit while there are unsaved changes, Scriptty will ask if you want to save first.</p>
+            <p><strong>Autosave + crash recovery.</strong> Scriptty silently autosaves your in-progress work to a hidden recovery file every few seconds while you type. If the app or your computer crashes, the next launch detects the recovery file and offers to restore the unsaved work — so even an unsaved new document survives a power loss. Saving normally with <kbd>Cmd+S</kbd> clears the recovery file.</p>
           </section>
 
           <section class="help-section" id="shortcuts">

@@ -1,6 +1,14 @@
 # Scriptty — Development Progress
 
-## Status: v0.7.0 shipped — Web series support, command palette, outline peek, Kerala palette
+## Status: v0.8.0 shipped — Production planning, editorial-grade PDFs, autosave, paste-to-script
+
+Highlights since v0.7.0:
+- **Production planning end-to-end.** Scene cards carry a location group, shoot date, and extras list. Daily Shoot List PDF groups scenes by day → location with industry-standard page-eighths totals. Statistics panel gains Schedule and Episodes views, sortable columns, and CSV export across Characters / Locations / Schedule.
+- **Editorial-grade PDF redesign.** Title page, prose covers, scene-card cover, and shoot-list cover share one masthead vocabulary (small tracked-caps eyebrow with flanking rules, dominant film title, asterism divider, Courier credits). Per-section page numbering. Transition widow control. Full-width single-column scene cards with date + location-group surfaced. Compact card-view export toggle. Courier Prime now bundled into PDFs alongside the body font for accent typography.
+- **Episode Breakout view.** Series projects get a top-level card per episode with a scene preview list; click an episode to drill into its scenes. IDE-style episode explorer in the sidebar with per-episode status (Outline / Draft / Revision / Final).
+- **Editor.** Smart curly quotes. Adjustable editor font size. Autosave + crash recovery — a hidden recovery file survives power loss. Paste-to-script — convert plain text into a screenplay (Hollywood-style detection plus a Malayalam-aware character-cue path).
+- **Title bar.** Colophon-style "Scriptty" wordmark with press-mark + hairline rule. Centred title gets flanking middle-dot ornaments. Episode badge becomes a click-to-switch popover. Metadata icon button. View-switcher tabs gain leading element-type glyphs.
+- **A11y + security + perf.** Keyboard navigation through scene list and calendar grid. Strict CSP. Escaped Typst delimiters. Direct GitHub Releases API for update checks. Debounced contentVersion + memoized SceneCardsView / SceneNavigator / Stats / OutlinePeek for snappier large-script editing.
 
 ---
 

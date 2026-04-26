@@ -8,7 +8,7 @@ screenwriters. It supports Hollywood single-column format and Indian two-column 
 input methods requiring no external tools.
 
 **Product name:** Scriptty  
-**Primary domain:** scriptty.app  
+**Site URL:** stultus.in/scriptty (GitHub Pages, subdirectory of the lead developer's personal site)  
 **File extension:** .screenplay  
 
 ---
@@ -111,7 +111,7 @@ scriptty/
 │   └── tauri.conf.json
 ├── static/
 │   └── fonts/                    # Fonts served to the Svelte UI
-├── docs/                         # GitHub Pages site (scriptty.app)
+├── docs/                         # GitHub Pages site (served at stultus.in/scriptty)
 │   ├── index.html
 │   └── downloads.json            # Auto-updated on each release
 ├── .github/workflows/            # CI: cross-platform build + release tagging

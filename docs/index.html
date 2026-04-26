@@ -2,863 +2,1639 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scriptty — Screenwriting for Malayalam &amp; English</title>
-  <meta name="description" content="Scriptty is a free, offline screenwriting app built for Malayalam and English writers. Hollywood and Indian formats, built-in Malayalam input, no cloud required.">
-  <meta property="og:title" content="Scriptty — Write in the language you dream in">
-  <meta property="og:description" content="Free, offline screenwriting for Malayalam and English. Hollywood and Indian two-column formats, built-in transliteration, PDF export.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#f6f0e6">
+  <meta name="color-scheme" content="light">
+
+  <!-- ─── SEO META ─── -->
+  <title>Scriptty — Free Offline Screenwriting App for Malayalam &amp; English Writers · Hollywood + Indian Format · Mac, Windows, Linux</title>
+  <meta name="description" content="Scriptty is a free, open-source, offline screenwriting app for Malayalam and English writers. Hollywood single-column and Indian two-column screenplay formats, built-in Malayalam input (Mozhi · Inscript), production breakdown cards, daily shoot list PDF, web-series support. Mac, Windows, Linux. No cloud, no account.">
+  <meta name="keywords" content="screenwriting software, screenplay writing app, Malayalam screenwriting, Malayalam screenplay app, Indian screenplay format, Hollywood screenplay format, free screenwriting software, offline screenwriting, open source screenplay editor, screenplay PDF export, web series writing, shooting script app, Malayalam Mozhi typing, Inscript Malayalam, screenwriting Mac, screenwriting Windows, screenwriting Linux">
+  <meta name="author" content="Hrishikesh Bhaskaran">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+  <link rel="canonical" href="https://stultus.in/scriptty/">
+
+  <!-- ─── OPEN GRAPH ─── -->
+  <meta property="og:title" content="Scriptty — Write screenplays in the language you dream in">
+  <meta property="og:description" content="Free, offline screenwriting for Malayalam and English. Hollywood and Indian two-column formats, built-in Malayalam input, production-breakdown cards, daily shoot list PDF. Mac, Windows, Linux.">
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://stultus.in/scriptty">
-  <link rel="icon" type="image/png" href="app-icon.png">
+  <meta property="og:url" content="https://stultus.in/scriptty/">
+  <meta property="og:site_name" content="Scriptty">
+  <meta property="og:image" content="https://stultus.in/scriptty/app-icon.png">
+  <meta property="og:image:alt" content="The Scriptty app icon — a stylized clapperboard mark on a cream paper field">
+  <meta property="og:locale" content="en_IN">
+  <meta property="og:locale:alternate" content="ml_IN">
+
+  <!-- ─── TWITTER CARD ─── -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Scriptty — Free offline screenwriting for Malayalam & English">
+  <meta name="twitter:description" content="Hollywood and Indian screenplay formats. Built-in Malayalam input. Production breakdown cards. Daily shoot list PDF. Web series support. Free & open source.">
+  <meta name="twitter:image" content="https://stultus.in/scriptty/app-icon.png">
+
+  <!-- ─── ICONS ─── -->
+  <link rel="icon" type="image/png" sizes="512x512" href="app-icon.png">
+  <link rel="apple-touch-icon" href="app-icon.png">
+
+  <!-- ─── FONTS ─── -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=Manjari:wght@400;700&display=swap">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=Manjari:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- ─── JSON-LD STRUCTURED DATA ─── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://stultus.in/scriptty/#software",
+        "name": "Scriptty",
+        "alternateName": "Scriptty Screenwriting App",
+        "description": "Free, offline screenwriting app for Malayalam and English writers. Hollywood single-column and Indian two-column screenplay formats, built-in Malayalam input (Mozhi, Inscript), production breakdown cards, daily shoot list PDF, web-series support.",
+        "url": "https://stultus.in/scriptty/",
+        "applicationCategory": "WritingApplication",
+        "applicationSubCategory": "Screenwriting Software",
+        "operatingSystem": "macOS, Windows, Linux",
+        "downloadUrl": "https://github.com/stultus/scriptty/releases/latest",
+        "softwareVersion": "0.8.0",
+        "fileSize": "12MB",
+        "inLanguage": ["en", "ml"],
+        "license": "https://github.com/stultus/scriptty/blob/main/LICENSE",
+        "isAccessibleForFree": true,
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "author": {
+          "@id": "https://stultus.in/scriptty/#author"
+        },
+        "featureList": [
+          "Hollywood single-column screenplay format",
+          "Indian two-column screenplay format export",
+          "Built-in Malayalam input (Mozhi phonetic, Inscript 1, Inscript 2)",
+          "Mixed Malayalam and English script on the same line",
+          "Production breakdown scene cards",
+          "Daily shoot list PDF with industry-standard page eighths",
+          "Web series support with multi-episode files",
+          "Editorial-grade PDF export",
+          "Autosave with crash recovery",
+          "Paste plain text and convert to screenplay",
+          "Fully offline, zero cloud dependency"
+        ]
+      },
+      {
+        "@type": "Person",
+        "@id": "https://stultus.in/scriptty/#author",
+        "name": "Hrishikesh Bhaskaran",
+        "url": "https://github.com/stultus"
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://stultus.in/scriptty/#website",
+        "url": "https://stultus.in/scriptty/",
+        "name": "Scriptty",
+        "description": "Offline screenwriting for Malayalam and English writers",
+        "publisher": { "@id": "https://stultus.in/scriptty/#author" },
+        "inLanguage": "en"
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://stultus.in/scriptty/#faq",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Is Scriptty free?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Scriptty is free and open source under the MIT license. There is no subscription, no account, and no cloud service to pay for."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does Scriptty support Malayalam typing?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Scriptty has three built-in Malayalam input schemes — Mozhi (phonetic), Inscript 1, and Inscript 2 — and you can mix Malayalam and English freely on the same line. No operating-system keyboard setup is required."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I export a screenplay in Indian two-column format?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. The editor uses Hollywood single-column format for writing, and the Export modal lets you pick Hollywood or Indian two-column layout at PDF time."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does Scriptty work offline?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes — completely. Scriptty makes zero network calls at runtime. Your scripts are saved locally as .screenplay files. There is no cloud sync and no telemetry."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Which platforms does Scriptty run on?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "macOS (Apple Silicon and Intel), Windows, and Linux (.deb and AppImage)."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+
+  <!-- ─── ANALYTICS PLACEHOLDER ───
+       Replace G-XXXXXXXXXX below with your Google Analytics 4 Measurement ID
+       (Admin → Data Streams → Web → Measurement ID). The site already wires
+       up download click tracking via the gtag('event', 'download', ...) call
+       inside the download-button renderer at the bottom of this file — once
+       the ID is in, downloads start showing up in GA Real-time and Events. -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){ dataLayer.push(arguments); }
+    gtag('js', new Date());
+    // Replace G-XXXXXXXXXX with your actual Measurement ID before this fires.
+    gtag('config', 'G-XXXXXXXXXX', {
+      anonymize_ip: true,
+      send_page_view: true
+    });
+  </script>
+
   <style>
-    /* ── Reset ── */
+    /* ─── Reset ─── */
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-    /* ── Tokens ── */
+    /* ─── Editorial design tokens ───
+         Cream paper, deep ink, the warm Kerala palette borrowed from the
+         app. Typography pairs Fraunces (display, optical-sized) with Source
+         Serif 4 (body, book-text feel) and Courier Prime (accents, slugs,
+         page numbers, chrome) — the same Courier vocabulary the app uses
+         on screen and in printed PDFs, so the marketing site reads as a
+         continuation of the product, not a separate brand. */
     :root {
-      --bg-deep: #111110;
-      --bg-surface: #1a1a19;
-      --bg-elevated: #222221;
-      --bg-warm: #f5f0e8;
-      --bg-page: #faf7f2;
+      /* Surface */
+      --paper:           #f6f0e6;
+      --paper-deep:      #ede6d8;
+      --paper-edge:      #e0d8c4;
+      --ink:             #1a1916;
+      --ink-soft:        #2a2924;
 
-      --teal: #2d9b8a;
-      --teal-bright: #3ec4af;
-      --teal-muted: rgba(45, 155, 138, 0.12);
-      --amber: #e8a04a;
+      /* Text */
+      --text:            #1a1916;
+      --text-secondary:  #4a4740;
+      --text-muted:      #6b6860;
+      --text-quiet:      #8a8478;
 
-      --text-hero: #f5f0e8;
-      --text-primary: #e0ddd7;
-      --text-secondary: #9e9a94;
-      --text-muted: #5e5a55;
-      --text-dark: #1a1a19;
-      --text-dark-secondary: #4a4740;
+      /* Accents — match the app's CSS variables */
+      --teal:            #1e8070;
+      --teal-deep:       #16604f;
+      --terracotta:      #b76d0f;
+      --oxblood:         #7a2b2b;
 
-      --border: rgba(255,255,255,0.06);
-      --border-dark: rgba(0,0,0,0.08);
+      /* Hairlines */
+      --rule:            rgba(26, 25, 22, 0.14);
+      --rule-strong:     rgba(26, 25, 22, 0.28);
+      --rule-faint:      rgba(26, 25, 22, 0.06);
 
-      --font-display: 'DM Serif Display', Georgia, serif;
-      --font-body: 'DM Sans', system-ui, -apple-system, sans-serif;
+      /* Shadows — subtle, like ink slightly bleeding into paper */
+      --shadow-card:     0 1px 0 rgba(26, 25, 22, 0.04),
+                         0 12px 32px -16px rgba(26, 25, 22, 0.18);
 
-      --max-w: 1080px;
-      --gutter: 24px;
+      /* Type families */
+      --display: 'Fraunces', 'Source Serif 4', Georgia, serif;
+      --body:    'Source Serif 4', Georgia, 'Times New Roman', serif;
+      --mono:    'Courier Prime', ui-monospace, 'SFMono-Regular', monospace;
+      --ml:      'Manjari', 'Source Serif 4', serif;
+
+      /* Geometry */
+      --max:     1180px;
+      --gutter:  32px;
+      --rhythm:  1.55;
     }
 
     html { scroll-behavior: smooth; }
 
     body {
-      font-family: var(--font-body);
-      color: var(--text-primary);
-      background: var(--bg-deep);
+      background: var(--paper);
+      color: var(--text);
+      font-family: var(--body);
+      font-size: 17px;
+      line-height: var(--rhythm);
+      font-feature-settings: 'kern', 'liga', 'onum', 'calt';
       -webkit-font-smoothing: antialiased;
-      line-height: 1.6;
+      text-rendering: optimizeLegibility;
+      /* Defensive: prevent any single rogue element (very long kbd
+         tokens, oversized headlines on tiny viewports) from
+         introducing horizontal scroll on mobile. The headlines and
+         display blocks all wrap, so this only catches edge cases. */
+      overflow-x: hidden;
+      overflow-wrap: break-word;
+      hyphens: auto;
+      /* Subtle vertical paper grain — uses two soft radial gradients in
+         oxblood/teal/terracotta tones at extreme low alpha, layered atop
+         the cream surface, to give the page a hand-printed-on-uncoated
+         feel without resorting to a noise PNG. */
+      background-image:
+        radial-gradient(circle at 12% 8%,  rgba(122, 43, 43, 0.03), transparent 40%),
+        radial-gradient(circle at 88% 92%, rgba(30, 128, 112, 0.03), transparent 45%);
+      background-attachment: fixed;
     }
 
-    a { color: var(--teal-bright); text-decoration: none; }
-    a:hover { text-decoration: underline; }
+    a { color: var(--teal-deep); text-decoration: underline; text-decoration-thickness: 0.5px; text-underline-offset: 3px; transition: color 140ms ease; }
+    a:hover { color: var(--oxblood); }
+
+    img { max-width: 100%; display: block; }
 
     .container {
-      max-width: var(--max-w);
+      max-width: var(--max);
       margin: 0 auto;
       padding: 0 var(--gutter);
     }
 
-    /* ── Nav ── */
-    nav {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 100;
-      background: rgba(17,17,16,0.85);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      height: 56px;
-      display: flex;
+    /* ─── Editorial primitives ─── */
+    .eyebrow {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 700;
+      display: inline-flex;
       align-items: center;
+      gap: 0.7em;
+    }
+    .eyebrow::before, .eyebrow::after {
+      content: "";
+      width: 22px;
+      height: 1px;
+      background: var(--rule-strong);
+    }
+    .eyebrow.solo::before, .eyebrow.solo::after { display: none; }
+
+    .deck {
+      font-family: var(--display);
+      font-style: italic;
+      font-weight: 400;
+      font-optical-sizing: auto;
+      font-size: clamp(20px, 2.4vw, 26px);
+      line-height: 1.4;
+      color: var(--text-secondary);
+      max-width: 38ch;
     }
 
-    nav .container {
+    .slug {
+      /* Section divider styled as a screenplay scene heading */
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text);
+      padding: 12px 0 10px;
+      border-top: 1px solid var(--ink);
+      border-bottom: 1px solid var(--rule);
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 16px;
+    }
+    .slug .slug-num {
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .cut-to {
+      /* Right-aligned screenplay transition between sections */
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-quiet);
+      text-align: right;
+      margin: 18px 0 -6px;
+    }
+
+    .asterism {
+      text-align: center;
+      color: var(--text-quiet);
+      letter-spacing: 0.6em;
+      font-size: 18px;
+      margin: 32px 0;
+    }
+
+    .pull-quote {
+      font-family: var(--display);
+      font-weight: 400;
+      font-style: italic;
+      font-size: clamp(22px, 3vw, 32px);
+      line-height: 1.3;
+      color: var(--ink);
+      max-width: 28ch;
+      margin: 0 auto;
+      text-align: center;
+      position: relative;
+    }
+    .pull-quote::before {
+      content: "“";
+      font-size: 5em;
+      line-height: 0;
+      position: absolute;
+      left: -0.4em;
+      top: 0.45em;
+      color: var(--terracotta);
+      font-family: var(--display);
+    }
+
+    /* ─── Masthead (top nav) ─── */
+    .masthead {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(246, 240, 230, 0.92);
+      backdrop-filter: saturate(140%) blur(10px);
+      -webkit-backdrop-filter: saturate(140%) blur(10px);
+      border-bottom: 1px solid var(--rule);
+    }
+    .masthead .container {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      width: 100%;
+      gap: 20px;
+      padding-top: 14px;
+      padding-bottom: 14px;
     }
-
-    .nav-brand {
+    .masthead-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text);
+    }
+    .masthead-brand img {
+      width: 28px; height: 28px;
+      border-radius: 5px;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.06), 0 4px 14px -8px rgba(0,0,0,0.2);
+    }
+    .masthead-brand .colophon-mark {
+      width: 6px; height: 6px;
+      background: var(--teal);
+      transform: rotate(45deg);
+      flex-shrink: 0;
+      display: none; /* compact masthead just shows the icon — diamond appears in the cover */
+    }
+    .wordmark {
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+    .masthead-meta {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      display: none;
+    }
+    @media (min-width: 720px) { .masthead-meta { display: inline; } }
+    .masthead-nav {
       display: flex;
       align-items: center;
-      gap: 10px;
-      font-family: var(--font-display);
-      font-size: 18px;
-      color: var(--text-hero);
-      text-decoration: none;
-    }
-
-    .nav-brand img { width: 28px; height: 28px; border-radius: 6px; }
-
-    .nav-links {
-      display: flex;
-      gap: 28px;
+      gap: 24px;
       list-style: none;
     }
-
-    .nav-links a {
+    .masthead-nav a {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-weight: 700;
       color: var(--text-secondary);
-      font-size: 14px;
-      font-weight: 500;
       text-decoration: none;
-      transition: color 150ms;
+      transition: color 120ms ease;
+    }
+    .masthead-nav a:hover { color: var(--teal-deep); }
+    .masthead-nav a.cta {
+      color: var(--paper);
+      background: var(--ink);
+      padding: 8px 14px;
+      border-radius: 2px;
+    }
+    .masthead-nav a.cta:hover { background: var(--teal-deep); }
+    @media (max-width: 640px) {
+      .masthead-nav li:not(:last-child) { display: none; }
     }
 
-    .nav-links a:hover { color: var(--text-hero); text-decoration: none; }
-
-    /* ── Hero ── */
-    .hero {
-      padding: 160px 0 100px;
-      text-align: center;
+    /* ─── COVER (the magazine cover spread) ─── */
+    .cover {
+      padding: 60px 0 80px;
       position: relative;
-      overflow: hidden;
     }
-
-    .hero::before {
-      content: 'ഋ';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -55%);
-      font-size: 420px;
-      color: rgba(45, 155, 138, 0.04);
-      pointer-events: none;
-      font-family: 'Noto Sans Malayalam', sans-serif;
-    }
-
-    .hero-icon {
-      width: 88px;
-      height: 88px;
-      border-radius: 20px;
-      margin-bottom: 32px;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06);
-    }
-
-    .hero h1 {
-      font-family: var(--font-display);
-      font-size: clamp(40px, 6vw, 64px);
-      color: var(--text-hero);
-      line-height: 1.1;
-      margin-bottom: 16px;
-      letter-spacing: -0.01em;
-    }
-
-    .hero .tagline {
-      font-size: clamp(18px, 2.5vw, 22px);
-      color: var(--text-secondary);
-      max-width: 520px;
-      margin: 0 auto 20px;
-      line-height: 1.5;
-    }
-
-    .hero .sub-tagline {
-      font-size: 15px;
+    .cover-top {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 22px;
+      margin-bottom: 56px;
+      padding-bottom: 22px;
+      border-bottom: 1px solid var(--rule);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
       color: var(--text-muted);
-      max-width: 560px;
-      margin: 0 auto 40px;
     }
-
-    .download-group {
+    .cover-top .cover-top-row {
       display: flex;
-      gap: 12px;
-      justify-content: center;
       flex-wrap: wrap;
-      margin-bottom: 16px;
+      gap: 18px 32px;
+      justify-content: space-between;
+    }
+    .cover-top .cover-top-row span { display: inline-block; }
+    .cover-top strong {
+      color: var(--ink);
+      font-weight: 700;
     }
 
+    .cover-headline {
+      font-family: var(--display);
+      font-weight: 600;
+      font-optical-sizing: auto;
+      /* Serious editorial display — variable optical sizing tightens up at
+         the headline scale. The clamp keeps it readable on a phone without
+         giving up the magazine-cover impact on a desktop. */
+      font-size: clamp(60px, 11.5vw, 168px);
+      line-height: 0.92;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      margin-bottom: 22px;
+      /* Slight optical hang into the left margin on desktop */
+      margin-left: -0.04em;
+    }
+    .cover-headline em {
+      font-style: italic;
+      color: var(--terracotta);
+      font-weight: 500;
+    }
+    .cover-deck {
+      font-family: var(--display);
+      font-style: italic;
+      font-weight: 400;
+      font-optical-sizing: auto;
+      font-size: clamp(22px, 2.8vw, 32px);
+      line-height: 1.32;
+      color: var(--text-secondary);
+      max-width: 22ch;
+      margin-bottom: 38px;
+    }
+    .cover-deck strong {
+      font-style: normal;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .cover-byline {
+      display: flex;
+      gap: 28px;
+      flex-wrap: wrap;
+      align-items: center;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 44px;
+    }
+    .cover-byline .by {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 9px;
+    }
+    .cover-byline .by-label { color: var(--text-quiet); }
+    .cover-byline .by-name {
+      color: var(--ink);
+      font-weight: 700;
+    }
+    .cover-byline .diamond {
+      width: 5px; height: 5px;
+      background: var(--teal);
+      transform: rotate(45deg);
+      display: inline-block;
+    }
+
+    /* Download CTAs — primary is filled-ink, secondary set in Courier */
+    .downloads-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+    }
     .btn-download {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 12px 24px;
-      border-radius: 10px;
-      font-size: 15px;
-      font-weight: 600;
-      font-family: var(--font-body);
-      border: none;
-      cursor: pointer;
-      transition: transform 150ms, box-shadow 150ms;
+      gap: 11px;
+      padding: 16px 22px;
+      border: 1px solid var(--ink);
+      background: var(--ink);
+      color: var(--paper);
       text-decoration: none;
-    }
-
-    .btn-download:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 24px rgba(45, 155, 138, 0.3);
-      text-decoration: none;
-    }
-
-    .btn-download.primary {
-      background: var(--teal);
-      color: #fff;
-    }
-
-    .btn-download.secondary {
-      background: var(--bg-elevated);
-      color: var(--text-primary);
-      border: 1px solid var(--border);
-    }
-
-    .btn-download .os-icon {
-      font-size: 18px;
-      line-height: 1;
-    }
-
-    .hero-note {
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    /* Platform-detected primary download + collapsible alternates */
-    .other-platforms-details {
-      margin-top: 18px;
-      margin-bottom: 12px;
-    }
-
-    .other-platforms-details summary {
-      cursor: pointer;
-      color: var(--text-secondary);
-      font-size: 14px;
-      list-style: none;
-      user-select: none;
-      display: inline-block;
-      transition: color 150ms;
-    }
-
-    .other-platforms-details summary::-webkit-details-marker { display: none; }
-    .other-platforms-details summary:hover { color: var(--text-hero); }
-
-    .other-platforms-details summary::after {
-      content: ' ▾';
-      font-size: 11px;
-      opacity: 0.7;
-      margin-left: 2px;
-    }
-
-    .other-platforms-details[open] summary {
-      margin-bottom: 14px;
-    }
-
-    .other-platforms-details[open] summary::after {
-      content: ' ▴';
-    }
-
-    /* ── Features ── */
-    .features {
-      padding: 80px 0;
-      border-top: 1px solid var(--border);
-    }
-
-    .section-label {
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
+      font-family: var(--mono);
+      font-size: 12.5px;
       letter-spacing: 0.1em;
-      color: var(--teal);
-      margin-bottom: 12px;
-      text-align: center;
-    }
-
-    .section-title {
-      font-family: var(--font-display);
-      font-size: clamp(28px, 4vw, 36px);
-      color: var(--text-hero);
-      text-align: center;
-      margin-bottom: 56px;
-      line-height: 1.2;
-    }
-
-    .feature-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 20px;
-    }
-
-    .feature-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 28px;
-    }
-
-    .feature-card h3 {
-      font-family: var(--font-display);
-      font-size: 18px;
-      color: var(--text-hero);
-      margin-bottom: 8px;
-    }
-
-    .feature-card p {
-      font-size: 14px;
-      color: var(--text-secondary);
-      line-height: 1.6;
-    }
-
-    .feature-card .feat-icon {
-      font-size: 28px;
-      margin-bottom: 16px;
-      display: block;
-    }
-
-    /* ── Guide (light section) ── */
-    .guide {
-      background: var(--bg-warm);
-      padding: 80px 0;
-    }
-
-    .guide .section-label { color: #1e8070; }
-    .guide .section-title { color: var(--text-dark); }
-
-    .guide-content {
-      max-width: 720px;
-      margin: 0 auto;
-    }
-
-    .guide-section {
-      margin-bottom: 40px;
-      padding-bottom: 40px;
-      border-bottom: 1px solid var(--border-dark);
-    }
-
-    .guide-section:last-child {
-      border-bottom: none;
-      margin-bottom: 0;
-      padding-bottom: 0;
-    }
-
-    .guide-section h3 {
-      font-family: var(--font-display);
-      font-size: 20px;
-      color: var(--text-dark);
-      margin-bottom: 12px;
-    }
-
-    .guide-section p,
-    .guide-section li {
-      font-size: 15px;
-      line-height: 1.7;
-      color: var(--text-dark-secondary);
-      margin-bottom: 8px;
-    }
-
-    .guide-section ol,
-    .guide-section ul {
-      padding-left: 20px;
-      margin: 8px 0 12px;
-    }
-
-    .guide-section li { margin-bottom: 6px; }
-
-    .guide-section strong { color: var(--text-dark); }
-
-    .guide-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 12px 0;
-      font-size: 14px;
-    }
-
-    .guide-table th {
-      text-align: left;
-      font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #9c9891;
-      padding: 8px 10px;
-      border-bottom: 2px solid rgba(0,0,0,0.08);
+      transition: background 140ms ease, color 140ms ease, transform 140ms ease, border-color 140ms ease;
+    }
+    .btn-download:hover {
+      background: var(--teal-deep);
+      border-color: var(--teal-deep);
+      color: var(--paper);
+    }
+    .btn-download.secondary {
+      background: transparent;
+      color: var(--ink);
+    }
+    .btn-download.secondary:hover {
+      background: var(--ink);
+      color: var(--paper);
+    }
+    .btn-download .os-icon {
+      width: 16px; height: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-download .os-icon svg { fill: currentColor; }
+
+    .other-platforms-details {
+      margin-top: 4px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .other-platforms-details summary {
+      list-style: none;
+      cursor: pointer;
+      color: var(--text-secondary);
+      padding: 8px 0;
+      user-select: none;
+    }
+    .other-platforms-details summary::-webkit-details-marker { display: none; }
+    .other-platforms-details summary::before {
+      content: "+ ";
+      color: var(--terracotta);
+    }
+    .other-platforms-details[open] summary::before { content: "− "; }
+    .other-platforms-details .download-group {
+      display: flex; flex-wrap: wrap; gap: 10px;
+      padding: 12px 0;
     }
 
-    .guide-table td {
-      padding: 7px 10px;
-      color: var(--text-dark-secondary);
-      border-bottom: 1px solid rgba(0,0,0,0.05);
+    .cover-meta {
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid var(--rule);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      display: flex;
+      gap: 22px;
+      flex-wrap: wrap;
     }
+    .cover-meta a { color: var(--text-secondary); text-decoration: none; }
+    .cover-meta a:hover { color: var(--teal-deep); text-decoration: underline; }
 
-    kbd {
-      display: inline-block;
-      font-family: var(--font-body);
-      font-size: 12px;
-      padding: 2px 7px;
-      border-radius: 4px;
-      background: #fff;
-      border: 1px solid rgba(0,0,0,0.12);
-      box-shadow: 0 1px 0 rgba(0,0,0,0.06);
-      color: var(--text-dark);
-      line-height: 1.5;
+    /* ─── STANDFIRST / opening editor's note ─── */
+    .standfirst {
+      padding: 80px 0 40px;
+      border-top: 1px solid var(--rule-faint);
     }
-
-    /* ── Footer ── */
-    footer {
-      padding: 48px 0;
-      border-top: 1px solid var(--border);
-      text-align: center;
-    }
-
-    /* ── Credits section ── */
-    .credits-section {
-      padding: 80px 0;
-      border-top: 1px solid var(--border);
-    }
-
-    .credits-grid {
+    .standfirst-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: 1fr;
       gap: 32px;
-      max-width: 800px;
-      margin: 0 auto;
     }
-
-    .credits-group h4 {
+    @media (min-width: 920px) {
+      .standfirst-grid {
+        grid-template-columns: 220px 1fr;
+        gap: 64px;
+      }
+    }
+    .standfirst-side {
+      font-family: var(--mono);
       font-size: 11px;
-      font-weight: 600;
+      letter-spacing: 0.18em;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
       color: var(--text-muted);
-      margin-bottom: 16px;
+      line-height: 1.7;
     }
-
-    .credits-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .credit-person {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .credit-person strong {
-      font-size: 14px;
-      color: var(--text-primary);
-      font-weight: 500;
-    }
-
-    .credit-person span {
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    .credit-person a {
-      color: var(--text-secondary);
-    }
-
-    .credit-person a:hover {
-      color: var(--teal-bright);
-    }
-
-    .credits-cta {
-      font-size: 14px;
-      color: var(--text-secondary);
-      line-height: 1.6;
-    }
-
-    footer p {
-      font-size: 13px;
-      color: var(--text-muted);
+    .standfirst-side .label {
+      display: block;
+      color: var(--terracotta);
+      font-weight: 700;
       margin-bottom: 6px;
     }
-
-    footer .footer-links {
-      display: flex;
-      gap: 20px;
-      justify-content: center;
-      margin-top: 12px;
+    .standfirst-body {
+      font-family: var(--display);
+      font-weight: 400;
+      font-optical-sizing: auto;
+      font-size: clamp(22px, 2.4vw, 30px);
+      line-height: 1.4;
+      color: var(--ink);
+      max-width: 38ch;
+    }
+    .standfirst-body p + p { margin-top: 18px; }
+    .standfirst-body .dropcap {
+      float: left;
+      font-family: var(--display);
+      font-weight: 600;
+      font-size: 4.4em;
+      line-height: 0.85;
+      padding: 6px 12px 0 0;
+      color: var(--terracotta);
     }
 
-    footer .footer-links a {
+    /* ─── DEPARTMENTS (feature grid) ─── */
+    .departments { padding: 60px 0; }
+    .departments-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-bottom: 36px;
+    }
+    .departments-head h2 {
+      font-family: var(--display);
+      font-weight: 600;
+      font-optical-sizing: auto;
+      font-size: clamp(36px, 5vw, 64px);
+      line-height: 1.0;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      max-width: 14ch;
+    }
+    .departments-head h2 em {
+      font-style: italic;
+      color: var(--teal-deep);
+      font-weight: 500;
+    }
+    .departments-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
+      border-top: 1px solid var(--rule-strong);
+    }
+    @media (min-width: 720px) {
+      .departments-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (min-width: 1040px) {
+      .departments-grid { grid-template-columns: 1fr 1fr 1fr; }
+    }
+
+    .dept {
+      padding: 32px 28px 36px 0;
+      border-bottom: 1px solid var(--rule);
+      position: relative;
+    }
+    @media (min-width: 720px) {
+      .dept:nth-child(odd) { padding-right: 28px; border-right: 1px solid var(--rule); }
+      .dept:nth-child(even) { padding-left: 28px; padding-right: 0; }
+    }
+    @media (min-width: 1040px) {
+      .dept { padding-right: 28px; padding-left: 28px; }
+      .dept:nth-child(3n+1) { padding-left: 0; border-right: 1px solid var(--rule); }
+      .dept:nth-child(3n+2) { border-right: 1px solid var(--rule); }
+      .dept:nth-child(3n) { padding-right: 0; border-right: none; }
+    }
+    .dept-num {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      color: var(--terracotta);
+      font-weight: 700;
+      display: block;
+      margin-bottom: 10px;
+    }
+    .dept-title {
+      font-family: var(--display);
+      font-weight: 600;
+      font-optical-sizing: auto;
+      font-size: 26px;
+      line-height: 1.15;
+      letter-spacing: -0.005em;
+      color: var(--ink);
+      margin-bottom: 12px;
+    }
+    .dept-title em {
+      font-style: italic;
+      color: var(--teal-deep);
+    }
+    .dept p {
+      font-family: var(--body);
+      font-size: 15.5px;
+      line-height: 1.55;
+      color: var(--text-secondary);
+    }
+    .dept p strong {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    /* ─── DUAL SCRIPT spread (Malayalam + English) ─── */
+    .spread {
+      padding: 80px 0;
+      background: var(--paper-deep);
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+      margin: 60px 0;
+    }
+    .spread-head {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    .spread-head h2 {
+      font-family: var(--display);
+      font-weight: 500;
+      font-optical-sizing: auto;
+      font-style: italic;
+      font-size: clamp(34px, 4.6vw, 56px);
+      line-height: 1.1;
+      color: var(--ink);
+      max-width: 22ch;
+      margin: 12px auto 0;
+    }
+    .spread-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 36px;
+      max-width: 920px;
+      margin: 0 auto;
+    }
+    @media (min-width: 820px) {
+      .spread-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 56px;
+      }
+    }
+    .script-card {
+      background: var(--paper);
+      border: 1px solid var(--rule);
+      padding: 32px 28px;
+      box-shadow: var(--shadow-card);
+      position: relative;
+    }
+    .script-card-num {
+      position: absolute;
+      top: -10px; left: 22px;
+      background: var(--paper-deep);
+      padding: 0 8px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      color: var(--terracotta);
+      font-weight: 700;
+    }
+    .script-card .heading {
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.04em;
+      color: var(--ink);
+      padding-bottom: 14px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid var(--rule);
+      text-transform: uppercase;
+    }
+    .script-card .character {
+      font-family: var(--mono);
+      font-weight: 700;
       font-size: 13px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      text-align: center;
+      margin: 22px 0 4px;
+      color: var(--ink);
+    }
+    .script-card .paren {
+      font-family: var(--body);
+      font-style: italic;
+      font-size: 14px;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-bottom: 4px;
+    }
+    .script-card .dialog {
+      font-family: var(--body);
+      font-size: 15px;
+      line-height: 1.5;
+      max-width: 22ch;
+      margin: 0 auto 12px;
+      text-align: center;
+      color: var(--ink);
+    }
+    .script-card .action {
+      font-family: var(--body);
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--ink);
+      margin-bottom: 12px;
+    }
+    .script-card.malayalam .heading,
+    .script-card.malayalam .character {
+      /* Keep slugs and character cues in Latin Courier — that's the
+         screenplay-format convention even in Malayalam scripts. */
+    }
+    .script-card.malayalam .dialog,
+    .script-card.malayalam .action {
+      font-family: var(--ml);
+      font-size: 17px;
+      line-height: 1.65;
+    }
+    .script-card .transition {
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-quiet);
+      text-align: right;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--rule);
+    }
+
+    /* ─── REFERENCE / how-to ─── */
+    .reference { padding: 60px 0 40px; }
+    .reference-head {
+      max-width: 36ch;
+      margin-bottom: 44px;
+    }
+    .reference-head h2 {
+      font-family: var(--display);
+      font-weight: 600;
+      font-optical-sizing: auto;
+      font-size: clamp(34px, 4.4vw, 56px);
+      line-height: 1.05;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+      margin-top: 10px;
+    }
+    .reference-head h2 em {
+      font-style: italic;
+      color: var(--teal-deep);
+    }
+    .reference-cols {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 36px;
+      border-top: 2px solid var(--ink);
+      padding-top: 36px;
+    }
+    @media (min-width: 760px) {
+      .reference-cols { grid-template-columns: 1fr 1fr; column-gap: 56px; }
+    }
+    @media (min-width: 1040px) {
+      .reference-cols { grid-template-columns: 1fr 1fr 1fr; }
+    }
+    .ref-block { }
+    .ref-block h3 {
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--terracotta);
+      margin-bottom: 14px;
+    }
+    .ref-block h4 {
+      font-family: var(--display);
+      font-weight: 600;
+      font-optical-sizing: auto;
+      font-size: 22px;
+      line-height: 1.2;
+      color: var(--ink);
+      margin: 22px 0 10px;
+      letter-spacing: -0.005em;
+    }
+    .ref-block h4:first-of-type { margin-top: 0; }
+    .ref-block p {
+      font-size: 15.5px;
+      line-height: 1.55;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+    }
+    .ref-block p strong { color: var(--ink); font-weight: 600; }
+    .ref-block ol, .ref-block ul {
+      padding-left: 1.1em;
+      font-size: 15.5px;
+      line-height: 1.6;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+    }
+    .ref-block li { margin-bottom: 6px; }
+    .ref-block li strong { color: var(--ink); font-weight: 600; }
+    .ref-block code {
+      font-family: var(--mono);
+      font-size: 13.5px;
+      background: var(--paper-deep);
+      padding: 1px 6px;
+      border-radius: 2px;
+      color: var(--ink);
+    }
+    kbd {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      padding: 2px 7px;
+      background: var(--paper);
+      border: 1px solid var(--rule-strong);
+      border-bottom-width: 2px;
+      border-radius: 3px;
+      color: var(--ink);
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      /* nowrap keeps "Cmd+Shift+T" from splitting mid-token, but on
+         narrow viewports the resulting unbreakable run can push past
+         the column edge. word-break: keep-all + line-break: anywhere
+         lets the line break BEFORE/AFTER the kbd while keeping its
+         internal text intact — which is what we actually want. */
+      white-space: nowrap;
+      word-break: keep-all;
+    }
+
+    /* ─── ISSUE NOTES (changelog highlights) ─── */
+    .issue-notes {
+      padding: 60px 0;
+      background: var(--paper-deep);
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+    }
+    .notes-head {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    .notes-head h2 {
+      font-family: var(--display);
+      font-weight: 600;
+      font-optical-sizing: auto;
+      font-size: clamp(32px, 4.4vw, 52px);
+      line-height: 1.05;
+      color: var(--ink);
+      max-width: 24ch;
+      margin: 12px auto 0;
+    }
+    .notes-head h2 em { font-style: italic; color: var(--terracotta); font-weight: 500; }
+    .notes-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
+      max-width: 880px;
+      margin: 0 auto;
+      border-top: 1px solid var(--rule-strong);
+    }
+    .note-item {
+      display: grid;
+      grid-template-columns: 90px 1fr;
+      gap: 24px;
+      padding: 22px 0;
+      border-bottom: 1px solid var(--rule);
+      align-items: baseline;
+    }
+    .note-item:last-child { border-bottom: none; }
+    .note-num {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      color: var(--terracotta);
+      font-weight: 700;
+    }
+    .note-body h3 {
+      font-family: var(--display);
+      font-weight: 600;
+      font-optical-sizing: auto;
+      font-size: 21px;
+      line-height: 1.2;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+    .note-body p {
+      font-size: 15.5px;
+      line-height: 1.55;
       color: var(--text-secondary);
     }
 
-    /* ── Responsive ── */
-    @media (max-width: 640px) {
-      .nav-links { display: none; }
-      .hero { padding: 120px 0 60px; }
-      .download-group { flex-direction: column; align-items: center; }
-      .btn-download { width: 100%; max-width: 280px; justify-content: center; }
-      .feature-grid { grid-template-columns: 1fr; }
-      .credits-grid { grid-template-columns: 1fr; text-align: center; }
+    /* ─── COLOPHON / footer ─── */
+    .colophon {
+      padding: 80px 0 60px;
+      background: var(--ink);
+      color: var(--paper);
+    }
+    .colophon a { color: var(--paper); text-decoration: underline; text-decoration-thickness: 0.5px; text-underline-offset: 4px; }
+    .colophon a:hover { color: #f5c98a; }
+    .colophon-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 40px;
+      padding-bottom: 36px;
+      border-bottom: 1px solid rgba(246, 240, 230, 0.18);
+    }
+    @media (min-width: 720px) {
+      .colophon-grid { grid-template-columns: 1.4fr 1fr 1fr; gap: 48px; }
+    }
+    .col-mast {
+      font-family: var(--display);
+      font-weight: 600;
+      font-size: 36px;
+      letter-spacing: -0.005em;
+    }
+    .col-mast .diamond {
+      display: inline-block;
+      width: 8px; height: 8px;
+      background: var(--teal);
+      transform: rotate(45deg);
+      margin-right: 12px;
+      vertical-align: middle;
+    }
+    .col-mast-deck {
+      font-family: var(--display);
+      font-style: italic;
+      font-weight: 400;
+      font-size: 18px;
+      line-height: 1.4;
+      color: rgba(246, 240, 230, 0.7);
+      margin-top: 14px;
+      max-width: 30ch;
+    }
+    .col-section h4 {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: rgba(246, 240, 230, 0.55);
+      margin-bottom: 14px;
+    }
+    .col-section ul { list-style: none; }
+    .col-section li { margin-bottom: 9px; font-size: 14.5px; }
+    .colophon-footer {
+      padding-top: 28px;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(246, 240, 230, 0.6);
+    }
+    .colophon-footer .set-in {
+      max-width: 50ch;
+      letter-spacing: 0.12em;
+      text-transform: none;
+      font-size: 12px;
+      line-height: 1.5;
+      color: rgba(246, 240, 230, 0.55);
+      font-family: var(--body);
+    }
+    .colophon-footer .set-in em {
+      font-style: italic;
+      color: rgba(246, 240, 230, 0.85);
+    }
+
+    /* ─── Print styles (because: magazine) ─── */
+    @media print {
+      .masthead, .masthead-nav, .other-platforms-details, .downloads-row { display: none; }
+      body { background: white; color: black; }
+      .cover-headline { font-size: 60pt; }
+      .colophon { background: white; color: black; }
+      .spread, .issue-notes { background: white; }
+    }
+
+    /* ─── Reduced motion respect ─── */
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+
+    /* Grid children should be allowed to shrink below their intrinsic
+       content width on mobile — the default `min-width: auto` lets a
+       long word or pre-styled element push the column wider than the
+       column track, which on a 390px phone shows up as horizontal
+       overflow that body's overflow-x: hidden then quietly clips. */
+    .standfirst-grid > *,
+    .reference-cols > *,
+    .departments-grid > *,
+    .spread-grid > *,
+    .colophon-grid > *,
+    .notes-grid > * { min-width: 0; }
+
+    /* ─── Mobile tightening ─── */
+    @media (max-width: 520px) {
+      :root { --gutter: 22px; }
+      body { font-size: 16px; }
+      .cover { padding: 36px 0 56px; }
+      .standfirst { padding: 48px 0 28px; }
+      .departments { padding: 40px 0; }
+      .spread { padding: 56px 0; margin: 36px 0; }
+      .reference { padding: 40px 0 28px; }
+      .issue-notes { padding: 48px 0; }
+      .colophon { padding: 56px 0 36px; }
+      .cover-headline { line-height: 0.95; }
+      /* Dropcap looks dramatic at desktop scale but eats too much width
+         on phones (a 4.4em float pushes wrap text to the right edge).
+         At small sizes we drop the float and let the first letter sit
+         in flow at a more modest scale. */
+      .standfirst-body .dropcap {
+        float: none;
+        font-size: 1.2em;
+        padding: 0;
+        color: var(--terracotta);
+      }
+      .standfirst-body { max-width: 100%; }
+      .deck { max-width: 100%; }
+      .pull-quote { max-width: 100%; }
+      .pull-quote::before { left: -0.2em; font-size: 3em; }
+      .note-item { grid-template-columns: 1fr; gap: 6px; }
+      .btn-download { padding: 14px 18px; font-size: 11.5px; flex: 1 1 100%; justify-content: center; }
+      .cover-byline { gap: 14px 18px; font-size: 10px; }
+      .cover-top, .cover-meta { font-size: 10px; letter-spacing: 0.14em; }
+      .slug { flex-direction: column; gap: 4px; }
+      /* Constrain large display measures so they can't blow past the
+         screen edge on tiny phones — the clamp lower bounds were
+         sometimes wider than the available column. */
+      .cover-deck { max-width: 100%; font-size: 18px; }
+      .standfirst-body { font-size: 17px; line-height: 1.5; }
+      .dept-title { font-size: 22px; }
+      .ref-block h4 { font-size: 19px; }
+      .ref-block { word-break: normal; overflow-wrap: anywhere; }
+    }
+    @media (max-width: 380px) {
+      :root { --gutter: 18px; }
+      .cover-headline { font-size: 56px; }
+      .cover-deck { font-size: 17px; }
+      .standfirst-body { font-size: 16px; }
     }
   </style>
 </head>
 <body>
 
-<!-- ── Navigation ── -->
-<nav>
+<!-- ─── MASTHEAD ─── -->
+<header class="masthead" role="banner">
   <div class="container">
-    <a href="#" class="nav-brand">
-      <img src="app-icon.png" alt="Scriptty icon">
-      Scriptty
+    <a href="#" class="masthead-brand" aria-label="Scriptty home">
+      <img src="app-icon.png" alt="" width="28" height="28">
+      <span class="wordmark">Scriptty</span>
     </a>
-    <ul class="nav-links">
-      <li><a href="#features">Features</a></li>
-      <li><a href="#guide">How to Use</a></li>
-      <li><a href="#credits">Credits</a></li>
-      <li><a href="#download">Download</a></li>
-      <li><a href="https://github.com/stultus/scriptty">GitHub</a></li>
-    </ul>
+    <span class="masthead-meta" aria-hidden="true">No. 1 · Volume 0.8 · Cream Edition</span>
+    <nav aria-label="Primary">
+      <ul class="masthead-nav">
+        <li><a href="#departments">Features</a></li>
+        <li><a href="#manual">Manual</a></li>
+        <li><a href="#issue-notes">What's New</a></li>
+        <li><a href="https://github.com/stultus/scriptty">GitHub</a></li>
+        <li><a href="#download" class="cta">Download</a></li>
+      </ul>
+    </nav>
   </div>
-</nav>
+</header>
 
-<!-- ── Hero ── -->
-<section class="hero" id="download">
+<main>
+
+<!-- ─── COVER ─── -->
+<section class="cover" id="download" aria-labelledby="cover-headline">
   <div class="container">
-    <img src="app-icon.png" alt="Scriptty" class="hero-icon">
-    <h1>Scriptty</h1>
-    <p class="tagline">Write in the language you dream in.</p>
-    <p class="sub-tagline">A free, offline screenwriting app for Malayalam and English writers. Hollywood and Indian formats. Built-in Malayalam input. No cloud, no account.</p>
 
-    <div id="download-buttons">
-      <!-- Populated dynamically from downloads.json -->
-      <p style="color: var(--text-muted); font-size: 14px;">Loading downloads...</p>
+    <div class="cover-top" aria-hidden="true">
+      <div class="cover-top-row">
+        <span><strong>Scriptty</strong> — The Screenwriter's Quarterly</span>
+        <span>Issue 01 · Volume 0.8 · Cream Edition</span>
+        <span>Free &amp; Open Source · MIT License</span>
+        <span>Set in <em>Manjari · Courier · Fraunces</em></span>
+      </div>
     </div>
-    <p class="hero-note"><span id="version-label">v0.8.0</span> &middot; Free &amp; open source &middot; MIT License &middot; <a href="https://github.com/stultus/scriptty/releases" style="color: var(--text-secondary);">All releases</a></p>
+
+    <h1 id="cover-headline" class="cover-headline">
+      Scriptty<em>.</em>
+    </h1>
+
+    <p class="cover-deck">
+      A free, offline screenwriting app for Malayalam &amp; English writers. <strong>Hollywood</strong> single-column &amp; <strong>Indian</strong> two-column formats, built-in Malayalam input, production-ready PDFs.
+    </p>
+
+    <div class="cover-byline">
+      <span class="by"><span class="by-label">By</span> <span class="by-name">Hrishikesh Bhaskaran</span></span>
+      <span class="diamond" aria-hidden="true"></span>
+      <span class="by"><span class="by-label">From</span> <span class="by-name">Kerala, India</span></span>
+      <span class="diamond" aria-hidden="true"></span>
+      <span class="by"><span class="by-label">Built on</span> <span class="by-name">Tauri · Rust · Svelte 5</span></span>
+    </div>
+
+    <div id="download-buttons" class="downloads-row" aria-label="Download installers">
+      <p style="font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; color: var(--text-muted); text-transform: uppercase;">Loading installers…</p>
+    </div>
+
+    <div class="cover-meta">
+      <span><strong style="color: var(--ink);"><span id="version-label">v0.8.0</span></strong></span>
+      <span>Mac · Windows · Linux</span>
+      <span>No cloud · No account · No telemetry</span>
+      <a href="https://github.com/stultus/scriptty/releases">All releases →</a>
+    </div>
+
   </div>
 </section>
 
-<!-- ── Features ── -->
-<section class="features" id="features">
+<p class="cut-to" aria-hidden="true">Cut to →</p>
+
+<!-- ─── STANDFIRST / opening editor's note ─── -->
+<section class="standfirst" aria-labelledby="standfirst-title">
   <div class="container">
-    <p class="section-label">Why Scriptty</p>
-    <h2 class="section-title">Built for how screenwriters actually work</h2>
-
-    <div class="feature-grid">
-      <div class="feature-card">
-        <span class="feat-icon">&#9997;&#65039;</span>
-        <h3>Malayalam &amp; English</h3>
-        <p>Three built-in input schemes — Mozhi (phonetic), Inscript 1, and Inscript 2. No OS keyboard setup needed. Mix Malayalam and English freely on the same line.</p>
-      </div>
-
-      <div class="feature-card">
-        <span class="feat-icon">&#128196;</span>
-        <h3>Hollywood &amp; Indian Formats</h3>
-        <p>Write in standard Hollywood single-column format. Export as Indian two-column layout for production. Page break per scene option for both.</p>
-      </div>
-
-      <div class="feature-card">
-        <span class="feat-icon">&#128274;</span>
-        <h3>Fully Offline</h3>
-        <p>Zero network calls. Your screenplays live on your machine as .screenplay files. No cloud, no account, no subscription. Works on a flight.</p>
-      </div>
-
-      <div class="feature-card">
-        <span class="feat-icon">&#127916;</span>
-        <h3>Three Views</h3>
-        <p>Writing view with scene annotations in the margin. Cards view for production breakdown — typeset shooting-script tear sheet with INT/EXT glyphs, time-of-day tinting, Compact mode, and Group-by-location. Story view combining Idea, Synopsis, Treatment, and Narrative.</p>
-      </div>
-
-      <div class="feature-card">
-        <span class="feat-icon">&#128253;</span>
-        <h3>Web Series</h3>
-        <p>Write a multi-episode series in one file with an IDE-style episode explorer, per-episode status (Outline / Draft / Revision / Final), and an Episode Breakout view that drills from a series overview into each episode's scenes. Export the active episode or the entire series with per-episode headers.</p>
-      </div>
-
-      <div class="feature-card">
-        <span class="feat-icon">&#127916;</span>
-        <h3>Production Planning</h3>
-        <p>Tag each scene with extras, a location group, and a shoot date. Export a <strong>Daily Shoot List</strong> PDF — scenes grouped by day and location with industry-standard page-eighths totals. The Statistics panel adds Schedule and Episodes views with sortable columns and CSV export.</p>
-      </div>
-
-      <div class="feature-card">
-        <span class="feat-icon">&#128462;</span>
-        <h3>Editorial-Grade PDF</h3>
-        <p>Title page, prose covers, and scene cards share one editorial-masthead vocabulary — small tracked-caps eyebrows, dominant film title, asterism dividers, Courier accents. Per-section page numbering, transition widow control, full-width production cards with scheduled date and location group, and a Compact card-view export.</p>
-      </div>
-
-      <div class="feature-card">
-        <span class="feat-icon">&#128295;</span>
-        <h3>Smart Editor</h3>
-        <p>Auto-uppercase scene headings and characters. Character autocomplete (Malayalam-aware). Smart curly quotes. Adjustable editor font size. Bold, italic, underline. Find &amp; replace. Paste plain text and watch it become a properly-formatted screenplay.</p>
-      </div>
-
-      <div class="feature-card">
-        <span class="feat-icon">&#128190;</span>
-        <h3>Autosave &amp; Recovery</h3>
-        <p>Background autosave to a hidden recovery file as you type. If the app or machine crashes, the next launch offers to restore your unsaved work — even an unsaved new document survives a power loss.</p>
+    <div class="standfirst-grid">
+      <aside class="standfirst-side" aria-hidden="true">
+        <span class="label">Editor's Note</span>
+        <p>Issue One · Spring 2026</p>
+        <p>2,000 words ·<br>3-minute read</p>
+      </aside>
+      <div class="standfirst-body">
+        <h2 id="standfirst-title" class="visually-hidden" style="position:absolute;left:-9999px;">Editor's Note</h2>
+        <p><span class="dropcap">M</span>alayalam screenwriters have always had to choose between two compromises — write in a tool built for Latin scripts and fight every mixed-script line, or use a generic word processor and lose the formatting that makes a screenplay readable on set.</p>
+        <p>Scriptty is the third option. The editor speaks <em>screenplay</em>, not "rich text" — every element (Scene Heading, Action, Character, Dialogue, Parenthetical, Transition) has its own behaviour, its own keyboard shortcut, its own typography. Malayalam input is built in (Mozhi · Inscript) so you toggle scripts mid-sentence with <kbd>Ctrl+Space</kbd>, never leaving the page.</p>
+        <p>And when it's time to print, the PDF reads like a proper shooting script — Hollywood single-column or Indian two-column, with title page, scene cards, and a Daily Shoot List your AD can actually use.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ── Guide ── -->
-<section class="guide" id="guide">
+<!-- ─── DEPARTMENTS / feature grid ─── -->
+<section class="departments" id="departments" aria-labelledby="departments-title">
   <div class="container">
-    <p class="section-label">Documentation</p>
-    <h2 class="section-title">How to Use Scriptty</h2>
+    <div class="slug" aria-hidden="true">
+      <span>INT. THE FEATURE GRID — DAY</span>
+      <span class="slug-num">02.</span>
+    </div>
 
-    <div class="guide-content">
+    <div class="departments-head">
+      <p class="eyebrow">Why Scriptty</p>
+      <h2 id="departments-title">Built for how screenwriters <em>actually</em> work.</h2>
+    </div>
 
-      <div class="guide-section">
-        <h3>Getting Started</h3>
-        <p>Scriptty is an offline screenwriting app for Malayalam and English writers. Your work is saved locally as <code>.screenplay</code> files — no cloud, no account needed.</p>
-        <ol>
-          <li>On the Welcome screen, pick <strong>New Film</strong> for a single screenplay or <strong>New Series</strong> for a multi-episode project. You can also trigger these later with <kbd>Cmd+N</kbd> and <kbd>Cmd+Shift+N</kbd>.</li>
-          <li>Go to <strong>File &rarr; Metadata</strong> to set your title, writer, director, and draft info.</li>
-          <li>Start writing — the editor begins in Action mode. Press <kbd>Tab</kbd> to switch to a Character name, then <kbd>Enter</kbd> to write Dialogue.</li>
-          <li>Use <kbd>Cmd+B</kbd>, <kbd>Cmd+I</kbd>, <kbd>Cmd+U</kbd> or the <strong>B I U</strong> buttons for formatting.</li>
-          <li>Press <kbd>Cmd+S</kbd> to save your work.</li>
-        </ol>
-      </div>
+    <div class="departments-grid">
 
-      <div class="guide-section">
-        <h3>Web Series</h3>
-        <p>Scriptty supports multi-episode projects in a single <code>.screenplay</code> file. Every episode has its own screenplay content, metadata, story sections, and scene cards, but shares one series title, font, and input settings.</p>
-        <ol>
-          <li>Pick <strong>New Series</strong> on the Welcome screen (or press <kbd>Cmd+Shift+N</kbd>). Enter a series title — Scriptty creates Episode 1 for you.</li>
-          <li>Open the left panel (<kbd>Cmd+\</kbd>). Series projects show an <strong>Episodes</strong> list above the scene list. Click an episode to switch; use the <strong>+</strong> control to add more.</li>
-          <li>Use <strong>File &rarr; Metadata</strong> with an episode active to edit that episode's title and credits. The <strong>Episode Title</strong> field is the short label shown in the navigator and as the per-episode header in combined exports.</li>
-          <li>Switching episodes switches every view — screenplay editor, Story, Cards, and annotations all follow the active episode.</li>
-        </ol>
-        <p>In the Export modal, series projects show a <strong>Scope</strong> option: export the <em>Active episode</em> or the <em>Entire series</em>. Series exports start each episode on a new page with a centered <em>EPISODE N: Title</em> header and restart scene numbering from 1 per episode.</p>
-      </div>
+      <article class="dept">
+        <span class="dept-num">№ 01 — Language</span>
+        <h3 class="dept-title">Malayalam &amp; <em>English</em>, mixed freely</h3>
+        <p>Three built-in input schemes — <strong>Mozhi</strong> (phonetic), <strong>Inscript 1</strong>, and <strong>Inscript 2</strong>. No OS keyboard setup needed. Mix Malayalam and English on the same line as casually as you'd switch them in conversation.</p>
+      </article>
 
-      <div class="guide-section">
-        <h3>Writing in the Editor</h3>
-        <p>The editor uses Hollywood single-column format. Six element types, navigated with Tab and Enter:</p>
-        <table class="guide-table">
-          <thead><tr><th>You're in</th><th>Key</th><th>Creates</th></tr></thead>
-          <tbody>
-            <tr><td>Scene Heading</td><td><kbd>Enter</kbd></td><td>Action</td></tr>
-            <tr><td>Action</td><td><kbd>Enter</kbd></td><td>Action (new paragraph)</td></tr>
-            <tr><td>Action</td><td><kbd>Tab</kbd></td><td>Character</td></tr>
-            <tr><td>Character</td><td><kbd>Enter</kbd></td><td>Dialogue</td></tr>
-            <tr><td>Dialogue</td><td><kbd>Enter</kbd></td><td>Character</td></tr>
-            <tr><td>Dialogue</td><td><kbd>Tab</kbd></td><td>Parenthetical</td></tr>
-            <tr><td>Parenthetical</td><td><kbd>Enter</kbd></td><td>Dialogue</td></tr>
-            <tr><td>Transition</td><td><kbd>Enter</kbd></td><td>Scene Heading</td></tr>
-          </tbody>
-        </table>
-        <p><kbd>Shift+Enter</kbd> creates a new Scene Heading from anywhere. <kbd>Shift+Tab</kbd> converts the current element back.</p>
-        <p><strong>Dialogue loop:</strong> Character &rarr; Dialogue &rarr; Character flows continuously. Press <kbd>Enter</kbd> on an empty Character to break out to Action. Press <kbd>Enter</kbd> on an empty Dialogue to return to the Character above.</p>
-        <p><strong>Paragraph splitting:</strong> Press <kbd>Enter</kbd> in the middle of an Action element to split it into two paragraphs.</p>
-      </div>
+      <article class="dept">
+        <span class="dept-num">№ 02 — Format</span>
+        <h3 class="dept-title">Hollywood <em>or</em> Indian two-column</h3>
+        <p>Write in standard Hollywood single-column. Export as Indian two-column for production teams who want dialogue and translation side by side. Page-break-per-scene is one toggle away for both.</p>
+      </article>
 
-      <div class="guide-section">
-        <h3>Text Formatting</h3>
-        <p>Use the <strong>B I U</strong> buttons in the toolbar or keyboard shortcuts:</p>
+      <article class="dept">
+        <span class="dept-num">№ 03 — Privacy</span>
+        <h3 class="dept-title">Fully offline. <em>Yours.</em></h3>
+        <p>Zero network calls at runtime. Your screenplays live on your machine as <code>.screenplay</code> files. No cloud, no account, no subscription, no telemetry. Works on a flight, on a beach, off-grid.</p>
+      </article>
+
+      <article class="dept">
+        <span class="dept-num">№ 04 — Three Views</span>
+        <h3 class="dept-title">One file, three lenses</h3>
+        <p>Writing view with scene annotations in the margin. <strong>Cards view</strong> as a typeset shooting-script tear sheet — INT/EXT glyphs, time-of-day tinting, Compact mode, Group-by-location. Story view for Idea, Synopsis, Treatment, and Narrative.</p>
+      </article>
+
+      <article class="dept">
+        <span class="dept-num">№ 05 — Web Series</span>
+        <h3 class="dept-title">Multi-episode, <em>one file</em></h3>
+        <p>An IDE-style episode explorer with <strong>per-episode status</strong> (Outline / Draft / Revision / Final), drag-to-reorder, and an Episode Breakout view that drills from a series overview into each episode's scene cards. Export the active episode or the whole series.</p>
+      </article>
+
+      <article class="dept">
+        <span class="dept-num">№ 06 — Production</span>
+        <h3 class="dept-title">Plan the shoot, <em>not just the script</em></h3>
+        <p>Tag each scene with <strong>extras</strong>, a <strong>location group</strong>, and a <strong>shoot date</strong>. Export a <strong>Daily Shoot List</strong> PDF — scenes grouped by day &amp; location with industry-standard page-eighths totals. Statistics panel adds Schedule and Episodes views with sortable columns and CSV export.</p>
+      </article>
+
+      <article class="dept">
+        <span class="dept-num">№ 07 — PDF</span>
+        <h3 class="dept-title">An editorial-grade printed page</h3>
+        <p>Title page, prose covers, and scene cards share one masthead vocabulary — small tracked-caps eyebrows, a dominant film title, asterism dividers, Courier-set credits. Per-section page numbering, transition widow control, full-width production cards, Compact card-view export.</p>
+      </article>
+
+      <article class="dept">
+        <span class="dept-num">№ 08 — Editor</span>
+        <h3 class="dept-title">A smart, restrained editor</h3>
+        <p>Auto-uppercase scene headings &amp; characters. <strong>Malayalam-aware autocomplete</strong> for character names. Smart curly quotes. Adjustable editor font size. Find &amp; replace. <strong>Paste a plain-text draft</strong> and watch it become a properly formatted screenplay.</p>
+      </article>
+
+      <article class="dept">
+        <span class="dept-num">№ 09 — Recovery</span>
+        <h3 class="dept-title">Autosave that survives a crash</h3>
+        <p>Background autosave to a hidden recovery file as you type. If the app or your machine crashes, the next launch offers to restore the unsaved work — even an unsaved new document survives a power loss. A normal save clears the recovery file.</p>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<p class="cut-to" aria-hidden="true">Cut to →</p>
+
+<!-- ─── DUAL-SCRIPT SPREAD ─── -->
+<section class="spread" aria-labelledby="spread-title">
+  <div class="container">
+    <div class="spread-head">
+      <p class="eyebrow">A two-language sample</p>
+      <h2 id="spread-title">Write in the language you dream in.</h2>
+    </div>
+
+    <div class="spread-grid">
+
+      <article class="script-card" aria-label="Sample scene in English">
+        <span class="script-card-num">English · No. 01</span>
+        <p class="heading">INT. CHAYAKKADA — DAWN</p>
+        <p class="action">Steam rises off a kettle. Outside, the rain has stopped. <strong>VARGHESE</strong> sets a glass on the counter and waits.</p>
+        <p class="character">Varghese</p>
+        <p class="paren">(quietly)</p>
+        <p class="dialog">"You don't write the script. You take dictation from it."</p>
+        <p class="action">A bus pulls in. The day begins.</p>
+        <p class="transition">Cut to →</p>
+      </article>
+
+      <article class="script-card malayalam" aria-label="അതേ രംഗം മലയാളത്തിൽ — Same scene in Malayalam">
+        <span class="script-card-num">മലയാളം · No. 01</span>
+        <p class="heading">INT. CHAYAKKADA — DAWN</p>
+        <p class="action">കെറ്റിലിൽ നിന്ന് ആവി ഉയരുന്നു. പുറത്ത് മഴ തോർന്നു. <strong>വർഗീസ്</strong> ഒരു ഗ്ലാസ് കൗണ്ടറിൽ വെച്ച് കാത്തിരിക്കുന്നു.</p>
+        <p class="character">VARGHESE</p>
+        <p class="paren">(quietly)</p>
+        <p class="dialog">"സ്ക്രിപ്റ്റ് നീ എഴുതുകയല്ല. അത് നിന്നോട് പറയുന്നത് കേട്ടെഴുതുക മാത്രം."</p>
+        <p class="action">ഒരു ബസ് വന്നു നിൽക്കുന്നു. ദിവസം തുടങ്ങുന്നു.</p>
+        <p class="transition">Cut to →</p>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ─── REFERENCE ─── -->
+<section class="reference" id="manual" aria-labelledby="manual-title">
+  <div class="container">
+    <div class="slug" aria-hidden="true">
+      <span>EXT. THE MANUAL — CONTINUOUS</span>
+      <span class="slug-num">04.</span>
+    </div>
+
+    <div class="reference-head">
+      <p class="eyebrow">Reference Card</p>
+      <h2 id="manual-title">A pocket guide. <em>For when the page gets crowded.</em></h2>
+    </div>
+
+    <div class="reference-cols">
+
+      <div class="ref-block">
+        <h3>The Editor</h3>
+
+        <h4>Element navigation</h4>
+        <p>The editor cycles through six element types via <kbd>Tab</kbd> and <kbd>Enter</kbd>:</p>
         <ul>
-          <li><kbd>Cmd+B</kbd> — <strong>Bold</strong></li>
-          <li><kbd>Cmd+I</kbd> — <em>Italic</em></li>
-          <li><kbd>Cmd+U</kbd> — <u>Underline</u></li>
+          <li>Scene Heading → <kbd>Enter</kbd> → Action</li>
+          <li>Action → <kbd>Tab</kbd> → Character</li>
+          <li>Character → <kbd>Enter</kbd> → Dialogue</li>
+          <li>Dialogue → <kbd>Tab</kbd> → Parenthetical</li>
+          <li>Anywhere → <kbd>Shift+Enter</kbd> → new Scene Heading</li>
+          <li>Anywhere → <kbd>Cmd+Shift+T</kbd> → Transition</li>
         </ul>
-        <p>Select text to apply formatting, or toggle the format before typing. Formatting is preserved in PDF and Fountain exports.</p>
+
+        <h4>Malayalam input</h4>
+        <p><kbd>Ctrl+Space</kbd> toggles English ↔ Malayalam mid-sentence. Three schemes available — <strong>Mozhi</strong>, <strong>Inscript 2</strong>, <strong>Inscript 1</strong>.</p>
+
+        <h4>Smart features</h4>
+        <p>Smart curly quotes as you type. Character autocomplete after 2 characters (Malayalam-aware). Auto-uppercase for scene headings and character cues.</p>
       </div>
 
-      <div class="guide-section">
-        <h3>Malayalam Input</h3>
-        <p>Scriptty has built-in Malayalam input — no OS keyboard setup required.</p>
-        <ol>
-          <li>Press <kbd>Ctrl+Space</kbd> to toggle between English and Malayalam.</li>
-          <li>The status bar shows <strong>ENG</strong> or <strong style="color: #2d9b8a;">MAL</strong> to indicate the current mode.</li>
-          <li>Choose your input scheme from Settings (gear icon in the status bar):
-            <ul>
-              <li><strong>Mozhi</strong> — type phonetically (e.g., "namaskkaaram" &rarr; &#3368;&#3374;&#3384;&#3405;&#3349;&#3405;&#3349;&#3390;&#3376;&#3330;)</li>
-              <li><strong>Inscript 2</strong> — standard Indian keyboard layout</li>
-              <li><strong>Inscript 1</strong> — legacy Indian keyboard layout</li>
-            </ul>
-          </li>
-        </ol>
-        <p>You can mix Malayalam and English freely on the same line.</p>
+      <div class="ref-block">
+        <h3>Production</h3>
+
+        <h4>Scene cards</h4>
+        <p>Each scene card carries a description, shoot notes, extras list, location group, and shoot date. <kbd>Cmd+Shift+K</kbd> opens the Cards view.</p>
+
+        <h4>Daily Shoot List</h4>
+        <p>From the Export modal, pick <strong>Daily Shoot List</strong> to emit a per-day production report: scenes grouped by shoot date, sub-grouped by location group, with industry-standard page-eighths totals — ready to hand to the AD.</p>
+
+        <h4>Statistics</h4>
+        <p><kbd>Cmd+Shift+I</kbd> opens five views — Overview, Characters, Locations, Schedule, Episodes — with <strong>sortable columns</strong> and <strong>CSV export</strong>.</p>
+
+        <h4>Web series</h4>
+        <p><kbd>Cmd+Shift+N</kbd> creates a new series file. Each episode has its own metadata, scene cards, and story sections. Export the active episode or the entire series.</p>
       </div>
 
-      <div class="guide-section">
-        <h3>Character Autocomplete</h3>
-        <p>When typing a character name, Scriptty suggests names already used in your screenplay after 2 characters. Use <kbd>&uarr;</kbd> / <kbd>&darr;</kbd> to navigate, <kbd>Enter</kbd> or <kbd>Tab</kbd> to accept, <kbd>Escape</kbd> to dismiss. Works with both English and Malayalam names.</p>
-      </div>
+      <div class="ref-block">
+        <h3>Files &amp; Output</h3>
 
-      <div class="guide-section">
-        <h3>Scene Navigator</h3>
-        <p>Press <kbd>Cmd+\</kbd> to toggle the left panel. The <strong>Scenes</strong> tab shows all your scene headings with auto-numbered labels. Click any scene to jump directly to it. Drag the handle to reorder scenes — undoable with <kbd>Cmd+Z</kbd>.</p>
-      </div>
+        <h4>The .screenplay format</h4>
+        <p>Plain JSON. Human-readable. Future-proof. Open it in any text editor if you ever need to.</p>
 
-      <div class="guide-section">
-        <h3>Three Views</h3>
-        <p>Use the tab bar in the title bar to switch between views:</p>
+        <h4>Export</h4>
         <ul>
-          <li><strong>Writing</strong> — the screenplay editor with scene annotations in the right margin. Press <kbd>Cmd+Shift+D</kbd> to add a description to the current scene. <kbd>Cmd+Shift+A</kbd> to toggle annotations.</li>
-          <li><strong>Cards</strong> (<kbd>Cmd+Shift+K</kbd>) — a grid of scene cards showing heading, characters, description, notes, and page estimate. Click <strong>Add Scene</strong> to create new scenes from the outline. Drag to reorder.</li>
-          <li><strong>Story</strong> (<kbd>Cmd+Shift+L</kbd>) — all four story sections (Idea, Synopsis, Treatment, Narrative) in one continuous page with word count.</li>
+          <li><strong>PDF</strong> — Hollywood or Indian, with optional Title page, Synopsis, Treatment, Narrative, Scene Cards, Daily Shoot List sections</li>
+          <li><strong>Fountain</strong> — plain text screenwriting format, compatible with Highland and Fade In</li>
+          <li><strong>Plain text</strong> — formatted .txt with proper indentation</li>
         </ul>
-        <p>The left panel (<kbd>Cmd+\</kbd>) provides quick access to the Scene Navigator and Story sections in Writing view.</p>
-      </div>
 
-      <div class="guide-section">
-        <h3>Exporting</h3>
-        <p>Click <strong>Export</strong> in the title bar. Choose what to include: Title Page, Synopsis, Treatment, Narrative, Screenplay, and Scene Cards.</p>
-        <p>Pick a format: <strong>Hollywood</strong> (single column) or <strong>Indian</strong> (two column). Enable <strong>Page break after each scene</strong> under Layout if needed.</p>
-        <p>Also export as <strong>Fountain</strong> (.fountain) for interop with other tools, or <strong>Plain Text</strong> (.txt) for simple sharing. Bold, italic, and underline formatting is preserved in PDF and Fountain.</p>
-      </div>
+        <h4>Autosave &amp; recovery</h4>
+        <p>A hidden recovery file is updated as you type. Survives crashes and power loss; cleared on a normal <kbd>Cmd+S</kbd>.</p>
 
-      <div class="guide-section">
-        <h3>Keyboard Shortcuts</h3>
-        <table class="guide-table">
-          <thead><tr><th>Shortcut</th><th>Action</th></tr></thead>
-          <tbody>
-            <tr><td><kbd>Cmd+N</kbd></td><td>New film</td></tr>
-            <tr><td><kbd>Cmd+Shift+N</kbd></td><td>New series</td></tr>
-            <tr><td><kbd>Cmd+O</kbd></td><td>Open document</td></tr>
-            <tr><td><kbd>Cmd+S</kbd></td><td>Save</td></tr>
-            <tr><td><kbd>Cmd+Shift+S</kbd></td><td>Save As</td></tr>
-            <tr><td><kbd>Cmd+B</kbd></td><td>Bold text</td></tr>
-            <tr><td><kbd>Cmd+I</kbd></td><td>Italic text</td></tr>
-            <tr><td><kbd>Cmd+U</kbd></td><td>Underline text</td></tr>
-            <tr><td><kbd>Cmd+\</kbd></td><td>Toggle left panel</td></tr>
-            <tr><td><kbd>Cmd+Shift+K</kbd></td><td>Toggle Cards view</td></tr>
-            <tr><td><kbd>Cmd+Shift+L</kbd></td><td>Toggle Story view</td></tr>
-            <tr><td><kbd>Cmd+Shift+A</kbd></td><td>Toggle annotations</td></tr>
-            <tr><td><kbd>Cmd+Shift+D</kbd></td><td>Edit current scene annotation</td></tr>
-            <tr><td><kbd>Cmd+Shift+I</kbd></td><td>Script Statistics</td></tr>
-            <tr><td><kbd>Cmd+F</kbd></td><td>Find</td></tr>
-            <tr><td><kbd>Cmd+Shift+H</kbd></td><td>Find and Replace</td></tr>
-            <tr><td><kbd>Ctrl+Space</kbd></td><td>Toggle English / Malayalam</td></tr>
-            <tr><td><kbd>Cmd+Z</kbd></td><td>Undo</td></tr>
-            <tr><td><kbd>Cmd+Shift+Z</kbd></td><td>Redo</td></tr>
-            <tr><td><kbd>Tab</kbd></td><td>Next element type</td></tr>
-            <tr><td><kbd>Shift+Tab</kbd></td><td>Previous element type</td></tr>
-            <tr><td><kbd>Cmd+Shift+T</kbd></td><td>Convert to Transition</td></tr>
-            <tr><td><kbd>Shift+Enter</kbd></td><td>New Scene Heading</td></tr>
-          </tbody>
-        </table>
-        <p id="shortcut-platform-note" style="font-size: 13px; color: #9c9891; font-style: italic;">On Windows/Linux, replace Cmd with Ctrl.</p>
+        <h4>Free &amp; open source</h4>
+        <p><a href="https://github.com/stultus/scriptty">Source on GitHub</a> · MIT license · Read the code, file an issue, or send a pull request.</p>
       </div>
 
     </div>
   </div>
 </section>
 
-<!-- ── Credits ── -->
-<section class="credits-section" id="credits">
+<p class="cut-to" aria-hidden="true">Cut to →</p>
+
+<!-- ─── PULL QUOTE ─── -->
+<div class="container" style="padding: 40px var(--gutter) 60px;">
+  <blockquote class="pull-quote">
+    Set in <em>Manjari</em>, <em>Courier&nbsp;Prime</em>, and <em>Fraunces</em>. Written for the page.
+  </blockquote>
+</div>
+
+<!-- ─── ISSUE NOTES (changelog) ─── -->
+<section class="issue-notes" id="issue-notes" aria-labelledby="issue-notes-title">
   <div class="container">
-    <p class="section-label">Credits</p>
-    <h2 class="section-title" style="color: var(--text-hero);">People behind Scriptty</h2>
+    <div class="notes-head">
+      <p class="eyebrow">In this issue · v0.8.0</p>
+      <h2 id="issue-notes-title">What's <em>new</em>.</h2>
+    </div>
 
-    <div class="credits-grid">
-      <div class="credits-group">
-        <h4>Developers</h4>
-        <div class="credits-list">
-          <div class="credit-person">
-            <strong>Hrishikesh Bhaskaran</strong>
-            <span><a href="https://stultus.in">stultus.in</a></span>
-          </div>
-          <div class="credit-person">
-            <strong>Hiran Venugopalan</strong>
-            <span><a href="https://hiran.in">hiran.in</a></span>
-          </div>
+    <div class="notes-grid">
+
+      <article class="note-item">
+        <span class="note-num">№ 01</span>
+        <div class="note-body">
+          <h3>Production planning, end to end</h3>
+          <p>Scene cards carry a location group, shoot date, and extras. Daily Shoot List PDF groups scenes by day &amp; location with industry-standard page-eighths. Statistics panel gains Schedule and Episodes views with sortable columns and CSV export.</p>
         </div>
-      </div>
+      </article>
 
-      <div class="credits-group">
-        <h4>Inputs &amp; Feedback</h4>
-        <div class="credits-list">
-          <div class="credit-person">
-            <strong>Abraham Joseph</strong>
-          </div>
-          <div class="credit-person">
-            <strong>Aashiq Abu</strong>
-            <span>Filmmaker</span>
-          </div>
-          <div class="credit-person">
-            <strong>Sijith Vijayakumar</strong>
-          </div>
+      <article class="note-item">
+        <span class="note-num">№ 02</span>
+        <div class="note-body">
+          <h3>Editorial-grade PDF redesign</h3>
+          <p>Title page, prose covers, and scene-card / shoot-list openers share one masthead vocabulary — eyebrow, dominant title, asterism, Courier-set credits. Per-section page numbering. Transition widow control. Courier Prime now bundled into every PDF.</p>
         </div>
-      </div>
+      </article>
 
-      <div class="credits-group">
-        <h4>Contribute</h4>
-        <p class="credits-cta">Scriptty is open source and welcomes contributors. Report bugs, suggest features, or submit code on <a href="https://github.com/stultus/scriptty">GitHub</a>.</p>
-      </div>
+      <article class="note-item">
+        <span class="note-num">№ 03</span>
+        <div class="note-body">
+          <h3>Episode Breakout view</h3>
+          <p>For series projects: a top-level card per episode with a scene preview list. Click an episode to drill into its scenes. IDE-style explorer with per-episode status, drag-to-reorder, hover-rename.</p>
+        </div>
+      </article>
+
+      <article class="note-item">
+        <span class="note-num">№ 04</span>
+        <div class="note-body">
+          <h3>Paste to Screenplay</h3>
+          <p>Drop plain text into the editor and Scriptty converts it into a properly formatted screenplay — Hollywood-style detection plus a Malayalam-aware character-cue path.</p>
+        </div>
+      </article>
+
+      <article class="note-item">
+        <span class="note-num">№ 05</span>
+        <div class="note-body">
+          <h3>Autosave &amp; crash recovery</h3>
+          <p>Background autosave to a hidden recovery file. Survives crashes and power loss. A normal save clears it. Even an unsaved new document doesn't disappear if the lights go out.</p>
+        </div>
+      </article>
+
+      <article class="note-item">
+        <span class="note-num">№ 06</span>
+        <div class="note-body">
+          <h3>Smart curly quotes &amp; adjustable editor type</h3>
+          <p>Straight quotes turn curly as you type, in both Latin and Malayalam contexts. Editor font size is now adjustable from Settings — independent of the printed PDF body size.</p>
+        </div>
+      </article>
+
     </div>
   </div>
 </section>
 
-<!-- ── Footer ── -->
-<footer>
+</main>
+
+<!-- ─── COLOPHON ─── -->
+<footer class="colophon" id="credits">
   <div class="container">
-    <p>Scriptty is free and open source software under the MIT License.</p>
-    <p>&copy; 2026 Hrishikesh Bhaskaran</p>
-    <div class="footer-links">
-      <a href="https://github.com/stultus/scriptty">GitHub</a>
-      <a href="https://github.com/stultus/scriptty/issues">Report an Issue</a>
-      <a href="#credits">Credits</a>
-      <a href="https://stultus.in">stultus.in</a>
+    <div class="colophon-grid">
+
+      <div>
+        <div class="col-mast"><span class="diamond" aria-hidden="true"></span>Scriptty</div>
+        <p class="col-mast-deck">Free, offline screenwriting for Malayalam &amp; English writers. Written in <em>Kerala</em>, free for the world.</p>
+      </div>
+
+      <div class="col-section">
+        <h4>The App</h4>
+        <ul>
+          <li><a href="#download">Download</a></li>
+          <li><a href="#departments">Features</a></li>
+          <li><a href="#manual">Manual</a></li>
+          <li><a href="https://github.com/stultus/scriptty/releases">All releases</a></li>
+        </ul>
+      </div>
+
+      <div class="col-section">
+        <h4>The Source</h4>
+        <ul>
+          <li><a href="https://github.com/stultus/scriptty">GitHub repository</a></li>
+          <li><a href="https://github.com/stultus/scriptty/issues">Report an issue</a></li>
+          <li><a href="https://github.com/stultus/scriptty/blob/main/LICENSE">MIT License</a></li>
+          <li><a href="https://github.com/stultus">@stultus</a></li>
+        </ul>
+      </div>
+
     </div>
+
+    <div class="colophon-footer">
+      <span>© 2026 Hrishikesh Bhaskaran · MIT</span>
+      <span class="set-in">Set on the web in <em>Fraunces</em>, <em>Source Serif 4</em>, <em>Courier Prime</em>, and <em>Manjari</em>. Printed in the app on <em>Manjari</em>, <em>Noto Sans Malayalam</em>, and <em>Courier Prime</em>.</span>
+    </div>
+
   </div>
 </footer>
 
+<!-- ─── Download buttons (dynamic) + analytics ─── -->
 <script>
-  // SVG icons for each platform
+  // SVG icons reused for the OS download buttons.
   const icons = {
-    apple: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>',
-    windows: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 12V6.75l8-1.25V12H3zm0 .5h8v6.5l-8-1.25V12.5zM11.5 12V5.35l9.5-1.6V12H11.5zm0 .5H21v7.75l-9.5-1.6V12.5z"/></svg>',
-    linux: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>'
+    apple: '<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>',
+    windows: '<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M3,12V6.75L9,5.43V11.91L3,12M20,3V11.75L10,11.9V5.21L20,3M3,13L9,13.09V19.9L3,18.75V13M20,13.25V22L10,20.09V13.1L20,13.25Z"/></svg>',
+    linux: '<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.62 8.35c-.42.28-1.42.93-2.61.93-1.19 0-2.18-.65-2.61-.93-.55-.36-2.42-1.86-2.42-4.42 0-2.34 1.94-3.93 4.93-3.93s4.93 1.59 4.93 3.93c0 2.56-1.86 4.06-2.42 4.42zM12 9.31c-2.36 0-3.36 1.04-4.43 1.85-.94.71-3.74 1.74-3.74 4.71 0 2.94 2.85 4.91 5.16 5.46.69.16 1.37.34 1.71.65.34.31.34 1.08-.34 1.42-.69.34-2.06.34-3.43-.34-1.37-.69-1.71-1.71-1.71-2.06v-.34c-.34 0-.69.34-.69.69 0 1.37 1.71 2.74 4.46 2.74s4.49-1.37 4.49-2.74c0-.34-.34-.69-.69-.69v.34c0 .34-.34 1.37-1.71 2.06-1.37.69-2.74.69-3.43.34-.69-.34-.69-1.11-.34-1.42.34-.31 1.03-.49 1.71-.65 2.31-.55 5.16-2.51 5.16-5.46 0-2.97-2.8-4-3.74-4.71-1.07-.81-2.06-1.85-4.43-1.85z"/></svg>'
   };
 
-  // On non-Mac visitors, rewrite every "Cmd" in the keyboard-shortcut guide
-  // to "Ctrl" so the documentation matches the key the reader will actually
-  // press. Runs synchronously once the DOM has parsed this script.
-  (function localizeShortcuts() {
-    const ua = (navigator.userAgent || '').toLowerCase();
-    const platform = (navigator.platform || '').toLowerCase();
-    const isMac = platform.includes('mac') || ua.includes('mac os') || ua.includes('macintosh');
-    if (isMac) return;
-    const guide = document.getElementById('guide');
-    if (!guide) return;
-    guide.querySelectorAll('kbd').forEach(el => {
-      if (el.textContent.indexOf('Cmd') !== -1) {
-        el.textContent = el.textContent.replace(/Cmd/g, 'Ctrl');
-      }
-    });
-    // The "On Windows/Linux, replace Cmd with Ctrl" footnote is now moot.
-    const note = document.getElementById('shortcut-platform-note');
-    if (note) note.remove();
-  })();
+  // Map of asset key → human label. The first item in items[] becomes the
+  // primary CTA when we can't detect the user's platform; otherwise the
+  // detected platform is promoted to primary and the rest collapse into
+  // "Other platforms".
+  const items = [
+    { key: 'macos_arm',      icon: icons.apple,   label: 'macOS · Apple Silicon',  primaryLabel: 'Download for macOS · Apple Silicon' },
+    { key: 'macos_intel',    icon: icons.apple,   label: 'macOS · Intel',          primaryLabel: 'Download for macOS · Intel' },
+    { key: 'windows',        icon: icons.windows, label: 'Windows',                primaryLabel: 'Download for Windows' },
+    { key: 'linux_deb',      icon: icons.linux,   label: 'Linux · .deb',           primaryLabel: 'Download for Linux · .deb' },
+    { key: 'linux_appimage', icon: icons.linux,   label: 'Linux · AppImage',       primaryLabel: 'Download for Linux · AppImage' }
+  ];
 
   // Best-effort guess at the user's platform so we can promote the matching
-  // build. Returns a key that matches downloads.json assets, or null if we
-  // can't confidently detect (in which case the page falls back to showing
-  // all platforms side by side).
+  // build. Returns a key that matches downloads.json assets, or null if
+  // we can't confidently detect — in that case we show all platforms in a
+  // single row so the user picks for themselves.
   async function detectPlatform() {
     const uaData = navigator.userAgentData;
     const ua = (navigator.userAgent || '').toLowerCase();
     const platform = ((uaData && uaData.platform) || navigator.platform || '').toLowerCase();
-
     const isMac = platform.includes('mac') || ua.includes('mac os') || ua.includes('macintosh');
     const isWin = platform.includes('win') || ua.includes('windows');
     const isLinux = platform.includes('linux') || ua.includes('linux');
-
-    // Don't try to detect on mobile — none of our builds are mobile-friendly.
     if (/iphone|ipad|android/i.test(ua)) return null;
 
     if (isMac) {
-      // Apple Silicon detection is only reliable via the High Entropy Client
-      // Hints API (Chromium). Safari does not expose userAgentData, so we
-      // fall back to assuming Apple Silicon — most Macs since late 2020 are ARM,
-      // and an Intel user seeing the wrong download can pick the Intel build
-      // from the "Other platforms" section.
       let arch = 'arm';
       if (uaData && typeof uaData.getHighEntropyValues === 'function') {
         try {
           const info = await uaData.getHighEntropyValues(['architecture']);
           if (info && info.architecture) arch = info.architecture;
-        } catch (_) { /* ignore, use default */ }
+        } catch (_) { /* ignore */ }
       }
       return arch === 'x86' ? 'macos_intel' : 'macos_arm';
     }
     if (isWin) return 'windows';
-    // For Linux we default to AppImage since it works across distros; Debian
-    // users can pick the .deb from Other platforms.
     if (isLinux) return 'linux_appimage';
     return null;
+  }
+
+  // Compose a download anchor. The `data-platform` attribute lets the
+  // delegated click handler below fire a GA `download` event with the
+  // platform key, so we get per-platform download counts in Analytics
+  // without instrumenting the app itself.
+  function btn(url, fallbackUrl, key, icon, label, primary) {
+    const href = url || fallbackUrl;
+    const cls = primary ? 'btn-download' : 'btn-download secondary';
+    return '<a href="' + href + '" class="' + cls + '" data-download-platform="' + key + '" rel="noopener">' +
+      '<span class="os-icon">' + icon + '</span>' + label + '</a>';
   }
 
   fetch('downloads.json')
@@ -872,53 +1648,46 @@
       const fallback = data.release_url;
       const detected = await detectPlatform();
 
-      function btn(url, icon, label, primary) {
-        const href = url || fallback;
-        const cls = primary ? 'btn-download primary' : 'btn-download secondary';
-        return '<a href="' + href + '" class="' + cls + '">' +
-          '<span class="os-icon">' + icon + '</span>' + label + '</a>';
-      }
-
-      const items = [
-        { key: 'macos_arm', icon: icons.apple, label: 'macOS (Apple Silicon)', primaryLabel: 'Download for macOS — Apple Silicon' },
-        { key: 'macos_intel', icon: icons.apple, label: 'macOS (Intel)', primaryLabel: 'Download for macOS — Intel' },
-        { key: 'windows', icon: icons.windows, label: 'Windows', primaryLabel: 'Download for Windows' },
-        { key: 'linux_deb', icon: icons.linux, label: 'Linux (.deb)', primaryLabel: 'Download for Linux — .deb' },
-        { key: 'linux_appimage', icon: icons.linux, label: 'Linux (AppImage)', primaryLabel: 'Download for Linux — AppImage' }
-      ];
-
       let html = '';
       if (detected && a[detected]) {
         const primary = items.find(i => i.key === detected);
         const others = items.filter(i => i.key !== detected);
-        html += '<div class="download-group">';
-        html += btn(a[primary.key], primary.icon, primary.primaryLabel, true);
-        html += '</div>';
-        html += '<details class="other-platforms-details"><summary>Other platforms</summary>';
-        html += '<div class="download-group">';
-        for (const o of others) html += btn(a[o.key], o.icon, o.label, false);
+        html += btn(a[primary.key], fallback, primary.key, primary.icon, primary.primaryLabel, true);
+        html += '<details class="other-platforms-details"><summary>Other platforms</summary><div class="download-group">';
+        for (const o of others) html += btn(a[o.key], fallback, o.key, o.icon, o.label, false);
         html += '</div></details>';
       } else {
-        // No confident detection — show the original all-platforms layout.
-        html += '<div class="download-group">';
-        html += btn(a.macos_arm, icons.apple, 'macOS (Apple Silicon)', true);
-        html += btn(a.macos_intel, icons.apple, 'macOS (Intel)', false);
-        html += '</div><div class="download-group">';
-        html += btn(a.windows, icons.windows, 'Windows', false);
-        html += btn(a.linux_deb, icons.linux, 'Linux (.deb)', false);
-        html += btn(a.linux_appimage, icons.linux, 'Linux (AppImage)', false);
-        html += '</div>';
+        // No confident detection — show every platform.
+        for (const o of items) html += btn(a[o.key], fallback, o.key, o.icon, o.label, false);
       }
-
       container.innerHTML = html;
     })
-    .catch(() => {
-      // Fallback: link to releases page
+    .catch(err => {
       const container = document.getElementById('download-buttons');
-      container.innerHTML = '<div class="download-group">' +
-        '<a href="https://github.com/stultus/scriptty/releases/latest" class="btn-download primary">' +
-        '<span class="os-icon">&darr;</span>Download from GitHub</a></div>';
+      container.innerHTML = '<a href="https://github.com/stultus/scriptty/releases/latest" class="btn-download" data-download-platform="fallback">Latest release on GitHub →</a>';
+      console.error('downloads.json fetch failed:', err);
     });
+
+  // ─── DOWNLOAD CLICK TRACKING ───
+  // Single delegated listener — fires a GA4 `download` event whenever the
+  // user clicks any installer button. The button's `data-download-platform`
+  // attribute carries the platform key (macos_arm / windows / linux_deb /
+  // ...) so per-platform counts roll up cleanly in GA's Events report.
+  // Falls through silently if gtag isn't loaded yet (e.g. ad-blockers,
+  // first-paint clicks) — the user's browser still navigates to the
+  // download URL.
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[data-download-platform]');
+    if (!a) return;
+    if (typeof gtag === 'function') {
+      gtag('event', 'download', {
+        platform: a.dataset.downloadPlatform,
+        url: a.href,
+        version: (document.getElementById('version-label')?.textContent || '').replace(/^v/, '')
+      });
+    }
+  });
 </script>
+
 </body>
 </html>

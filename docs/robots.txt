@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Scriptty lives at /scriptty under stultus.in. The sitemap path here
+# is the absolute URL of THIS robots' sitemap; if the parent site's
+# robots.txt at stultus.in/robots.txt also exists, list this sitemap
+# there too so search engines find both.
+Sitemap: https://stultus.in/scriptty/sitemap.xml

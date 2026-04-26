@@ -2125,23 +2125,27 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
                 };
 
                 // Card body. Two-column inner grid: hero number
-                // gutter on the left (compacted to 13mm so two
-                // cards breathe side-by-side on a 14.7cm text
-                // area), body on the right. The hero number now
-                // anchors at top (was horizon) so it lines up with
-                // the eyebrow on every card — without the rigid
-                // outer grid forcing equal heights, horizon
-                // centring would leave the number floating in
-                // empty space on tall cards.
+                // gutter on the left, body on the right. The
+                // vertical rule between the two used to be a
+                // dedicated 0.5pt grid column with `rect(height:
+                // 100%)` — but Typst resolves `height: 100%` to
+                // the parent column's available height, which
+                // under `#columns(2)` is the WHOLE page column.
+                // That made every card's border stretch to the
+                // page bottom regardless of content. Fixed by
+                // dropping the rect column and putting the divider
+                // on the body block's left border instead — the
+                // body's height is its content height, so the
+                // rule extends naturally to whatever the card
+                // actually needs and the outer block hugs it.
                 markup.push_str(&format!(
                     r#"  #block(stroke: 0.5pt + luma(180), radius: 4pt, inset: 0pt, width: 100%, breakable: false)[
     #grid(
-      columns: (13mm, 0.5pt, 1fr),
+      columns: (13mm, 1fr),
       rows: auto,
-      align: (center + top, center + horizon, left + top),
+      align: (center + top, left + top),
       pad(top: 11pt, bottom: 9pt)[#text(font: "Courier Prime", size: 18pt, weight: "bold", tracking: 0.04em, fill: {})[{:02}]],
-      rect(width: 0.5pt, height: 100%, fill: luma(215), stroke: none),
-      pad(top: 9pt, bottom: 10pt, left: 11pt, right: 11pt)[
+      block(width: 100%, inset: (top: 9pt, bottom: 10pt, left: 11pt, right: 11pt), stroke: (left: 0.5pt + luma(215)))[
 "#,
                     number_color, scene_num,
                 ));

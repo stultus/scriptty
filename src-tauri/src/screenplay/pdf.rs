@@ -1726,7 +1726,19 @@ pub fn generate_pdf_indian(
     // create a ScreenplayWorld, compile the Typst source, render to PDF bytes.
 
     // Collect font bytes — both regular and bold weights for embedding.
-    let font_bytes: Vec<&'static [u8]> = vec![font_data.regular, font_data.bold];
+    // Always load Courier Prime alongside the user-selected body font.
+    // The PDF templates reference "Courier Prime" by name in accent
+    // positions (wordmarks, slugs, hero numerals, credit names,
+    // scene-card eyebrows). Without it in the font world, Typst
+    // silently falls back to the body font and the editorial-Courier
+    // vocabulary disappears from the printed PDF.
+    let (courier_regular, courier_bold) = crate::fonts::courier_prime_bytes();
+    let font_bytes: Vec<&'static [u8]> = vec![
+        font_data.regular,
+        font_data.bold,
+        courier_regular,
+        courier_bold,
+    ];
 
     // Create the Typst "World" — provides source code, fonts, and library to the compiler.
     let world = ScreenplayWorld::new(markup, &font_bytes)
@@ -1787,7 +1799,19 @@ pub fn generate_pdf(
 
     // Collect all font bytes — pass both regular and bold weights.
     // These are `&'static [u8]` slices embedded in the binary at compile time.
-    let font_bytes: Vec<&'static [u8]> = vec![font_data.regular, font_data.bold];
+    // Always load Courier Prime alongside the user-selected body font.
+    // The PDF templates reference "Courier Prime" by name in accent
+    // positions (wordmarks, slugs, hero numerals, credit names,
+    // scene-card eyebrows). Without it in the font world, Typst
+    // silently falls back to the body font and the editorial-Courier
+    // vocabulary disappears from the printed PDF.
+    let (courier_regular, courier_bold) = crate::fonts::courier_prime_bytes();
+    let font_bytes: Vec<&'static [u8]> = vec![
+        font_data.regular,
+        font_data.bold,
+        courier_regular,
+        courier_bold,
+    ];
 
     // Create the Typst "World" — the environment the compiler needs to do its work.
     let world = ScreenplayWorld::new(markup, &font_bytes)
@@ -2575,7 +2599,19 @@ pub fn generate_shoot_list_markup(
 /// Compiles a complete Typst markup string (with preamble already included)
 /// into PDF bytes. Shared helper used by the combined export command.
 pub fn compile_markup_to_pdf(markup: &str, font_data: &FontData) -> Result<Vec<u8>, String> {
-    let font_bytes: Vec<&'static [u8]> = vec![font_data.regular, font_data.bold];
+    // Always load Courier Prime alongside the user-selected body font.
+    // The PDF templates reference "Courier Prime" by name in accent
+    // positions (wordmarks, slugs, hero numerals, credit names,
+    // scene-card eyebrows). Without it in the font world, Typst
+    // silently falls back to the body font and the editorial-Courier
+    // vocabulary disappears from the printed PDF.
+    let (courier_regular, courier_bold) = crate::fonts::courier_prime_bytes();
+    let font_bytes: Vec<&'static [u8]> = vec![
+        font_data.regular,
+        font_data.bold,
+        courier_regular,
+        courier_bold,
+    ];
     let world = ScreenplayWorld::new(markup.to_string(), &font_bytes)
         .map_err(|e| format!("Failed to initialize Typst world: {}", e))?;
 

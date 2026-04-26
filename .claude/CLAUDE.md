@@ -110,7 +110,7 @@ scriptty/
 │   ├── Cargo.toml
 │   └── tauri.conf.json
 ├── static/
-│   └── fonts/                    # Fonts served to the Svelte UI (incl. Courier Prime)
+│   └── fonts/                    # Fonts served to the Svelte UI
 ├── docs/                         # GitHub Pages site (scriptty.app)
 │   ├── index.html
 │   └── downloads.json            # Auto-updated on each release
@@ -170,14 +170,21 @@ These are final. Do not suggest alternatives unless explicitly asked.
 
 ### Fonts
 
-- Bundled fonts (PDF + UI): **Manjari** (default), **Noto Sans Malayalam**
-- UI-only font: **Courier Prime** — used by the editor for the classic screenplay
-  monospace look on Latin text; not embedded in PDFs
+- Bundled fonts (PDF + UI): **Manjari** (default), **Noto Sans Malayalam**,
+  **Courier Prime**
+- Courier Prime is bundled into PDFs even though it isn't user-selectable
+  as a body font. PDF templates reference "Courier Prime" by name in
+  accent positions (wordmark, slug, hero numerals, credit names,
+  scene-card eyebrow) — without it in the Typst font world the
+  templates silently fall back to the body font and the editorial
+  vocabulary disappears. `pdf::compile_markup_to_pdf` and the two
+  standalone generators always inject `fonts::courier_prime_bytes()`
+  alongside the user-selected body font.
 - All fonts licensed SIL OFL 1.1 — safe to bundle in commercial software
 - One selected font applies to all editor text — Malayalam and English both use it
 - Font files live in two places:
-  - `src-tauri/fonts/` — embedded in PDFs at export time (Manjari, Noto only)
-  - `static/fonts/` — served to the Svelte UI via CSS (Manjari, Noto, Courier Prime)
+  - `src-tauri/fonts/` — embedded in PDFs at export time
+  - `static/fonts/` — served to the Svelte UI via CSS
 - No system font dependency — app works on a fresh OS install
 - Default font slug is the constant `DEFAULT_FONT` in `src-tauri/src/screenplay/document.rs`
   (currently `"manjari"`); both `default_font()` and `ScreenplaySettings::default()` reference it

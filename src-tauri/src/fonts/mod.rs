@@ -1,4 +1,9 @@
-// Font loading utilities for Typst PDF embedding (Noto Sans Malayalam, Manjari)
+// Font loading utilities for Typst PDF embedding (Noto Sans Malayalam,
+// Manjari, Courier Prime). Courier Prime is bundled even though it's
+// not exposed as a user-selectable body font — the PDF templates use
+// it for accent typography (wordmarks, slugs, hero numerals, credit
+// names, scene-card eyebrows) and need it available to the Typst font
+// resolver alongside whatever body font the user picked.
 
 /// A font bundled into the application binary at compile time.
 ///
@@ -38,5 +43,25 @@ pub fn bundled_fonts() -> Vec<BundledFont> {
             regular: include_bytes!("../../fonts/Manjari-Regular.otf"),
             bold: include_bytes!("../../fonts/Manjari-Bold.otf"),
         },
+        BundledFont {
+            name: "Courier Prime",
+            regular: include_bytes!("../../fonts/CourierPrime-Regular.ttf"),
+            bold: include_bytes!("../../fonts/CourierPrime-Bold.ttf"),
+        },
     ]
+}
+
+/// Bytes of the Courier Prime font (regular + bold), always loaded
+/// into the PDF compiler's font world even when the user has picked
+/// Manjari or Noto as the body font. The PDF templates reference
+/// "Courier Prime" by name in accent positions (wordmarks, slugs,
+/// hero numerals, credit names) and will silently fall back to the
+/// body font if Typst can't resolve it — making the editorial-Courier
+/// vocabulary disappear from the printed PDF. Calling this from the
+/// PDF compile path ensures the font is always present.
+pub fn courier_prime_bytes() -> (&'static [u8], &'static [u8]) {
+    (
+        include_bytes!("../../fonts/CourierPrime-Regular.ttf"),
+        include_bytes!("../../fonts/CourierPrime-Bold.ttf"),
+    )
 }

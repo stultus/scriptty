@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { documentStore } from '$lib/stores/documentStore.svelte';
   import { focusTrap } from '$lib/actions/focusTrap';
   import DatePicker from './DatePicker.svelte';
@@ -56,34 +57,41 @@
 
   // Populate the form from the active meta (series → active episode,
   // film → top-level) on open, and re-populate if the writer switches
-  // episodes while the modal is still open — reading activeEpisode?.id
-  // inside the effect makes it a dependency so Svelte reruns the block
-  // on episode change, not just on the open → true transition.
+  // episodes while the modal is still open. The deps we *want* are
+  // `open` (transition from false → true) and `activeEpisode?.id`
+  // (episode change while open). Reading meta.title / meta.tagline /
+  // etc. inside an unguarded effect would make every property of the
+  // store's meta object a dep too — and any unrelated reactive ripple
+  // (the live preview pane re-rendering, etc.) could re-fire the
+  // effect mid-typing and overwrite the local `title` state with the
+  // stale meta.title, making the field appear unresponsive. Wrapping
+  // the population block in untrack() lets us read meta freely without
+  // those reads becoming deps.
   $effect(() => {
     if (!open) return;
     const activeEpId = documentStore.activeEpisode?.id;
     void activeEpId; // explicit dependency on the active episode
-    const meta = documentStore.activeMeta;
-    if (!meta) return;
-    title = meta.title || '';
-    episodeTitle = documentStore.activeEpisode?.title || '';
-    tagline = meta.tagline || '';
-    author = meta.author || '';
-    director = meta.director || '';
-    contact = meta.contact || '';
-    registrationNumber = meta.registration_number || '';
-    footnote = meta.footnote || '';
-    draftNumber = meta.draft_number || 1;
-    draftDate = meta.draft_date || '';
-    titleTouched = false;
-    // For untitled docs, focus the Title field so the writer can start
-    // typing the most important piece of metadata immediately. For docs
-    // that already have a title, leave focus on the focusTrap default
-    // (close button) so Escape feels predictable for "I just opened to
-    // peek." (#143)
-    if (!title.trim()) {
-      queueMicrotask(() => titleInputEl?.focus());
-    }
+    untrack(() => {
+      const meta = documentStore.activeMeta;
+      if (!meta) return;
+      title = meta.title || '';
+      episodeTitle = documentStore.activeEpisode?.title || '';
+      tagline = meta.tagline || '';
+      author = meta.author || '';
+      director = meta.director || '';
+      contact = meta.contact || '';
+      registrationNumber = meta.registration_number || '';
+      footnote = meta.footnote || '';
+      draftNumber = meta.draft_number || 1;
+      draftDate = meta.draft_date || '';
+      titleTouched = false;
+      // For untitled docs, focus the Title field so the writer can
+      // start typing the most important piece of metadata immediately.
+      // (#143)
+      if (!title.trim()) {
+        queueMicrotask(() => titleInputEl?.focus());
+      }
+    });
   });
 
   function handleSave() {

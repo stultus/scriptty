@@ -38,7 +38,6 @@
   <!-- ─── FONTS ─── -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=Manjari:wght@400;700&display=swap">
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=Manjari:wght@400;700&display=swap" rel="stylesheet">
 
   <!-- ─── JSON-LD STRUCTURED DATA ─── -->
@@ -62,14 +61,8 @@
         "inLanguage": ["en", "ml"],
         "license": "https://github.com/stultus/scriptty/blob/main/LICENSE",
         "isAccessibleForFree": true,
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        },
-        "author": {
-          "@id": "https://stultus.in/scriptty/#author"
-        },
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "author": { "@id": "https://stultus.in/scriptty/#author" },
         "featureList": [
           "Hollywood single-column screenplay format",
           "Indian two-column screenplay format export",
@@ -103,120 +96,68 @@
         "@type": "FAQPage",
         "@id": "https://stultus.in/scriptty/#faq",
         "mainEntity": [
-          {
-            "@type": "Question",
-            "name": "Is Scriptty free?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Yes. Scriptty is free and open source under the MIT license. There is no subscription, no account, and no cloud service to pay for."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Does Scriptty support Malayalam typing?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Yes. Scriptty has three built-in Malayalam input schemes — Mozhi (phonetic), Inscript 1, and Inscript 2 — and you can mix Malayalam and English freely on the same line. No operating-system keyboard setup is required."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Can I export a screenplay in Indian two-column format?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Yes. The editor uses Hollywood single-column format for writing, and the Export modal lets you pick Hollywood or Indian two-column layout at PDF time."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Does Scriptty work offline?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Yes — completely. Scriptty makes zero network calls at runtime. Your scripts are saved locally as .screenplay files. There is no cloud sync and no telemetry."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Which platforms does Scriptty run on?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "macOS (Apple Silicon and Intel), Windows, and Linux (.deb and AppImage)."
-            }
-          }
+          { "@type": "Question", "name": "Is Scriptty free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Scriptty is free and open source under the MIT license. There is no subscription, no account, and no cloud service to pay for." } },
+          { "@type": "Question", "name": "Does Scriptty support Malayalam typing?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Scriptty has three built-in Malayalam input schemes — Mozhi (phonetic), Inscript 1, and Inscript 2 — and you can mix Malayalam and English freely on the same line. No operating-system keyboard setup is required." } },
+          { "@type": "Question", "name": "Can I export a screenplay in Indian two-column format?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. The editor uses Hollywood single-column format for writing, and the Export modal lets you pick Hollywood or Indian two-column layout at PDF time." } },
+          { "@type": "Question", "name": "Does Scriptty work offline?", "acceptedAnswer": { "@type": "Answer", "text": "Yes — completely. Scriptty makes zero network calls at runtime. Your scripts are saved locally as .screenplay files. There is no cloud sync and no telemetry." } },
+          { "@type": "Question", "name": "Which platforms does Scriptty run on?", "acceptedAnswer": { "@type": "Answer", "text": "macOS (Apple Silicon and Intel), Windows, and Linux (.deb and AppImage)." } }
         ]
       }
     ]
   }
   </script>
 
-  <!-- ─── ANALYTICS PLACEHOLDER ───
-       Replace G-XXXXXXXXXX below with your Google Analytics 4 Measurement ID
-       (Admin → Data Streams → Web → Measurement ID). The site already wires
-       up download click tracking via the gtag('event', 'download', ...) call
-       inside the download-button renderer at the bottom of this file — once
-       the ID is in, downloads start showing up in GA Real-time and Events. -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <!-- ─── GOOGLE ANALYTICS 4 ───
+       Per-platform download click tracking is wired up via the
+       gtag('event', 'download', ...) call inside the download-button
+       renderer at the bottom of this file. anonymize_ip masks IPs
+       before logging. The app itself stays uninstrumented — only this
+       marketing site reports anything, which honors the offline-first
+       promise users made decisions on. -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-W743J3SS60"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){ dataLayer.push(arguments); }
     gtag('js', new Date());
-    // Replace G-XXXXXXXXXX with your actual Measurement ID before this fires.
-    gtag('config', 'G-XXXXXXXXXX', {
-      anonymize_ip: true,
-      send_page_view: true
-    });
+    gtag('config', 'G-W743J3SS60', { anonymize_ip: true, send_page_view: true });
   </script>
 
   <style>
     /* ─── Reset ─── */
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-    /* ─── Editorial design tokens ───
-         Cream paper, deep ink, the warm Kerala palette borrowed from the
-         app. Typography pairs Fraunces (display, optical-sized) with Source
-         Serif 4 (body, book-text feel) and Courier Prime (accents, slugs,
-         page numbers, chrome) — the same Courier vocabulary the app uses
-         on screen and in printed PDFs, so the marketing site reads as a
-         continuation of the product, not a separate brand. */
+    /* ─── Tokens ───
+         Cream paper, deep ink. Type pairs Fraunces (variable, optical-
+         sized display) with Source Serif 4 (book-text body) and Courier
+         Prime (accents) — same Courier vocabulary the app uses on screen
+         and in printed PDFs, so the marketing site reads as a continuation
+         of the product. */
     :root {
-      /* Surface */
       --paper:           #f6f0e6;
-      --paper-deep:      #ede6d8;
-      --paper-edge:      #e0d8c4;
+      --paper-warm:      #efe7d6;
       --ink:             #1a1916;
       --ink-soft:        #2a2924;
-
-      /* Text */
       --text:            #1a1916;
       --text-secondary:  #4a4740;
-      --text-muted:      #6b6860;
-      --text-quiet:      #8a8478;
+      --text-muted:      #7a766c;
+      --text-quiet:      #a39e92;
 
-      /* Accents — match the app's CSS variables */
       --teal:            #1e8070;
       --teal-deep:       #16604f;
       --terracotta:      #b76d0f;
-      --oxblood:         #7a2b2b;
 
-      /* Hairlines */
-      --rule:            rgba(26, 25, 22, 0.14);
-      --rule-strong:     rgba(26, 25, 22, 0.28);
-      --rule-faint:      rgba(26, 25, 22, 0.06);
+      --rule:            rgba(26, 25, 22, 0.12);
+      --rule-strong:     rgba(26, 25, 22, 0.24);
+      --rule-faint:      rgba(26, 25, 22, 0.05);
 
-      /* Shadows — subtle, like ink slightly bleeding into paper */
-      --shadow-card:     0 1px 0 rgba(26, 25, 22, 0.04),
-                         0 12px 32px -16px rgba(26, 25, 22, 0.18);
-
-      /* Type families */
       --display: 'Fraunces', 'Source Serif 4', Georgia, serif;
       --body:    'Source Serif 4', Georgia, 'Times New Roman', serif;
       --mono:    'Courier Prime', ui-monospace, 'SFMono-Regular', monospace;
       --ml:      'Manjari', 'Source Serif 4', serif;
 
-      /* Geometry */
-      --max:     1180px;
-      --gutter:  32px;
-      --rhythm:  1.55;
+      --max:     960px;        /* tighter measure than before — magazine-page width */
+      --gutter:  28px;
+      --rhythm:  1.6;
     }
 
     html { scroll-behavior: smooth; }
@@ -227,28 +168,21 @@
       font-family: var(--body);
       font-size: 17px;
       line-height: var(--rhythm);
-      font-feature-settings: 'kern', 'liga', 'onum', 'calt';
+      font-feature-settings: 'kern', 'liga', 'onum';
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
-      /* Defensive: prevent any single rogue element (very long kbd
-         tokens, oversized headlines on tiny viewports) from
-         introducing horizontal scroll on mobile. The headlines and
-         display blocks all wrap, so this only catches edge cases. */
       overflow-x: hidden;
       overflow-wrap: break-word;
-      hyphens: auto;
-      /* Subtle vertical paper grain — uses two soft radial gradients in
-         oxblood/teal/terracotta tones at extreme low alpha, layered atop
-         the cream surface, to give the page a hand-printed-on-uncoated
-         feel without resorting to a noise PNG. */
-      background-image:
-        radial-gradient(circle at 12% 8%,  rgba(122, 43, 43, 0.03), transparent 40%),
-        radial-gradient(circle at 88% 92%, rgba(30, 128, 112, 0.03), transparent 45%);
-      background-attachment: fixed;
     }
 
-    a { color: var(--teal-deep); text-decoration: underline; text-decoration-thickness: 0.5px; text-underline-offset: 3px; transition: color 140ms ease; }
-    a:hover { color: var(--oxblood); }
+    a {
+      color: var(--teal-deep);
+      text-decoration: underline;
+      text-decoration-thickness: 0.5px;
+      text-underline-offset: 3px;
+      transition: color 140ms ease;
+    }
+    a:hover { color: var(--ink); }
 
     img { max-width: 100%; display: block; }
 
@@ -258,6 +192,10 @@
       padding: 0 var(--gutter);
     }
 
+    /* Grid children allowed to shrink below intrinsic content width on
+       narrow viewports (default min-width: auto can introduce overflow). */
+    .grid > *, .reference-cols > *, .departments > * { min-width: 0; }
+
     /* ─── Editorial primitives ─── */
     .eyebrow {
       font-family: var(--mono);
@@ -266,95 +204,43 @@
       text-transform: uppercase;
       color: var(--text-muted);
       font-weight: 700;
+    }
+    .eyebrow.with-rules {
       display: inline-flex;
       align-items: center;
       gap: 0.7em;
     }
-    .eyebrow::before, .eyebrow::after {
+    .eyebrow.with-rules::before, .eyebrow.with-rules::after {
       content: "";
       width: 22px;
       height: 1px;
       background: var(--rule-strong);
     }
-    .eyebrow.solo::before, .eyebrow.solo::after { display: none; }
+
+    .h-display {
+      font-family: var(--display);
+      font-weight: 600;
+      font-optical-sizing: auto;
+      letter-spacing: -0.005em;
+      color: var(--ink);
+    }
+    .h-display em {
+      font-style: italic;
+      color: var(--teal-deep);
+      font-weight: 500;
+    }
 
     .deck {
       font-family: var(--display);
-      font-style: italic;
       font-weight: 400;
+      font-style: italic;
       font-optical-sizing: auto;
-      font-size: clamp(20px, 2.4vw, 26px);
-      line-height: 1.4;
       color: var(--text-secondary);
-      max-width: 38ch;
+      line-height: 1.4;
     }
 
-    .slug {
-      /* Section divider styled as a screenplay scene heading */
-      font-family: var(--mono);
-      font-weight: 700;
-      font-size: 13px;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--text);
-      padding: 12px 0 10px;
-      border-top: 1px solid var(--ink);
-      border-bottom: 1px solid var(--rule);
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 16px;
-    }
-    .slug .slug-num {
-      color: var(--text-muted);
-      font-weight: 400;
-    }
-
-    .cut-to {
-      /* Right-aligned screenplay transition between sections */
-      font-family: var(--mono);
-      font-weight: 700;
-      font-size: 11px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--text-quiet);
-      text-align: right;
-      margin: 18px 0 -6px;
-    }
-
-    .asterism {
-      text-align: center;
-      color: var(--text-quiet);
-      letter-spacing: 0.6em;
-      font-size: 18px;
-      margin: 32px 0;
-    }
-
-    .pull-quote {
-      font-family: var(--display);
-      font-weight: 400;
-      font-style: italic;
-      font-size: clamp(22px, 3vw, 32px);
-      line-height: 1.3;
-      color: var(--ink);
-      max-width: 28ch;
-      margin: 0 auto;
-      text-align: center;
-      position: relative;
-    }
-    .pull-quote::before {
-      content: "“";
-      font-size: 5em;
-      line-height: 0;
-      position: absolute;
-      left: -0.4em;
-      top: 0.45em;
-      color: var(--terracotta);
-      font-family: var(--display);
-    }
-
-    /* ─── Masthead (top nav) ─── */
-    .masthead {
+    /* ─── Top bar ─── */
+    .topbar {
       position: sticky;
       top: 0;
       z-index: 50;
@@ -363,138 +249,85 @@
       -webkit-backdrop-filter: saturate(140%) blur(10px);
       border-bottom: 1px solid var(--rule);
     }
-    .masthead .container {
+    .topbar .container {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 20px;
+      gap: 16px;
       padding-top: 14px;
       padding-bottom: 14px;
     }
-    .masthead-brand {
+    .brand {
       display: inline-flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       text-decoration: none;
-      color: var(--text);
-    }
-    .masthead-brand img {
-      width: 28px; height: 28px;
-      border-radius: 5px;
-      box-shadow: 0 1px 0 rgba(0,0,0,0.06), 0 4px 14px -8px rgba(0,0,0,0.2);
-    }
-    .masthead-brand .colophon-mark {
-      width: 6px; height: 6px;
-      background: var(--teal);
-      transform: rotate(45deg);
-      flex-shrink: 0;
-      display: none; /* compact masthead just shows the icon — diamond appears in the cover */
-    }
-    .wordmark {
-      font-family: var(--mono);
-      font-weight: 700;
-      font-size: 13px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
       color: var(--ink);
     }
-    .masthead-meta {
+    .brand img { width: 24px; height: 24px; border-radius: 4px; }
+    .brand-name {
       font-family: var(--mono);
-      font-size: 10.5px;
-      letter-spacing: 0.18em;
+      font-weight: 700;
+      font-size: 12.5px;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--text-muted);
-      display: none;
     }
-    @media (min-width: 720px) { .masthead-meta { display: inline; } }
-    .masthead-nav {
-      display: flex;
-      align-items: center;
-      gap: 24px;
-      list-style: none;
-    }
-    .masthead-nav a {
+    .topnav { display: flex; align-items: center; gap: 22px; list-style: none; }
+    .topnav a {
       font-family: var(--mono);
-      font-size: 11.5px;
+      font-size: 11px;
       letter-spacing: 0.14em;
       text-transform: uppercase;
       font-weight: 700;
       color: var(--text-secondary);
       text-decoration: none;
-      transition: color 120ms ease;
     }
-    .masthead-nav a:hover { color: var(--teal-deep); }
-    .masthead-nav a.cta {
+    .topnav a:hover { color: var(--teal-deep); }
+    .topnav .cta {
       color: var(--paper);
       background: var(--ink);
-      padding: 8px 14px;
+      padding: 7px 13px;
       border-radius: 2px;
     }
-    .masthead-nav a.cta:hover { background: var(--teal-deep); }
-    @media (max-width: 640px) {
-      .masthead-nav li:not(:last-child) { display: none; }
+    .topnav .cta:hover { background: var(--teal-deep); color: var(--paper); }
+    @media (max-width: 700px) {
+      .topnav li:nth-child(-n+3) { display: none; }
     }
 
-    /* ─── COVER (the magazine cover spread) ─── */
+    /* ─── COVER ─── */
     .cover {
-      padding: 60px 0 80px;
-      position: relative;
+      padding: 110px 0 80px;
+      max-width: 760px;
+      margin: 0 auto;
     }
-    .cover-top {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 22px;
-      margin-bottom: 56px;
-      padding-bottom: 22px;
-      border-bottom: 1px solid var(--rule);
-      font-family: var(--mono);
-      font-size: 11px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-    }
-    .cover-top .cover-top-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 18px 32px;
-      justify-content: space-between;
-    }
-    .cover-top .cover-top-row span { display: inline-block; }
-    .cover-top strong {
-      color: var(--ink);
-      font-weight: 700;
-    }
-
-    .cover-headline {
+    .cover .container { padding: 0 var(--gutter); }
+    .cover-head {
       font-family: var(--display);
       font-weight: 600;
       font-optical-sizing: auto;
-      /* Serious editorial display — variable optical sizing tightens up at
-         the headline scale. The clamp keeps it readable on a phone without
-         giving up the magazine-cover impact on a desktop. */
-      font-size: clamp(60px, 11.5vw, 168px);
+      /* The headline is the visual anchor of the whole site; clamp grows
+         to a magazine-cover scale on desktop without overflowing phones. */
+      font-size: clamp(64px, 12vw, 160px);
       line-height: 0.92;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.025em;
       color: var(--ink);
-      margin-bottom: 22px;
-      /* Slight optical hang into the left margin on desktop */
-      margin-left: -0.04em;
+      margin-bottom: 24px;
     }
-    .cover-headline em {
+    .cover-head em {
       font-style: italic;
-      color: var(--terracotta);
       font-weight: 500;
+      color: var(--terracotta);
     }
     .cover-deck {
       font-family: var(--display);
       font-style: italic;
       font-weight: 400;
       font-optical-sizing: auto;
-      font-size: clamp(22px, 2.8vw, 32px);
-      line-height: 1.32;
+      font-size: clamp(20px, 2.4vw, 26px);
+      line-height: 1.4;
       color: var(--text-secondary);
-      max-width: 22ch;
-      margin-bottom: 38px;
+      max-width: 32ch;
+      margin-bottom: 40px;
     }
     .cover-deck strong {
       font-style: normal;
@@ -502,318 +335,216 @@
       color: var(--ink);
     }
 
-    .cover-byline {
-      display: flex;
-      gap: 28px;
-      flex-wrap: wrap;
-      align-items: center;
-      font-family: var(--mono);
-      font-size: 11px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      margin-bottom: 44px;
-    }
-    .cover-byline .by {
-      display: inline-flex;
-      align-items: baseline;
-      gap: 9px;
-    }
-    .cover-byline .by-label { color: var(--text-quiet); }
-    .cover-byline .by-name {
-      color: var(--ink);
-      font-weight: 700;
-    }
-    .cover-byline .diamond {
-      width: 5px; height: 5px;
-      background: var(--teal);
-      transform: rotate(45deg);
-      display: inline-block;
-    }
-
-    /* Download CTAs — primary is filled-ink, secondary set in Courier */
-    .downloads-row {
+    /* Download CTAs */
+    .downloads {
       display: flex;
       flex-wrap: wrap;
-      gap: 14px;
+      gap: 12px;
       align-items: center;
+      margin-bottom: 22px;
     }
-    .btn-download {
+    .btn {
       display: inline-flex;
       align-items: center;
-      gap: 11px;
-      padding: 16px 22px;
+      gap: 10px;
+      padding: 14px 20px;
       border: 1px solid var(--ink);
       background: var(--ink);
       color: var(--paper);
       text-decoration: none;
       font-family: var(--mono);
-      font-size: 12.5px;
+      font-size: 12px;
       letter-spacing: 0.1em;
       font-weight: 700;
       text-transform: uppercase;
-      transition: background 140ms ease, color 140ms ease, transform 140ms ease, border-color 140ms ease;
+      transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
     }
-    .btn-download:hover {
+    .btn:hover {
       background: var(--teal-deep);
       border-color: var(--teal-deep);
       color: var(--paper);
     }
-    .btn-download.secondary {
+    .btn.secondary {
       background: transparent;
       color: var(--ink);
     }
-    .btn-download.secondary:hover {
+    .btn.secondary:hover {
       background: var(--ink);
       color: var(--paper);
     }
-    .btn-download .os-icon {
-      width: 16px; height: 16px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .btn-download .os-icon svg { fill: currentColor; }
+    .btn .os-icon { width: 14px; height: 14px; display: inline-flex; }
+    .btn .os-icon svg { fill: currentColor; }
 
-    .other-platforms-details {
-      margin-top: 4px;
+    .other-platforms {
+      width: 100%;
       font-family: var(--mono);
       font-size: 11px;
       letter-spacing: 0.12em;
       text-transform: uppercase;
     }
-    .other-platforms-details summary {
+    .other-platforms summary {
       list-style: none;
       cursor: pointer;
-      color: var(--text-secondary);
+      color: var(--text-muted);
       padding: 8px 0;
       user-select: none;
     }
-    .other-platforms-details summary::-webkit-details-marker { display: none; }
-    .other-platforms-details summary::before {
+    .other-platforms summary::-webkit-details-marker { display: none; }
+    .other-platforms summary::before {
       content: "+ ";
       color: var(--terracotta);
     }
-    .other-platforms-details[open] summary::before { content: "− "; }
-    .other-platforms-details .download-group {
+    .other-platforms[open] summary::before { content: "− "; }
+    .other-platforms .download-group {
       display: flex; flex-wrap: wrap; gap: 10px;
-      padding: 12px 0;
+      padding-top: 6px;
     }
 
     .cover-meta {
-      margin-top: 28px;
-      padding-top: 20px;
-      border-top: 1px solid var(--rule);
+      margin-top: 12px;
       font-family: var(--mono);
       font-size: 11px;
-      letter-spacing: 0.14em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--text-muted);
       display: flex;
-      gap: 22px;
+      gap: 18px;
       flex-wrap: wrap;
     }
-    .cover-meta a { color: var(--text-secondary); text-decoration: none; }
+    .cover-meta a { color: var(--text-muted); text-decoration: none; }
     .cover-meta a:hover { color: var(--teal-deep); text-decoration: underline; }
+    .cover-meta strong { color: var(--ink); font-weight: 700; }
 
-    /* ─── STANDFIRST / opening editor's note ─── */
-    .standfirst {
-      padding: 80px 0 40px;
-      border-top: 1px solid var(--rule-faint);
+    /* ─── SECTION primitives ─── */
+    .section {
+      padding: 80px 0;
+      border-top: 1px solid var(--rule);
     }
-    .standfirst-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 32px;
+    .section.warm { background: var(--paper-warm); border-bottom: 1px solid var(--rule); }
+    .section-head {
+      max-width: 760px;
+      margin: 0 auto 48px;
+      padding: 0 var(--gutter);
     }
-    @media (min-width: 920px) {
-      .standfirst-grid {
-        grid-template-columns: 220px 1fr;
-        gap: 64px;
-      }
-    }
-    .standfirst-side {
-      font-family: var(--mono);
-      font-size: 11px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      line-height: 1.7;
-    }
-    .standfirst-side .label {
-      display: block;
-      color: var(--terracotta);
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-    .standfirst-body {
-      font-family: var(--display);
-      font-weight: 400;
-      font-optical-sizing: auto;
-      font-size: clamp(22px, 2.4vw, 30px);
-      line-height: 1.4;
-      color: var(--ink);
-      max-width: 38ch;
-    }
-    .standfirst-body p + p { margin-top: 18px; }
-    .standfirst-body .dropcap {
-      float: left;
-      font-family: var(--display);
-      font-weight: 600;
-      font-size: 4.4em;
-      line-height: 0.85;
-      padding: 6px 12px 0 0;
-      color: var(--terracotta);
-    }
-
-    /* ─── DEPARTMENTS (feature grid) ─── */
-    .departments { padding: 60px 0; }
-    .departments-head {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 24px;
-      flex-wrap: wrap;
-      margin-bottom: 36px;
-    }
-    .departments-head h2 {
+    .section-head .eyebrow { display: block; margin-bottom: 16px; }
+    .section-head h2 {
       font-family: var(--display);
       font-weight: 600;
       font-optical-sizing: auto;
-      font-size: clamp(36px, 5vw, 64px);
-      line-height: 1.0;
-      letter-spacing: -0.01em;
+      font-size: clamp(34px, 4.4vw, 56px);
+      line-height: 1.04;
+      letter-spacing: -0.012em;
       color: var(--ink);
-      max-width: 14ch;
+      max-width: 18ch;
     }
-    .departments-head h2 em {
+    .section-head h2 em {
       font-style: italic;
       color: var(--teal-deep);
       font-weight: 500;
     }
-    .departments-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 0;
-      border-top: 1px solid var(--rule-strong);
-    }
-    @media (min-width: 720px) {
-      .departments-grid { grid-template-columns: 1fr 1fr; }
-    }
-    @media (min-width: 1040px) {
-      .departments-grid { grid-template-columns: 1fr 1fr 1fr; }
+    .section-head .lead {
+      font-family: var(--display);
+      font-style: italic;
+      font-weight: 400;
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.5;
+      color: var(--text-secondary);
+      max-width: 44ch;
+      margin-top: 20px;
     }
 
-    .dept {
-      padding: 32px 28px 36px 0;
-      border-bottom: 1px solid var(--rule);
-      position: relative;
+    /* ─── INTRO (editor's note, but discreet) ─── */
+    .intro {
+      padding: 80px 0 0;
+    }
+    .intro-body {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 0 var(--gutter);
+      font-family: var(--display);
+      font-weight: 400;
+      font-optical-sizing: auto;
+      font-size: clamp(20px, 2.2vw, 24px);
+      line-height: 1.5;
+      color: var(--ink);
+    }
+    .intro-body p + p { margin-top: 18px; }
+
+    /* ─── DEPARTMENTS / feature grid ─── */
+    .departments {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 var(--gutter);
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 40px;
+      column-gap: 56px;
     }
     @media (min-width: 720px) {
-      .dept:nth-child(odd) { padding-right: 28px; border-right: 1px solid var(--rule); }
-      .dept:nth-child(even) { padding-left: 28px; padding-right: 0; }
+      .departments { grid-template-columns: 1fr 1fr; gap: 36px 56px; }
     }
-    @media (min-width: 1040px) {
-      .dept { padding-right: 28px; padding-left: 28px; }
-      .dept:nth-child(3n+1) { padding-left: 0; border-right: 1px solid var(--rule); }
-      .dept:nth-child(3n+2) { border-right: 1px solid var(--rule); }
-      .dept:nth-child(3n) { padding-right: 0; border-right: none; }
+    @media (min-width: 1000px) {
+      .departments { grid-template-columns: 1fr 1fr 1fr; }
+    }
+    .dept {
+      padding-top: 6px;
+      border-top: 1px solid var(--ink);
     }
     .dept-num {
       font-family: var(--mono);
-      font-size: 11px;
+      font-size: 10.5px;
       letter-spacing: 0.18em;
       color: var(--terracotta);
       font-weight: 700;
       display: block;
-      margin-bottom: 10px;
+      margin-bottom: 14px;
     }
-    .dept-title {
+    .dept h3 {
       font-family: var(--display);
       font-weight: 600;
       font-optical-sizing: auto;
-      font-size: 26px;
-      line-height: 1.15;
+      font-size: 22px;
+      line-height: 1.2;
       letter-spacing: -0.005em;
       color: var(--ink);
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
-    .dept-title em {
+    .dept h3 em {
       font-style: italic;
       color: var(--teal-deep);
     }
     .dept p {
-      font-family: var(--body);
       font-size: 15.5px;
       line-height: 1.55;
       color: var(--text-secondary);
     }
-    .dept p strong {
-      color: var(--ink);
-      font-weight: 600;
-    }
+    .dept p strong { color: var(--ink); font-weight: 600; }
 
-    /* ─── DUAL SCRIPT spread (Malayalam + English) ─── */
-    .spread {
-      padding: 80px 0;
-      background: var(--paper-deep);
-      border-top: 1px solid var(--rule);
-      border-bottom: 1px solid var(--rule);
-      margin: 60px 0;
-    }
-    .spread-head {
-      text-align: center;
-      margin-bottom: 36px;
-    }
-    .spread-head h2 {
-      font-family: var(--display);
-      font-weight: 500;
-      font-optical-sizing: auto;
-      font-style: italic;
-      font-size: clamp(34px, 4.6vw, 56px);
-      line-height: 1.1;
-      color: var(--ink);
-      max-width: 22ch;
-      margin: 12px auto 0;
-    }
+    /* ─── DUAL-SCRIPT spread ─── */
     .spread-grid {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 var(--gutter);
       display: grid;
       grid-template-columns: 1fr;
-      gap: 36px;
-      max-width: 920px;
-      margin: 0 auto;
+      gap: 28px;
     }
-    @media (min-width: 820px) {
-      .spread-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 56px;
-      }
+    @media (min-width: 760px) {
+      .spread-grid { grid-template-columns: 1fr 1fr; gap: 36px; }
     }
     .script-card {
       background: var(--paper);
-      border: 1px solid var(--rule);
+      border: 1px solid var(--rule-strong);
       padding: 32px 28px;
-      box-shadow: var(--shadow-card);
-      position: relative;
     }
-    .script-card-num {
-      position: absolute;
-      top: -10px; left: 22px;
-      background: var(--paper-deep);
-      padding: 0 8px;
-      font-family: var(--mono);
-      font-size: 11px;
-      letter-spacing: 0.16em;
-      color: var(--terracotta);
-      font-weight: 700;
-    }
+    .section.warm .script-card { background: #fffaf0; }
     .script-card .heading {
       font-family: var(--mono);
       font-weight: 700;
-      font-size: 14px;
+      font-size: 13px;
       letter-spacing: 0.04em;
       color: var(--ink);
-      padding-bottom: 14px;
+      padding-bottom: 12px;
       margin-bottom: 14px;
       border-bottom: 1px solid var(--rule);
       text-transform: uppercase;
@@ -825,7 +556,7 @@
       letter-spacing: 0.04em;
       text-transform: uppercase;
       text-align: center;
-      margin: 22px 0 4px;
+      margin: 18px 0 4px;
       color: var(--ink);
     }
     .script-card .paren {
@@ -841,7 +572,7 @@
       font-size: 15px;
       line-height: 1.5;
       max-width: 22ch;
-      margin: 0 auto 12px;
+      margin: 0 auto 14px;
       text-align: center;
       color: var(--ink);
     }
@@ -852,13 +583,8 @@
       color: var(--ink);
       margin-bottom: 12px;
     }
-    .script-card.malayalam .heading,
-    .script-card.malayalam .character {
-      /* Keep slugs and character cues in Latin Courier — that's the
-         screenplay-format convention even in Malayalam scripts. */
-    }
-    .script-card.malayalam .dialog,
-    .script-card.malayalam .action {
+    .script-card.ml .dialog,
+    .script-card.ml .action {
       font-family: var(--ml);
       font-size: 17px;
       line-height: 1.65;
@@ -866,98 +592,81 @@
     .script-card .transition {
       font-family: var(--mono);
       font-weight: 700;
-      font-size: 12px;
+      font-size: 11.5px;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: var(--text-quiet);
+      color: var(--text-muted);
       text-align: right;
-      margin-top: 14px;
-      padding-top: 14px;
+      margin-top: 10px;
+      padding-top: 12px;
       border-top: 1px solid var(--rule);
     }
 
     /* ─── REFERENCE / how-to ─── */
-    .reference { padding: 60px 0 40px; }
-    .reference-head {
-      max-width: 36ch;
-      margin-bottom: 44px;
-    }
-    .reference-head h2 {
-      font-family: var(--display);
-      font-weight: 600;
-      font-optical-sizing: auto;
-      font-size: clamp(34px, 4.4vw, 56px);
-      line-height: 1.05;
-      color: var(--ink);
-      letter-spacing: -0.01em;
-      margin-top: 10px;
-    }
-    .reference-head h2 em {
-      font-style: italic;
-      color: var(--teal-deep);
-    }
     .reference-cols {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 var(--gutter);
       display: grid;
       grid-template-columns: 1fr;
       gap: 36px;
-      border-top: 2px solid var(--ink);
-      padding-top: 36px;
     }
     @media (min-width: 760px) {
       .reference-cols { grid-template-columns: 1fr 1fr; column-gap: 56px; }
     }
-    @media (min-width: 1040px) {
+    @media (min-width: 1000px) {
       .reference-cols { grid-template-columns: 1fr 1fr 1fr; }
     }
-    .ref-block { }
-    .ref-block h3 {
+    .ref h3 {
       font-family: var(--mono);
       font-weight: 700;
-      font-size: 12px;
+      font-size: 11px;
       letter-spacing: 0.14em;
       text-transform: uppercase;
       color: var(--terracotta);
       margin-bottom: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--ink);
     }
-    .ref-block h4 {
+    .ref h4 {
       font-family: var(--display);
       font-weight: 600;
       font-optical-sizing: auto;
-      font-size: 22px;
+      font-size: 18px;
       line-height: 1.2;
-      color: var(--ink);
-      margin: 22px 0 10px;
       letter-spacing: -0.005em;
+      color: var(--ink);
+      margin: 20px 0 8px;
     }
-    .ref-block h4:first-of-type { margin-top: 0; }
-    .ref-block p {
-      font-size: 15.5px;
+    .ref h4:first-of-type { margin-top: 0; }
+    .ref p {
+      font-size: 15px;
       line-height: 1.55;
       color: var(--text-secondary);
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
-    .ref-block p strong { color: var(--ink); font-weight: 600; }
-    .ref-block ol, .ref-block ul {
+    .ref p strong { color: var(--ink); font-weight: 600; }
+    .ref ul {
       padding-left: 1.1em;
-      font-size: 15.5px;
+      font-size: 15px;
       line-height: 1.6;
       color: var(--text-secondary);
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
-    .ref-block li { margin-bottom: 6px; }
-    .ref-block li strong { color: var(--ink); font-weight: 600; }
-    .ref-block code {
+    .ref li { margin-bottom: 5px; }
+    .ref li strong { color: var(--ink); font-weight: 600; }
+    .ref code {
       font-family: var(--mono);
-      font-size: 13.5px;
-      background: var(--paper-deep);
+      font-size: 13px;
+      background: var(--paper-warm);
       padding: 1px 6px;
       border-radius: 2px;
       color: var(--ink);
     }
     kbd {
       font-family: var(--mono);
-      font-size: 11.5px;
-      padding: 2px 7px;
+      font-size: 11px;
+      padding: 2px 6px;
       background: var(--paper);
       border: 1px solid var(--rule-strong);
       border-bottom-width: 2px;
@@ -965,246 +674,223 @@
       color: var(--ink);
       font-weight: 600;
       letter-spacing: 0.02em;
-      /* nowrap keeps "Cmd+Shift+T" from splitting mid-token, but on
-         narrow viewports the resulting unbreakable run can push past
-         the column edge. word-break: keep-all + line-break: anywhere
-         lets the line break BEFORE/AFTER the kbd while keeping its
-         internal text intact — which is what we actually want. */
       white-space: nowrap;
-      word-break: keep-all;
     }
 
-    /* ─── ISSUE NOTES (changelog highlights) ─── */
-    .issue-notes {
-      padding: 60px 0;
-      background: var(--paper-deep);
-      border-top: 1px solid var(--rule);
-      border-bottom: 1px solid var(--rule);
-    }
-    .notes-head {
-      text-align: center;
-      margin-bottom: 36px;
-    }
-    .notes-head h2 {
-      font-family: var(--display);
-      font-weight: 600;
-      font-optical-sizing: auto;
-      font-size: clamp(32px, 4.4vw, 52px);
-      line-height: 1.05;
-      color: var(--ink);
-      max-width: 24ch;
-      margin: 12px auto 0;
-    }
-    .notes-head h2 em { font-style: italic; color: var(--terracotta); font-weight: 500; }
-    .notes-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 0;
-      max-width: 880px;
+    /* ─── WHATS NEW ─── */
+    .notes {
+      max-width: 760px;
       margin: 0 auto;
-      border-top: 1px solid var(--rule-strong);
+      padding: 0 var(--gutter);
     }
-    .note-item {
+    .note {
       display: grid;
-      grid-template-columns: 90px 1fr;
+      grid-template-columns: 70px 1fr;
       gap: 24px;
       padding: 22px 0;
       border-bottom: 1px solid var(--rule);
       align-items: baseline;
     }
-    .note-item:last-child { border-bottom: none; }
+    .note:last-child { border-bottom: none; }
     .note-num {
       font-family: var(--mono);
-      font-size: 11px;
+      font-size: 10.5px;
       letter-spacing: 0.16em;
       color: var(--terracotta);
       font-weight: 700;
     }
-    .note-body h3 {
+    .note h3 {
       font-family: var(--display);
       font-weight: 600;
       font-optical-sizing: auto;
-      font-size: 21px;
+      font-size: 19px;
       line-height: 1.2;
       color: var(--ink);
       margin-bottom: 6px;
     }
-    .note-body p {
-      font-size: 15.5px;
+    .note p {
+      font-size: 15px;
       line-height: 1.55;
       color: var(--text-secondary);
     }
-
-    /* ─── COLOPHON / footer ─── */
-    .colophon {
-      padding: 80px 0 60px;
-      background: var(--ink);
-      color: var(--paper);
+    @media (max-width: 520px) {
+      .note { grid-template-columns: 1fr; gap: 4px; }
     }
-    .colophon a { color: var(--paper); text-decoration: underline; text-decoration-thickness: 0.5px; text-underline-offset: 4px; }
-    .colophon a:hover { color: #f5c98a; }
-    .colophon-grid {
+
+    /* ─── CREDITS ─── */
+    .credits-grid {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 var(--gutter);
       display: grid;
       grid-template-columns: 1fr;
       gap: 40px;
-      padding-bottom: 36px;
-      border-bottom: 1px solid rgba(246, 240, 230, 0.18);
     }
     @media (min-width: 720px) {
-      .colophon-grid { grid-template-columns: 1.4fr 1fr 1fr; gap: 48px; }
+      .credits-grid { grid-template-columns: 1fr 1fr 1fr; gap: 36px 56px; }
     }
-    .col-mast {
+    .credits-group h3 {
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--terracotta);
+      margin-bottom: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--ink);
+    }
+    .credits-group ul { list-style: none; }
+    .credits-group li {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--rule-faint);
+    }
+    .credits-group li:last-child { border-bottom: none; }
+    .credits-group .name {
       font-family: var(--display);
       font-weight: 600;
-      font-size: 36px;
-      letter-spacing: -0.005em;
+      font-optical-sizing: auto;
+      font-size: 18px;
+      line-height: 1.2;
+      color: var(--ink);
+      display: block;
     }
-    .col-mast .diamond {
-      display: inline-block;
-      width: 8px; height: 8px;
-      background: var(--teal);
-      transform: rotate(45deg);
-      margin-right: 12px;
-      vertical-align: middle;
+    .credits-group .role,
+    .credits-group .link {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      display: block;
+      margin-top: 4px;
     }
-    .col-mast-deck {
+    .credits-group .link a {
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+    .credits-group .link a:hover { color: var(--teal-deep); }
+    .credits-group p {
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--text-secondary);
+    }
+    .credits-group p strong { color: var(--ink); font-weight: 600; }
+
+    /* ─── FOOTER / colophon ─── */
+    footer {
+      padding: 60px 0 40px;
+      border-top: 1px solid var(--rule);
+      background: var(--paper);
+    }
+    .foot {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 var(--gutter);
+      display: grid;
+      gap: 24px;
+    }
+    @media (min-width: 720px) {
+      .foot { grid-template-columns: 1.6fr 1fr 1fr; gap: 48px; }
+    }
+    .foot-mark {
+      font-family: var(--display);
+      font-weight: 600;
+      font-size: 22px;
+      color: var(--ink);
+    }
+    .foot-deck {
       font-family: var(--display);
       font-style: italic;
-      font-weight: 400;
-      font-size: 18px;
-      line-height: 1.4;
-      color: rgba(246, 240, 230, 0.7);
-      margin-top: 14px;
-      max-width: 30ch;
+      font-size: 15px;
+      line-height: 1.45;
+      color: var(--text-secondary);
+      margin-top: 8px;
+      max-width: 38ch;
     }
-    .col-section h4 {
+    .foot h4 {
       font-family: var(--mono);
-      font-size: 11px;
-      letter-spacing: 0.18em;
+      font-size: 10.5px;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
       font-weight: 700;
-      color: rgba(246, 240, 230, 0.55);
-      margin-bottom: 14px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
     }
-    .col-section ul { list-style: none; }
-    .col-section li { margin-bottom: 9px; font-size: 14.5px; }
-    .colophon-footer {
-      padding-top: 28px;
+    .foot ul { list-style: none; }
+    .foot li { margin-bottom: 7px; font-size: 14px; }
+    .foot a { color: var(--ink); text-decoration: none; }
+    .foot a:hover { color: var(--teal-deep); text-decoration: underline; }
+
+    .coda {
+      max-width: var(--max);
+      margin: 36px auto 0;
+      padding: 24px var(--gutter) 0;
+      border-top: 1px solid var(--rule);
       display: flex;
       justify-content: space-between;
       flex-wrap: wrap;
       gap: 14px;
       font-family: var(--mono);
-      font-size: 11px;
-      letter-spacing: 0.16em;
+      font-size: 10.5px;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
-      color: rgba(246, 240, 230, 0.6);
+      color: var(--text-muted);
     }
-    .colophon-footer .set-in {
-      max-width: 50ch;
-      letter-spacing: 0.12em;
+    .coda .set-in {
+      letter-spacing: 0.06em;
       text-transform: none;
-      font-size: 12px;
-      line-height: 1.5;
-      color: rgba(246, 240, 230, 0.55);
       font-family: var(--body);
+      font-size: 13px;
+      color: var(--text-muted);
+      max-width: 50ch;
     }
-    .colophon-footer .set-in em {
-      font-style: italic;
-      color: rgba(246, 240, 230, 0.85);
-    }
+    .coda .set-in em { font-style: italic; color: var(--ink); }
 
-    /* ─── Print styles (because: magazine) ─── */
+    /* ─── Print ─── */
     @media print {
-      .masthead, .masthead-nav, .other-platforms-details, .downloads-row { display: none; }
+      .topbar, .topnav, .other-platforms, .downloads { display: none; }
       body { background: white; color: black; }
-      .cover-headline { font-size: 60pt; }
-      .colophon { background: white; color: black; }
-      .spread, .issue-notes { background: white; }
+      .section.warm, footer { background: white; }
     }
 
-    /* ─── Reduced motion respect ─── */
+    /* ─── Reduced motion ─── */
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
       * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
     }
 
-    /* Grid children should be allowed to shrink below their intrinsic
-       content width on mobile — the default `min-width: auto` lets a
-       long word or pre-styled element push the column wider than the
-       column track, which on a 390px phone shows up as horizontal
-       overflow that body's overflow-x: hidden then quietly clips. */
-    .standfirst-grid > *,
-    .reference-cols > *,
-    .departments-grid > *,
-    .spread-grid > *,
-    .colophon-grid > *,
-    .notes-grid > * { min-width: 0; }
-
-    /* ─── Mobile tightening ─── */
+    /* ─── Mobile ─── */
     @media (max-width: 520px) {
       :root { --gutter: 22px; }
       body { font-size: 16px; }
-      .cover { padding: 36px 0 56px; }
-      .standfirst { padding: 48px 0 28px; }
-      .departments { padding: 40px 0; }
-      .spread { padding: 56px 0; margin: 36px 0; }
-      .reference { padding: 40px 0 28px; }
-      .issue-notes { padding: 48px 0; }
-      .colophon { padding: 56px 0 36px; }
-      .cover-headline { line-height: 0.95; }
-      /* Dropcap looks dramatic at desktop scale but eats too much width
-         on phones (a 4.4em float pushes wrap text to the right edge).
-         At small sizes we drop the float and let the first letter sit
-         in flow at a more modest scale. */
-      .standfirst-body .dropcap {
-        float: none;
-        font-size: 1.2em;
-        padding: 0;
-        color: var(--terracotta);
-      }
-      .standfirst-body { max-width: 100%; }
-      .deck { max-width: 100%; }
-      .pull-quote { max-width: 100%; }
-      .pull-quote::before { left: -0.2em; font-size: 3em; }
-      .note-item { grid-template-columns: 1fr; gap: 6px; }
-      .btn-download { padding: 14px 18px; font-size: 11.5px; flex: 1 1 100%; justify-content: center; }
-      .cover-byline { gap: 14px 18px; font-size: 10px; }
-      .cover-top, .cover-meta { font-size: 10px; letter-spacing: 0.14em; }
-      .slug { flex-direction: column; gap: 4px; }
-      /* Constrain large display measures so they can't blow past the
-         screen edge on tiny phones — the clamp lower bounds were
-         sometimes wider than the available column. */
-      .cover-deck { max-width: 100%; font-size: 18px; }
-      .standfirst-body { font-size: 17px; line-height: 1.5; }
-      .dept-title { font-size: 22px; }
-      .ref-block h4 { font-size: 19px; }
-      .ref-block { word-break: normal; overflow-wrap: anywhere; }
-    }
-    @media (max-width: 380px) {
-      :root { --gutter: 18px; }
-      .cover-headline { font-size: 56px; }
-      .cover-deck { font-size: 17px; }
-      .standfirst-body { font-size: 16px; }
+      .cover { padding: 64px 0 56px; }
+      .section { padding: 56px 0; }
+      .intro { padding: 56px 0 0; }
+      .intro-body { font-size: 18px; }
+      .cover-deck { font-size: 18px; }
+      .cover-meta { gap: 12px; }
+      .btn { padding: 12px 18px; font-size: 11.5px; flex: 1 1 100%; justify-content: center; }
+      .dept h3 { font-size: 19px; }
+      .ref h4 { font-size: 17px; }
     }
   </style>
 </head>
 <body>
 
-<!-- ─── MASTHEAD ─── -->
-<header class="masthead" role="banner">
+<!-- ─── Top bar ─── -->
+<header class="topbar" role="banner">
   <div class="container">
-    <a href="#" class="masthead-brand" aria-label="Scriptty home">
-      <img src="app-icon.png" alt="" width="28" height="28">
-      <span class="wordmark">Scriptty</span>
+    <a href="#" class="brand" aria-label="Scriptty home">
+      <img src="app-icon.png" alt="" width="24" height="24">
+      <span class="brand-name">Scriptty</span>
     </a>
-    <span class="masthead-meta" aria-hidden="true">No. 1 · Volume 0.8 · Cream Edition</span>
     <nav aria-label="Primary">
-      <ul class="masthead-nav">
-        <li><a href="#departments">Features</a></li>
-        <li><a href="#manual">Manual</a></li>
-        <li><a href="#issue-notes">What's New</a></li>
-        <li><a href="https://github.com/stultus/scriptty">GitHub</a></li>
+      <ul class="topnav">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#guide">Guide</a></li>
+        <li><a href="#whats-new">What's new</a></li>
+        <li><a href="#credits">Credits</a></li>
         <li><a href="#download" class="cta">Download</a></li>
       </ul>
     </nav>
@@ -1214,370 +900,333 @@
 <main>
 
 <!-- ─── COVER ─── -->
-<section class="cover" id="download" aria-labelledby="cover-headline">
+<section class="cover" id="download" aria-labelledby="cover-head">
   <div class="container">
-
-    <div class="cover-top" aria-hidden="true">
-      <div class="cover-top-row">
-        <span><strong>Scriptty</strong> — The Screenwriter's Quarterly</span>
-        <span>Issue 01 · Volume 0.8 · Cream Edition</span>
-        <span>Free &amp; Open Source · MIT License</span>
-        <span>Set in <em>Manjari · Courier · Fraunces</em></span>
-      </div>
-    </div>
-
-    <h1 id="cover-headline" class="cover-headline">
-      Scriptty<em>.</em>
-    </h1>
-
+    <h1 id="cover-head" class="cover-head">Scriptty<em>.</em></h1>
     <p class="cover-deck">
       A free, offline screenwriting app for Malayalam &amp; English writers. <strong>Hollywood</strong> single-column &amp; <strong>Indian</strong> two-column formats, built-in Malayalam input, production-ready PDFs.
     </p>
 
-    <div class="cover-byline">
-      <span class="by"><span class="by-label">By</span> <span class="by-name">Hrishikesh Bhaskaran</span></span>
-      <span class="diamond" aria-hidden="true"></span>
-      <span class="by"><span class="by-label">From</span> <span class="by-name">Kerala, India</span></span>
-      <span class="diamond" aria-hidden="true"></span>
-      <span class="by"><span class="by-label">Built on</span> <span class="by-name">Tauri · Rust · Svelte 5</span></span>
-    </div>
-
-    <div id="download-buttons" class="downloads-row" aria-label="Download installers">
+    <div id="download-buttons" class="downloads" aria-label="Download installers">
       <p style="font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; color: var(--text-muted); text-transform: uppercase;">Loading installers…</p>
     </div>
 
-    <div class="cover-meta">
-      <span><strong style="color: var(--ink);"><span id="version-label">v0.8.0</span></strong></span>
+    <p class="cover-meta">
+      <span><strong><span id="version-label">v0.8.0</span></strong></span>
       <span>Mac · Windows · Linux</span>
-      <span>No cloud · No account · No telemetry</span>
-      <a href="https://github.com/stultus/scriptty/releases">All releases →</a>
-    </div>
+      <span>MIT &middot; <a href="https://github.com/stultus/scriptty">Source on GitHub</a></span>
+      <span><a href="https://github.com/stultus/scriptty/releases">All releases →</a></span>
+    </p>
+  </div>
+</section>
+
+<!-- ─── INTRO ─── -->
+<section class="intro" aria-label="Introduction">
+  <div class="intro-body">
+    <p>Malayalam screenwriters have always had to choose between two compromises — write in a tool built for Latin scripts and fight every mixed-script line, or use a generic word processor and lose the formatting that makes a screenplay readable on set.</p>
+    <p>Scriptty is the third option. The editor speaks <em>screenplay</em>, not "rich text" — every element has its own behaviour, its own keyboard shortcut, its own typography. Malayalam input is built in, so you toggle scripts mid-sentence with <kbd>Ctrl+Space</kbd> and never leave the page.</p>
+  </div>
+</section>
+
+<!-- ─── FEATURES ─── -->
+<section class="section" id="features" aria-labelledby="features-title">
+  <div class="section-head">
+    <span class="eyebrow">Why Scriptty</span>
+    <h2 id="features-title">Built for how screenwriters <em>actually</em> work.</h2>
+  </div>
+
+  <div class="departments">
+
+    <article class="dept">
+      <span class="dept-num">№ 01 · Language</span>
+      <h3>Malayalam &amp; <em>English</em>, mixed freely</h3>
+      <p>Three built-in input schemes — <strong>Mozhi</strong> (phonetic), <strong>Inscript 1</strong>, and <strong>Inscript 2</strong>. No OS keyboard setup needed. Mix Malayalam and English on the same line.</p>
+    </article>
+
+    <article class="dept">
+      <span class="dept-num">№ 02 · Format</span>
+      <h3>Hollywood <em>or</em> Indian two-column</h3>
+      <p>Write in standard Hollywood single-column. Export as Indian two-column for production teams who want dialogue and translation side by side.</p>
+    </article>
+
+    <article class="dept">
+      <span class="dept-num">№ 03 · Privacy</span>
+      <h3>Fully offline. <em>Yours.</em></h3>
+      <p>Zero network calls at runtime. Your screenplays live on your machine as <code>.screenplay</code> files. No cloud, no account, no telemetry.</p>
+    </article>
+
+    <article class="dept">
+      <span class="dept-num">№ 04 · Three views</span>
+      <h3>One file, three lenses</h3>
+      <p>Writing view with scene annotations in the margin. <strong>Cards view</strong> as a typeset shooting-script tear sheet. Story view for Idea, Synopsis, Treatment, and Narrative.</p>
+    </article>
+
+    <article class="dept">
+      <span class="dept-num">№ 05 · Web series</span>
+      <h3>Multi-episode, <em>one file</em></h3>
+      <p>An IDE-style episode explorer with per-episode status, drag-to-reorder, and an Episode Breakout view that drills from a series overview into each episode's scenes.</p>
+    </article>
+
+    <article class="dept">
+      <span class="dept-num">№ 06 · Production</span>
+      <h3>Plan the shoot, <em>not just the script</em></h3>
+      <p>Tag each scene with a location group and a shoot date. Export a <strong>Daily Shoot List</strong> PDF — scenes grouped by day &amp; location with industry-standard page-eighths totals.</p>
+    </article>
+
+    <article class="dept">
+      <span class="dept-num">№ 07 · PDF</span>
+      <h3>An editorial-grade printed page</h3>
+      <p>Title page, prose covers, and scene cards share one masthead vocabulary. Per-section page numbering, transition widow control, full-width production cards, Compact card-view export.</p>
+    </article>
+
+    <article class="dept">
+      <span class="dept-num">№ 08 · Editor</span>
+      <h3>A smart, restrained editor</h3>
+      <p>Auto-uppercase scene headings &amp; characters. Malayalam-aware autocomplete. Smart curly quotes. Adjustable editor font size. <strong>Paste a plain-text draft</strong> and watch it become a properly formatted screenplay.</p>
+    </article>
+
+    <article class="dept">
+      <span class="dept-num">№ 09 · Recovery</span>
+      <h3>Autosave that survives a crash</h3>
+      <p>Background autosave to a hidden recovery file. If the app or your machine crashes, the next launch offers to restore your unsaved work — even an unsaved new document survives a power loss.</p>
+    </article>
 
   </div>
 </section>
 
-<p class="cut-to" aria-hidden="true">Cut to →</p>
-
-<!-- ─── STANDFIRST / opening editor's note ─── -->
-<section class="standfirst" aria-labelledby="standfirst-title">
-  <div class="container">
-    <div class="standfirst-grid">
-      <aside class="standfirst-side" aria-hidden="true">
-        <span class="label">Editor's Note</span>
-        <p>Issue One · Spring 2026</p>
-        <p>2,000 words ·<br>3-minute read</p>
-      </aside>
-      <div class="standfirst-body">
-        <h2 id="standfirst-title" class="visually-hidden" style="position:absolute;left:-9999px;">Editor's Note</h2>
-        <p><span class="dropcap">M</span>alayalam screenwriters have always had to choose between two compromises — write in a tool built for Latin scripts and fight every mixed-script line, or use a generic word processor and lose the formatting that makes a screenplay readable on set.</p>
-        <p>Scriptty is the third option. The editor speaks <em>screenplay</em>, not "rich text" — every element (Scene Heading, Action, Character, Dialogue, Parenthetical, Transition) has its own behaviour, its own keyboard shortcut, its own typography. Malayalam input is built in (Mozhi · Inscript) so you toggle scripts mid-sentence with <kbd>Ctrl+Space</kbd>, never leaving the page.</p>
-        <p>And when it's time to print, the PDF reads like a proper shooting script — Hollywood single-column or Indian two-column, with title page, scene cards, and a Daily Shoot List your AD can actually use.</p>
-      </div>
-    </div>
+<!-- ─── DUAL-SCRIPT spread ─── -->
+<section class="section warm" aria-labelledby="spread-title">
+  <div class="section-head" style="text-align: center; margin-left: auto; margin-right: auto;">
+    <span class="eyebrow with-rules">A two-language sample</span>
+    <h2 id="spread-title" style="margin: 16px auto 0;">Write in the language you dream in.</h2>
   </div>
-</section>
 
-<!-- ─── DEPARTMENTS / feature grid ─── -->
-<section class="departments" id="departments" aria-labelledby="departments-title">
-  <div class="container">
-    <div class="slug" aria-hidden="true">
-      <span>INT. THE FEATURE GRID — DAY</span>
-      <span class="slug-num">02.</span>
-    </div>
+  <div class="spread-grid">
+    <article class="script-card" aria-label="Sample scene in English">
+      <p class="heading">INT. CHAYAKKADA — DAWN</p>
+      <p class="action">Steam rises off a kettle. Outside, the rain has stopped. <strong>VARGHESE</strong> sets a glass on the counter and waits.</p>
+      <p class="character">Varghese</p>
+      <p class="paren">(quietly)</p>
+      <p class="dialog">"You don't write the script. You take dictation from it."</p>
+      <p class="action">A bus pulls in. The day begins.</p>
+      <p class="transition">Cut to →</p>
+    </article>
 
-    <div class="departments-head">
-      <p class="eyebrow">Why Scriptty</p>
-      <h2 id="departments-title">Built for how screenwriters <em>actually</em> work.</h2>
-    </div>
-
-    <div class="departments-grid">
-
-      <article class="dept">
-        <span class="dept-num">№ 01 — Language</span>
-        <h3 class="dept-title">Malayalam &amp; <em>English</em>, mixed freely</h3>
-        <p>Three built-in input schemes — <strong>Mozhi</strong> (phonetic), <strong>Inscript 1</strong>, and <strong>Inscript 2</strong>. No OS keyboard setup needed. Mix Malayalam and English on the same line as casually as you'd switch them in conversation.</p>
-      </article>
-
-      <article class="dept">
-        <span class="dept-num">№ 02 — Format</span>
-        <h3 class="dept-title">Hollywood <em>or</em> Indian two-column</h3>
-        <p>Write in standard Hollywood single-column. Export as Indian two-column for production teams who want dialogue and translation side by side. Page-break-per-scene is one toggle away for both.</p>
-      </article>
-
-      <article class="dept">
-        <span class="dept-num">№ 03 — Privacy</span>
-        <h3 class="dept-title">Fully offline. <em>Yours.</em></h3>
-        <p>Zero network calls at runtime. Your screenplays live on your machine as <code>.screenplay</code> files. No cloud, no account, no subscription, no telemetry. Works on a flight, on a beach, off-grid.</p>
-      </article>
-
-      <article class="dept">
-        <span class="dept-num">№ 04 — Three Views</span>
-        <h3 class="dept-title">One file, three lenses</h3>
-        <p>Writing view with scene annotations in the margin. <strong>Cards view</strong> as a typeset shooting-script tear sheet — INT/EXT glyphs, time-of-day tinting, Compact mode, Group-by-location. Story view for Idea, Synopsis, Treatment, and Narrative.</p>
-      </article>
-
-      <article class="dept">
-        <span class="dept-num">№ 05 — Web Series</span>
-        <h3 class="dept-title">Multi-episode, <em>one file</em></h3>
-        <p>An IDE-style episode explorer with <strong>per-episode status</strong> (Outline / Draft / Revision / Final), drag-to-reorder, and an Episode Breakout view that drills from a series overview into each episode's scene cards. Export the active episode or the whole series.</p>
-      </article>
-
-      <article class="dept">
-        <span class="dept-num">№ 06 — Production</span>
-        <h3 class="dept-title">Plan the shoot, <em>not just the script</em></h3>
-        <p>Tag each scene with <strong>extras</strong>, a <strong>location group</strong>, and a <strong>shoot date</strong>. Export a <strong>Daily Shoot List</strong> PDF — scenes grouped by day &amp; location with industry-standard page-eighths totals. Statistics panel adds Schedule and Episodes views with sortable columns and CSV export.</p>
-      </article>
-
-      <article class="dept">
-        <span class="dept-num">№ 07 — PDF</span>
-        <h3 class="dept-title">An editorial-grade printed page</h3>
-        <p>Title page, prose covers, and scene cards share one masthead vocabulary — small tracked-caps eyebrows, a dominant film title, asterism dividers, Courier-set credits. Per-section page numbering, transition widow control, full-width production cards, Compact card-view export.</p>
-      </article>
-
-      <article class="dept">
-        <span class="dept-num">№ 08 — Editor</span>
-        <h3 class="dept-title">A smart, restrained editor</h3>
-        <p>Auto-uppercase scene headings &amp; characters. <strong>Malayalam-aware autocomplete</strong> for character names. Smart curly quotes. Adjustable editor font size. Find &amp; replace. <strong>Paste a plain-text draft</strong> and watch it become a properly formatted screenplay.</p>
-      </article>
-
-      <article class="dept">
-        <span class="dept-num">№ 09 — Recovery</span>
-        <h3 class="dept-title">Autosave that survives a crash</h3>
-        <p>Background autosave to a hidden recovery file as you type. If the app or your machine crashes, the next launch offers to restore the unsaved work — even an unsaved new document survives a power loss. A normal save clears the recovery file.</p>
-      </article>
-
-    </div>
-  </div>
-</section>
-
-<p class="cut-to" aria-hidden="true">Cut to →</p>
-
-<!-- ─── DUAL-SCRIPT SPREAD ─── -->
-<section class="spread" aria-labelledby="spread-title">
-  <div class="container">
-    <div class="spread-head">
-      <p class="eyebrow">A two-language sample</p>
-      <h2 id="spread-title">Write in the language you dream in.</h2>
-    </div>
-
-    <div class="spread-grid">
-
-      <article class="script-card" aria-label="Sample scene in English">
-        <span class="script-card-num">English · No. 01</span>
-        <p class="heading">INT. CHAYAKKADA — DAWN</p>
-        <p class="action">Steam rises off a kettle. Outside, the rain has stopped. <strong>VARGHESE</strong> sets a glass on the counter and waits.</p>
-        <p class="character">Varghese</p>
-        <p class="paren">(quietly)</p>
-        <p class="dialog">"You don't write the script. You take dictation from it."</p>
-        <p class="action">A bus pulls in. The day begins.</p>
-        <p class="transition">Cut to →</p>
-      </article>
-
-      <article class="script-card malayalam" aria-label="അതേ രംഗം മലയാളത്തിൽ — Same scene in Malayalam">
-        <span class="script-card-num">മലയാളം · No. 01</span>
-        <p class="heading">INT. CHAYAKKADA — DAWN</p>
-        <p class="action">കെറ്റിലിൽ നിന്ന് ആവി ഉയരുന്നു. പുറത്ത് മഴ തോർന്നു. <strong>വർഗീസ്</strong> ഒരു ഗ്ലാസ് കൗണ്ടറിൽ വെച്ച് കാത്തിരിക്കുന്നു.</p>
-        <p class="character">VARGHESE</p>
-        <p class="paren">(quietly)</p>
-        <p class="dialog">"സ്ക്രിപ്റ്റ് നീ എഴുതുകയല്ല. അത് നിന്നോട് പറയുന്നത് കേട്ടെഴുതുക മാത്രം."</p>
-        <p class="action">ഒരു ബസ് വന്നു നിൽക്കുന്നു. ദിവസം തുടങ്ങുന്നു.</p>
-        <p class="transition">Cut to →</p>
-      </article>
-
-    </div>
+    <article class="script-card ml" aria-label="അതേ രംഗം മലയാളത്തിൽ — Same scene in Malayalam">
+      <p class="heading">INT. CHAYAKKADA — DAWN</p>
+      <p class="action">കെറ്റിലിൽ നിന്ന് ആവി ഉയരുന്നു. പുറത്ത് മഴ തോർന്നു. <strong>വർഗീസ്</strong> ഒരു ഗ്ലാസ് കൗണ്ടറിൽ വെച്ച് കാത്തിരിക്കുന്നു.</p>
+      <p class="character">VARGHESE</p>
+      <p class="paren">(quietly)</p>
+      <p class="dialog">"സ്ക്രിപ്റ്റ് നീ എഴുതുകയല്ല. അത് നിന്നോട് പറയുന്നത് കേട്ടെഴുതുക മാത്രം."</p>
+      <p class="action">ഒരു ബസ് വന്നു നിൽക്കുന്നു. ദിവസം തുടങ്ങുന്നു.</p>
+      <p class="transition">Cut to →</p>
+    </article>
   </div>
 </section>
 
 <!-- ─── REFERENCE ─── -->
-<section class="reference" id="manual" aria-labelledby="manual-title">
-  <div class="container">
-    <div class="slug" aria-hidden="true">
-      <span>EXT. THE MANUAL — CONTINUOUS</span>
-      <span class="slug-num">04.</span>
+<section class="section" id="guide" aria-labelledby="guide-title">
+  <div class="section-head">
+    <span class="eyebrow">Quick reference</span>
+    <h2 id="guide-title">A pocket guide.</h2>
+    <p class="lead">Three columns covering the editor, the production prep, and the file/output side. Full manual lives inside the app under <strong>Help</strong>.</p>
+  </div>
+
+  <div class="reference-cols">
+
+    <div class="ref">
+      <h3>The editor</h3>
+
+      <h4>Element navigation</h4>
+      <p>The editor cycles through six element types via <kbd>Tab</kbd> and <kbd>Enter</kbd>.</p>
+      <ul>
+        <li>Scene Heading → <kbd>Enter</kbd> → Action</li>
+        <li>Action → <kbd>Tab</kbd> → Character</li>
+        <li>Character → <kbd>Enter</kbd> → Dialogue</li>
+        <li>Anywhere → <kbd>Shift+Enter</kbd> → new Scene Heading</li>
+        <li>Anywhere → <kbd>Cmd+Shift+T</kbd> → Transition</li>
+      </ul>
+
+      <h4>Malayalam input</h4>
+      <p><kbd>Ctrl+Space</kbd> toggles English ↔ Malayalam mid-sentence. Three schemes — <strong>Mozhi</strong>, <strong>Inscript 2</strong>, <strong>Inscript 1</strong>.</p>
+
+      <h4>Smart features</h4>
+      <p>Smart curly quotes. Character autocomplete after 2 characters (Malayalam-aware). Auto-uppercase for scene headings and character cues.</p>
     </div>
 
-    <div class="reference-head">
-      <p class="eyebrow">Reference Card</p>
-      <h2 id="manual-title">A pocket guide. <em>For when the page gets crowded.</em></h2>
+    <div class="ref">
+      <h3>Production</h3>
+
+      <h4>Scene cards</h4>
+      <p>Each card carries description, shoot notes, extras list, location group, and shoot date. <kbd>Cmd+Shift+K</kbd> opens the Cards view.</p>
+
+      <h4>Daily Shoot List</h4>
+      <p>From the Export modal, pick <strong>Daily Shoot List</strong> for a per-day production report — scenes grouped by date &amp; location with page-eighths totals.</p>
+
+      <h4>Statistics</h4>
+      <p><kbd>Cmd+Shift+I</kbd> opens five views — Overview, Characters, Locations, Schedule, Episodes — with sortable columns and CSV export.</p>
+
+      <h4>Web series</h4>
+      <p><kbd>Cmd+Shift+N</kbd> creates a new series file. Each episode has its own metadata, scene cards, and story sections.</p>
     </div>
 
-    <div class="reference-cols">
+    <div class="ref">
+      <h3>Files &amp; output</h3>
 
-      <div class="ref-block">
-        <h3>The Editor</h3>
+      <h4>The .screenplay format</h4>
+      <p>Plain JSON. Human-readable. Open it in any text editor if you ever need to.</p>
 
-        <h4>Element navigation</h4>
-        <p>The editor cycles through six element types via <kbd>Tab</kbd> and <kbd>Enter</kbd>:</p>
-        <ul>
-          <li>Scene Heading → <kbd>Enter</kbd> → Action</li>
-          <li>Action → <kbd>Tab</kbd> → Character</li>
-          <li>Character → <kbd>Enter</kbd> → Dialogue</li>
-          <li>Dialogue → <kbd>Tab</kbd> → Parenthetical</li>
-          <li>Anywhere → <kbd>Shift+Enter</kbd> → new Scene Heading</li>
-          <li>Anywhere → <kbd>Cmd+Shift+T</kbd> → Transition</li>
-        </ul>
+      <h4>Export</h4>
+      <ul>
+        <li><strong>PDF</strong> — Hollywood or Indian, with optional Title page, Synopsis, Treatment, Narrative, Scene Cards, Daily Shoot List sections</li>
+        <li><strong>Fountain</strong> — plain text format compatible with Highland and Fade In</li>
+        <li><strong>Plain text</strong> — formatted .txt with proper indentation</li>
+      </ul>
 
-        <h4>Malayalam input</h4>
-        <p><kbd>Ctrl+Space</kbd> toggles English ↔ Malayalam mid-sentence. Three schemes available — <strong>Mozhi</strong>, <strong>Inscript 2</strong>, <strong>Inscript 1</strong>.</p>
-
-        <h4>Smart features</h4>
-        <p>Smart curly quotes as you type. Character autocomplete after 2 characters (Malayalam-aware). Auto-uppercase for scene headings and character cues.</p>
-      </div>
-
-      <div class="ref-block">
-        <h3>Production</h3>
-
-        <h4>Scene cards</h4>
-        <p>Each scene card carries a description, shoot notes, extras list, location group, and shoot date. <kbd>Cmd+Shift+K</kbd> opens the Cards view.</p>
-
-        <h4>Daily Shoot List</h4>
-        <p>From the Export modal, pick <strong>Daily Shoot List</strong> to emit a per-day production report: scenes grouped by shoot date, sub-grouped by location group, with industry-standard page-eighths totals — ready to hand to the AD.</p>
-
-        <h4>Statistics</h4>
-        <p><kbd>Cmd+Shift+I</kbd> opens five views — Overview, Characters, Locations, Schedule, Episodes — with <strong>sortable columns</strong> and <strong>CSV export</strong>.</p>
-
-        <h4>Web series</h4>
-        <p><kbd>Cmd+Shift+N</kbd> creates a new series file. Each episode has its own metadata, scene cards, and story sections. Export the active episode or the entire series.</p>
-      </div>
-
-      <div class="ref-block">
-        <h3>Files &amp; Output</h3>
-
-        <h4>The .screenplay format</h4>
-        <p>Plain JSON. Human-readable. Future-proof. Open it in any text editor if you ever need to.</p>
-
-        <h4>Export</h4>
-        <ul>
-          <li><strong>PDF</strong> — Hollywood or Indian, with optional Title page, Synopsis, Treatment, Narrative, Scene Cards, Daily Shoot List sections</li>
-          <li><strong>Fountain</strong> — plain text screenwriting format, compatible with Highland and Fade In</li>
-          <li><strong>Plain text</strong> — formatted .txt with proper indentation</li>
-        </ul>
-
-        <h4>Autosave &amp; recovery</h4>
-        <p>A hidden recovery file is updated as you type. Survives crashes and power loss; cleared on a normal <kbd>Cmd+S</kbd>.</p>
-
-        <h4>Free &amp; open source</h4>
-        <p><a href="https://github.com/stultus/scriptty">Source on GitHub</a> · MIT license · Read the code, file an issue, or send a pull request.</p>
-      </div>
-
+      <h4>Autosave &amp; recovery</h4>
+      <p>A hidden recovery file is updated as you type. Survives crashes and power loss.</p>
     </div>
+
   </div>
 </section>
 
-<p class="cut-to" aria-hidden="true">Cut to →</p>
+<!-- ─── WHAT'S NEW ─── -->
+<section class="section warm" id="whats-new" aria-labelledby="whats-new-title">
+  <div class="section-head" style="text-align: center; margin-left: auto; margin-right: auto;">
+    <span class="eyebrow with-rules">v0.8.0</span>
+    <h2 id="whats-new-title" style="margin: 16px auto 0;">What's <em>new</em>.</h2>
+  </div>
 
-<!-- ─── PULL QUOTE ─── -->
-<div class="container" style="padding: 40px var(--gutter) 60px;">
-  <blockquote class="pull-quote">
-    Set in <em>Manjari</em>, <em>Courier&nbsp;Prime</em>, and <em>Fraunces</em>. Written for the page.
-  </blockquote>
-</div>
+  <div class="notes">
 
-<!-- ─── ISSUE NOTES (changelog) ─── -->
-<section class="issue-notes" id="issue-notes" aria-labelledby="issue-notes-title">
-  <div class="container">
-    <div class="notes-head">
-      <p class="eyebrow">In this issue · v0.8.0</p>
-      <h2 id="issue-notes-title">What's <em>new</em>.</h2>
+    <article class="note">
+      <span class="note-num">№ 01</span>
+      <div>
+        <h3>Production planning, end to end</h3>
+        <p>Scene cards carry a location group, shoot date, and extras. Daily Shoot List PDF groups scenes by day &amp; location with industry-standard page-eighths. Statistics adds Schedule and Episodes views with sortable columns and CSV export.</p>
+      </div>
+    </article>
+
+    <article class="note">
+      <span class="note-num">№ 02</span>
+      <div>
+        <h3>Editorial-grade PDF redesign</h3>
+        <p>Title page, prose covers, and scene-card / shoot-list openers share one masthead vocabulary. Per-section page numbering. Transition widow control. Courier Prime now bundled into every PDF.</p>
+      </div>
+    </article>
+
+    <article class="note">
+      <span class="note-num">№ 03</span>
+      <div>
+        <h3>Episode Breakout view</h3>
+        <p>For series projects: a top-level card per episode with a scene preview list. Click an episode to drill into its scenes. IDE-style explorer with per-episode status, drag-to-reorder, hover-rename.</p>
+      </div>
+    </article>
+
+    <article class="note">
+      <span class="note-num">№ 04</span>
+      <div>
+        <h3>Paste to Screenplay</h3>
+        <p>Drop plain text into the editor and Scriptty converts it into a properly formatted screenplay — Hollywood-style detection plus a Malayalam-aware character-cue path.</p>
+      </div>
+    </article>
+
+    <article class="note">
+      <span class="note-num">№ 05</span>
+      <div>
+        <h3>Autosave &amp; crash recovery</h3>
+        <p>Background autosave to a hidden recovery file. Survives crashes and power loss. A normal save clears it.</p>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+<!-- ─── CREDITS & THANKS ─── -->
+<section class="section" id="credits" aria-labelledby="credits-title">
+  <div class="section-head">
+    <span class="eyebrow">Behind Scriptty</span>
+    <h2 id="credits-title">Credits &amp; thanks.</h2>
+  </div>
+
+  <div class="credits-grid">
+
+    <div class="credits-group">
+      <h3>Built by</h3>
+      <ul>
+        <li>
+          <span class="name">Hrishikesh Bhaskaran</span>
+          <span class="link"><a href="https://stultus.in">stultus.in</a></span>
+        </li>
+        <li>
+          <span class="name">Hiran Venugopalan</span>
+          <span class="link"><a href="https://hiran.in">hiran.in</a></span>
+        </li>
+      </ul>
     </div>
 
-    <div class="notes-grid">
-
-      <article class="note-item">
-        <span class="note-num">№ 01</span>
-        <div class="note-body">
-          <h3>Production planning, end to end</h3>
-          <p>Scene cards carry a location group, shoot date, and extras. Daily Shoot List PDF groups scenes by day &amp; location with industry-standard page-eighths. Statistics panel gains Schedule and Episodes views with sortable columns and CSV export.</p>
-        </div>
-      </article>
-
-      <article class="note-item">
-        <span class="note-num">№ 02</span>
-        <div class="note-body">
-          <h3>Editorial-grade PDF redesign</h3>
-          <p>Title page, prose covers, and scene-card / shoot-list openers share one masthead vocabulary — eyebrow, dominant title, asterism, Courier-set credits. Per-section page numbering. Transition widow control. Courier Prime now bundled into every PDF.</p>
-        </div>
-      </article>
-
-      <article class="note-item">
-        <span class="note-num">№ 03</span>
-        <div class="note-body">
-          <h3>Episode Breakout view</h3>
-          <p>For series projects: a top-level card per episode with a scene preview list. Click an episode to drill into its scenes. IDE-style explorer with per-episode status, drag-to-reorder, hover-rename.</p>
-        </div>
-      </article>
-
-      <article class="note-item">
-        <span class="note-num">№ 04</span>
-        <div class="note-body">
-          <h3>Paste to Screenplay</h3>
-          <p>Drop plain text into the editor and Scriptty converts it into a properly formatted screenplay — Hollywood-style detection plus a Malayalam-aware character-cue path.</p>
-        </div>
-      </article>
-
-      <article class="note-item">
-        <span class="note-num">№ 05</span>
-        <div class="note-body">
-          <h3>Autosave &amp; crash recovery</h3>
-          <p>Background autosave to a hidden recovery file. Survives crashes and power loss. A normal save clears it. Even an unsaved new document doesn't disappear if the lights go out.</p>
-        </div>
-      </article>
-
-      <article class="note-item">
-        <span class="note-num">№ 06</span>
-        <div class="note-body">
-          <h3>Smart curly quotes &amp; adjustable editor type</h3>
-          <p>Straight quotes turn curly as you type, in both Latin and Malayalam contexts. Editor font size is now adjustable from Settings — independent of the printed PDF body size.</p>
-        </div>
-      </article>
-
+    <div class="credits-group">
+      <h3>Inputs &amp; feedback</h3>
+      <ul>
+        <li>
+          <span class="name">Abraham Joseph</span>
+        </li>
+        <li>
+          <span class="name">Aashiq Abu</span>
+          <span class="role">Filmmaker</span>
+        </li>
+        <li>
+          <span class="name">Sijith Vijayakumar</span>
+        </li>
+      </ul>
     </div>
+
+    <div class="credits-group">
+      <h3>Contribute</h3>
+      <p>Scriptty is open source under the MIT license. Bugs, feature ideas, and pull requests are welcome on <a href="https://github.com/stultus/scriptty">GitHub</a>.</p>
+    </div>
+
   </div>
 </section>
 
 </main>
 
-<!-- ─── COLOPHON ─── -->
-<footer class="colophon" id="credits">
-  <div class="container">
-    <div class="colophon-grid">
-
-      <div>
-        <div class="col-mast"><span class="diamond" aria-hidden="true"></span>Scriptty</div>
-        <p class="col-mast-deck">Free, offline screenwriting for Malayalam &amp; English writers. Written in <em>Kerala</em>, free for the world.</p>
-      </div>
-
-      <div class="col-section">
-        <h4>The App</h4>
-        <ul>
-          <li><a href="#download">Download</a></li>
-          <li><a href="#departments">Features</a></li>
-          <li><a href="#manual">Manual</a></li>
-          <li><a href="https://github.com/stultus/scriptty/releases">All releases</a></li>
-        </ul>
-      </div>
-
-      <div class="col-section">
-        <h4>The Source</h4>
-        <ul>
-          <li><a href="https://github.com/stultus/scriptty">GitHub repository</a></li>
-          <li><a href="https://github.com/stultus/scriptty/issues">Report an issue</a></li>
-          <li><a href="https://github.com/stultus/scriptty/blob/main/LICENSE">MIT License</a></li>
-          <li><a href="https://github.com/stultus">@stultus</a></li>
-        </ul>
-      </div>
-
+<!-- ─── FOOTER ─── -->
+<footer>
+  <div class="foot">
+    <div>
+      <div class="foot-mark">Scriptty</div>
+      <p class="foot-deck">Free, offline screenwriting for Malayalam &amp; English writers. Written in Kerala, free for the world.</p>
     </div>
 
-    <div class="colophon-footer">
-      <span>© 2026 Hrishikesh Bhaskaran · MIT</span>
-      <span class="set-in">Set on the web in <em>Fraunces</em>, <em>Source Serif 4</em>, <em>Courier Prime</em>, and <em>Manjari</em>. Printed in the app on <em>Manjari</em>, <em>Noto Sans Malayalam</em>, and <em>Courier Prime</em>.</span>
+    <div>
+      <h4>The app</h4>
+      <ul>
+        <li><a href="#download">Download</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#guide">Quick guide</a></li>
+        <li><a href="https://github.com/stultus/scriptty/releases">All releases</a></li>
+      </ul>
     </div>
 
+    <div>
+      <h4>The source</h4>
+      <ul>
+        <li><a href="https://github.com/stultus/scriptty">GitHub repository</a></li>
+        <li><a href="https://github.com/stultus/scriptty/issues">Report an issue</a></li>
+        <li><a href="https://github.com/stultus/scriptty/blob/main/LICENSE">MIT License</a></li>
+        <li><a href="https://stultus.in">stultus.in</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="coda">
+    <span>© 2026 Hrishikesh Bhaskaran · MIT</span>
+    <span class="set-in">Set on the web in <em>Fraunces</em>, <em>Source Serif 4</em>, <em>Courier Prime</em>, and <em>Manjari</em>.</span>
   </div>
 </footer>
 
-<!-- ─── Download buttons (dynamic) + analytics ─── -->
+<!-- ─── Download buttons + analytics ─── -->
 <script>
   // SVG icons reused for the OS download buttons.
   const icons = {
@@ -1586,10 +1235,6 @@
     linux: '<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.62 8.35c-.42.28-1.42.93-2.61.93-1.19 0-2.18-.65-2.61-.93-.55-.36-2.42-1.86-2.42-4.42 0-2.34 1.94-3.93 4.93-3.93s4.93 1.59 4.93 3.93c0 2.56-1.86 4.06-2.42 4.42zM12 9.31c-2.36 0-3.36 1.04-4.43 1.85-.94.71-3.74 1.74-3.74 4.71 0 2.94 2.85 4.91 5.16 5.46.69.16 1.37.34 1.71.65.34.31.34 1.08-.34 1.42-.69.34-2.06.34-3.43-.34-1.37-.69-1.71-1.71-1.71-2.06v-.34c-.34 0-.69.34-.69.69 0 1.37 1.71 2.74 4.46 2.74s4.49-1.37 4.49-2.74c0-.34-.34-.69-.69-.69v.34c0 .34-.34 1.37-1.71 2.06-1.37.69-2.74.69-3.43.34-.69-.34-.69-1.11-.34-1.42.34-.31 1.03-.49 1.71-.65 2.31-.55 5.16-2.51 5.16-5.46 0-2.97-2.8-4-3.74-4.71-1.07-.81-2.06-1.85-4.43-1.85z"/></svg>'
   };
 
-  // Map of asset key → human label. The first item in items[] becomes the
-  // primary CTA when we can't detect the user's platform; otherwise the
-  // detected platform is promoted to primary and the rest collapse into
-  // "Other platforms".
   const items = [
     { key: 'macos_arm',      icon: icons.apple,   label: 'macOS · Apple Silicon',  primaryLabel: 'Download for macOS · Apple Silicon' },
     { key: 'macos_intel',    icon: icons.apple,   label: 'macOS · Intel',          primaryLabel: 'Download for macOS · Intel' },
@@ -1599,9 +1244,8 @@
   ];
 
   // Best-effort guess at the user's platform so we can promote the matching
-  // build. Returns a key that matches downloads.json assets, or null if
-  // we can't confidently detect — in that case we show all platforms in a
-  // single row so the user picks for themselves.
+  // build. Returns a key from items[].key, or null if we can't confidently
+  // detect — in which case we show every platform side by side.
   async function detectPlatform() {
     const uaData = navigator.userAgentData;
     const ua = (navigator.userAgent || '').toLowerCase();
@@ -1610,7 +1254,6 @@
     const isWin = platform.includes('win') || ua.includes('windows');
     const isLinux = platform.includes('linux') || ua.includes('linux');
     if (/iphone|ipad|android/i.test(ua)) return null;
-
     if (isMac) {
       let arch = 'arm';
       if (uaData && typeof uaData.getHighEntropyValues === 'function') {
@@ -1626,13 +1269,12 @@
     return null;
   }
 
-  // Compose a download anchor. The `data-platform` attribute lets the
-  // delegated click handler below fire a GA `download` event with the
-  // platform key, so we get per-platform download counts in Analytics
-  // without instrumenting the app itself.
+  // Build a download anchor. data-download-platform is read by the analytics
+  // listener at the bottom — every click fires a GA `download` event with the
+  // platform key, no in-app instrumentation required.
   function btn(url, fallbackUrl, key, icon, label, primary) {
     const href = url || fallbackUrl;
-    const cls = primary ? 'btn-download' : 'btn-download secondary';
+    const cls = primary ? 'btn' : 'btn secondary';
     return '<a href="' + href + '" class="' + cls + '" data-download-platform="' + key + '" rel="noopener">' +
       '<span class="os-icon">' + icon + '</span>' + label + '</a>';
   }
@@ -1653,29 +1295,25 @@
         const primary = items.find(i => i.key === detected);
         const others = items.filter(i => i.key !== detected);
         html += btn(a[primary.key], fallback, primary.key, primary.icon, primary.primaryLabel, true);
-        html += '<details class="other-platforms-details"><summary>Other platforms</summary><div class="download-group">';
+        html += '<details class="other-platforms"><summary>Other platforms</summary><div class="download-group">';
         for (const o of others) html += btn(a[o.key], fallback, o.key, o.icon, o.label, false);
         html += '</div></details>';
       } else {
-        // No confident detection — show every platform.
         for (const o of items) html += btn(a[o.key], fallback, o.key, o.icon, o.label, false);
       }
       container.innerHTML = html;
     })
     .catch(err => {
       const container = document.getElementById('download-buttons');
-      container.innerHTML = '<a href="https://github.com/stultus/scriptty/releases/latest" class="btn-download" data-download-platform="fallback">Latest release on GitHub →</a>';
+      container.innerHTML = '<a href="https://github.com/stultus/scriptty/releases/latest" class="btn" data-download-platform="fallback">Latest release on GitHub →</a>';
       console.error('downloads.json fetch failed:', err);
     });
 
   // ─── DOWNLOAD CLICK TRACKING ───
-  // Single delegated listener — fires a GA4 `download` event whenever the
-  // user clicks any installer button. The button's `data-download-platform`
-  // attribute carries the platform key (macos_arm / windows / linux_deb /
-  // ...) so per-platform counts roll up cleanly in GA's Events report.
-  // Falls through silently if gtag isn't loaded yet (e.g. ad-blockers,
-  // first-paint clicks) — the user's browser still navigates to the
-  // download URL.
+  // Single delegated listener on the document. Every installer button has
+  // data-download-platform set; this fires a GA4 `download` event with that
+  // platform on click. No app-side instrumentation, no leak of the offline
+  // promise — only voluntary visits to the marketing site report downloads.
   document.addEventListener('click', (e) => {
     const a = e.target.closest('a[data-download-platform]');
     if (!a) return;

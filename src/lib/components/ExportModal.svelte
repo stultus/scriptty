@@ -22,6 +22,11 @@
   let includeScreenplay = $state(true);
   let includeNarrative = $state(false);
   let includeSceneCards = $state(false);
+  /** Compact card view — strips description / notes / location group
+   *  from each card so the breakdown reads as a one-line-per-scene
+   *  shoot-day overview. Only meaningful when scene cards are
+   *  included; the toggle is hidden otherwise. */
+  let compactSceneCards = $state(false);
   /** Daily Shoot List PDF section (#124) — only meaningful when at least
    *  one scene card has a `scheduled_date`. */
   let includeShootList = $state(false);
@@ -157,7 +162,6 @@
     const startNum = doc.settings?.scene_number_start ?? 1;
     let sceneIndex = -1; // -1 means "no scene heading seen yet"
     let currentSceneCharacters: string[] = [];
-    let currentSceneCharCount = 0;
 
     const finalizePreviousScene = () => {
       if (sceneIndex < 0 || sceneIndex >= cards.length) return;
@@ -176,9 +180,6 @@
       }
 
       cards[sceneIndex].characters = merged.join(', ');
-      // Rough page estimate: ~3000 chars per page
-      const pages = Math.max(0.1, currentSceneCharCount / 3000);
-      cards[sceneIndex].page_estimate = `~${pages.toFixed(1)} pages`;
     };
 
     for (const node of content.content) {
@@ -186,7 +187,6 @@
         finalizePreviousScene();
         sceneIndex++;
         currentSceneCharacters = [];
-        currentSceneCharCount = 0;
 
         const headingText = (node.content ?? []).map((c) => c.text ?? '').join('');
         const { location, time } = parseSceneHeading(headingText);
@@ -201,7 +201,6 @@
           location,
           time,
           characters: '',
-          page_estimate: '',
           description: manualCard?.description ?? '',
           shoot_notes: manualCard?.shoot_notes ?? '',
           // Production-planning fields surfaced on the printed
@@ -215,11 +214,6 @@
         if (charName && !currentSceneCharacters.includes(charName)) {
           currentSceneCharacters.push(charName);
         }
-      }
-
-      // Count characters for page estimate
-      if (node.content) {
-        currentSceneCharCount += node.content.reduce((sum, c) => sum + (c.text ?? '').length, 0);
       }
     }
 
@@ -605,6 +599,7 @@
           include_screenplay: includeScreenplay,
           include_narrative: includeNarrative,
           include_scene_cards: includeSceneCards,
+          compact_scene_cards: compactSceneCards,
           include_shoot_list: includeShootList,
           format,
           page_break_after_scene: pageBreakAfterScene,
@@ -985,6 +980,23 @@
                 onclick={() => { includePageNumbers = !includePageNumbers; }}
               ><span class="opt-thumb"></span></button>
             </label>
+
+            {#if includeSceneCards}
+              <label class="opt-row">
+                <span class="opt-label">
+                  <span class="opt-name">Compact card view</span>
+                  <span class="opt-desc">Slug + cast only — packs more cards per page</span>
+                </span>
+                <button
+                  type="button"
+                  class="opt-toggle"
+                  role="switch"
+                  aria-label="Compact scene card view"
+                  aria-checked={compactSceneCards}
+                  onclick={() => { compactSceneCards = !compactSceneCards; }}
+                ><span class="opt-thumb"></span></button>
+              </label>
+            {/if}
 
             {#if sceneCount > 0 && (includeScreenplay || includeSceneCards) && !(isSeriesProject && exportScope === 'series')}
               <label class="opt-row">

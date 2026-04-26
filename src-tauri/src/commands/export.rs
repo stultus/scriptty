@@ -216,6 +216,14 @@ pub struct ExportOptions {
     pub include_narrative: bool,
     /// Include scene cards breakdown
     pub include_scene_cards: bool,
+    /// Render the breakdown in compact mode — each card shows only
+    /// its eyebrow, slug, and cast (no description / notes /
+    /// location group). Useful as a shoot-day overview where the
+    /// AD doesn't need the full body. `#[serde(default)]` so older
+    /// frontends that don't send the field default to detailed
+    /// (the previous-and-still-default behavior).
+    #[serde(default)]
+    pub compact_scene_cards: bool,
     /// Include the Daily Shoot List — scenes grouped by scheduled_date,
     /// sub-grouped by location_group, with page-eighths totals per day.
     /// `#[serde(default)]` so older frontends omit the field harmlessly. (#124)
@@ -384,6 +392,7 @@ pub fn export_combined_pdf(
             &document.meta,
             has_content,
             options.include_page_numbers,
+            options.compact_scene_cards,
         ));
         has_content = true;
     }

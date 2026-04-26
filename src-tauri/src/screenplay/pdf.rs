@@ -1960,7 +1960,13 @@ pub fn generate_prose_section_markup(section_name: &str, body: &str, font_name: 
 /// * `font_name` — The font family name for rendering
 /// * `meta` — Document metadata for title and credits
 /// * `needs_pagebreak` — whether to emit a `#pagebreak()` before the section.
-pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &ScreenplayMeta, needs_pagebreak: bool, page_numbers: bool) -> String {
+/// * `page_numbers` — whether the export wants per-page numbering.
+/// * `compact` — when true, render each card as a minimal at-a-glance
+///   block (eyebrow + slug + cast only — no description, notes,
+///   location group, or empty-state). Used by the export's "Compact
+///   card view" toggle.
+#[allow(clippy::too_many_arguments)]
+pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &ScreenplayMeta, needs_pagebreak: bool, page_numbers: bool, compact: bool) -> String {
     let mut markup = String::new();
 
     // Only emit a page break if there's preceding content. When page
@@ -2065,81 +2071,133 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
         }
     }
 
-    markup.push_str("\n#v(1.4cm)\n\n");
+    // The cover masthead always gets its own page — sharing the
+    // page with the first row of cards reads as cluttered
+    // (masthead competing with production data). A clean break
+    // lets the cover read as a section divider and lets the
+    // breakdown read as a self-contained tear sheet.
+    markup.push_str("\n#pagebreak()\n\n");
 
-    // Cards rendered into a two-column FLOW (Typst `#columns`) so
-    // each card hugs its own content height. The previous `#grid`
-    // with `(1fr, 1fr)` forced both cards in a row to match the
-    // taller one — a 0.1-page card paired with a long card became
-    // a tall block of empty space. Worse: an odd final card sat
-    // alone in a row with the right cell blank for the rest of
-    // the page.
+    // Cards rendered as a two-column FLOW with adaptive width:
+    // - "Compact" cards (short bodies) flow inside `#columns(2)`,
+    //   packing top-down and spilling into the right column.
+    // - "Wide" cards (long bodies — body text exceeds
+    //   LONG_CARD_THRESHOLD) break OUT of the columns flow and
+    //   render full-page-width, with their description split into
+    //   2 inner columns. This keeps a long card from becoming a
+    //   tall narrow tower; instead it gets the width it needs and
+    //   stays roughly square.
     //
-    // `#columns(2)` packs cards top-down in the left column, spills
-    // into the right column, and balances at page boundaries —
-    // exactly the magazine "tear sheet" densification we want.
-    // Each card is `breakable: false` so a single card never splits
-    // across columns or pages.
+    // Each card is `breakable: false` so it never splits across
+    // columns or pages.
+    //
+    // In compact mode (export setting), every card renders as a
+    // minimal slug-only block — no description, notes, location
+    // group, or empty-state — and the wide-spanning logic is
+    // bypassed (compact cards are never long enough to span).
     //
     // cards_data is a JSON array of:
     // [{ scene_number, heading, location, time, characters,
-    //    page_estimate, description, shoot_notes }]
+    //    description, shoot_notes, scheduled_date, location_group }]
+    const LONG_CARD_THRESHOLD: usize = 500;
+
     if let Some(cards) = cards_data.as_array() {
         if !cards.is_empty() {
-            markup.push_str("#columns(2, gutter: 10pt)[\n");
+            // Walk the cards, grouping consecutive non-wide cards
+            // into a single `#columns(2)` block, flushing it when
+            // we hit a wide card (which renders standalone), then
+            // resuming a fresh columns block.
+            let mut i = 0;
+            while i < cards.len() {
+                let run_start = i;
+                while i < cards.len() {
+                    if !compact && card_body_len(&cards[i]) > LONG_CARD_THRESHOLD {
+                        break;
+                    }
+                    i += 1;
+                }
 
-            for (card_idx, card) in cards.iter().enumerate() {
-                let scene_num = card.get("scene_number").and_then(|v| v.as_u64()).unwrap_or(0);
-                let heading = card.get("heading").and_then(|v| v.as_str()).unwrap_or("");
-                let characters = card.get("characters").and_then(|v| v.as_str()).unwrap_or("");
-                let description = card.get("description").and_then(|v| v.as_str()).unwrap_or("");
-                let shoot_notes = card.get("shoot_notes").and_then(|v| v.as_str()).unwrap_or("");
-                let page_estimate = card.get("page_estimate").and_then(|v| v.as_str()).unwrap_or("");
-                // Production-planning fields — only rendered on the
-                // card when the writer has actually filled them in.
-                // Empty string is the "not set" sentinel for both.
-                let scheduled_date = card.get("scheduled_date").and_then(|v| v.as_str()).unwrap_or("").trim();
-                let location_group = card.get("location_group").and_then(|v| v.as_str()).unwrap_or("").trim();
+                // Emit the run [run_start..i] of compact-width cards
+                // inside a 2-column flow.
+                if i > run_start {
+                    markup.push_str("#columns(2, gutter: 10pt)[\n");
+                    for (offset, run_card) in cards[run_start..i].iter().enumerate() {
+                        emit_scene_card(&mut markup, run_card, compact, false);
+                        if run_start + offset + 1 < i {
+                            markup.push_str("  #v(10pt)\n");
+                        }
+                    }
+                    markup.push_str("]\n\n");
+                }
 
-                // Parse setting + time from the heading so the card
-                // eyebrow renders "INTERIOR · DAY" / "EXTERIOR · NIGHT"
-                // the same way the on-screen card does.
-                let (setting_word, time_word) = parse_card_setting_time(heading);
-                // Time-of-day determines the gutter number color.
-                // Hex colors are written via `rgb(...)` wrapped in
-                // double-pound raw strings so Rust doesn't mistake
-                // the `#` for a string delimiter.
-                let number_color = match time_word.as_str() {
-                    "NIGHT" | "DUSK" | "EVENING" => r##"rgb("#7a2b2b")"##,
-                    "DAY" | "MORNING" | "AFTERNOON" | "DAWN" => r##"rgb("#b76d0f")"##,
-                    _ => "luma(80)",
-                };
+                // Emit the wide card (if any) standalone at full
+                // page width. A small vertical gap follows so the
+                // next columns block doesn't butt against it.
+                if i < cards.len() {
+                    emit_scene_card(&mut markup, &cards[i], compact, true);
+                    markup.push_str("\n#v(10pt)\n\n");
+                    i += 1;
+                }
+            }
+        }
+    }
 
-                // Build the eyebrow text — "INTERIOR · DAY",
-                // "EXTERIOR", or just the time word.
-                let eyebrow_text = match (setting_word.is_empty(), time_word.is_empty()) {
-                    (false, false) => format!("{} · {}", setting_word, time_word),
-                    (false, true) => setting_word.clone(),
-                    (true, false) => time_word.clone(),
-                    (true, true) => String::new(),
-                };
+    markup
+}
 
-                // Card body. Two-column inner grid: hero number
-                // gutter on the left, body on the right. The
-                // vertical rule between the two used to be a
-                // dedicated 0.5pt grid column with `rect(height:
-                // 100%)` — but Typst resolves `height: 100%` to
-                // the parent column's available height, which
-                // under `#columns(2)` is the WHOLE page column.
-                // That made every card's border stretch to the
-                // page bottom regardless of content. Fixed by
-                // dropping the rect column and putting the divider
-                // on the body block's left border instead — the
-                // body's height is its content height, so the
-                // rule extends naturally to whatever the card
-                // actually needs and the outer block hugs it.
-                markup.push_str(&format!(
-                    r#"  #block(stroke: 0.5pt + luma(180), radius: 4pt, inset: 0pt, width: 100%, breakable: false)[
+/// Total character length of the writer-authored body fields on a
+/// card — used to decide whether a card should break out of the
+/// 2-column flow and render full-width. Counts description + shoot
+/// notes; eyebrow / slug / cast / dates are short and bounded so
+/// they don't drive the decision.
+fn card_body_len(card: &Value) -> usize {
+    let d = card.get("description").and_then(|v| v.as_str()).unwrap_or("").len();
+    let s = card.get("shoot_notes").and_then(|v| v.as_str()).unwrap_or("").len();
+    d + s
+}
+
+/// Emit a single scene card block. Pulled out of the parent
+/// generator so the same code path serves three modes:
+///   - normal: inside `#columns(2)`, half-page width
+///   - wide: standalone, full-page width with the description split
+///     into 2 inner sub-columns so line lengths stay readable
+///   - compact: minimal — eyebrow, slug, cast only — used by the
+///     export's "Compact card view" toggle
+///
+/// The caller controls inter-card spacing; this function emits
+/// only the card itself.
+fn emit_scene_card(markup: &mut String, card: &Value, compact: bool, full_width: bool) {
+    let scene_num = card.get("scene_number").and_then(|v| v.as_u64()).unwrap_or(0);
+    let heading = card.get("heading").and_then(|v| v.as_str()).unwrap_or("");
+    let characters = card.get("characters").and_then(|v| v.as_str()).unwrap_or("");
+    let description = card.get("description").and_then(|v| v.as_str()).unwrap_or("");
+    let shoot_notes = card.get("shoot_notes").and_then(|v| v.as_str()).unwrap_or("");
+    let scheduled_date = card.get("scheduled_date").and_then(|v| v.as_str()).unwrap_or("").trim();
+    let location_group = card.get("location_group").and_then(|v| v.as_str()).unwrap_or("").trim();
+
+    // Parse setting + time from the heading so the eyebrow renders
+    // "INTERIOR · DAY" / "EXTERIOR · NIGHT" the same way the
+    // on-screen card does.
+    let (setting_word, time_word) = parse_card_setting_time(heading);
+    let number_color = match time_word.as_str() {
+        "NIGHT" | "DUSK" | "EVENING" => r##"rgb("#7a2b2b")"##,
+        "DAY" | "MORNING" | "AFTERNOON" | "DAWN" => r##"rgb("#b76d0f")"##,
+        _ => "luma(80)",
+    };
+
+    let eyebrow_text = match (setting_word.is_empty(), time_word.is_empty()) {
+        (false, false) => format!("{} · {}", setting_word, time_word),
+        (false, true) => setting_word.clone(),
+        (true, false) => time_word.clone(),
+        (true, true) => String::new(),
+    };
+
+    // Outer block + inner gutter/body grid. The vertical rule
+    // between hero number and body lives on the body block's left
+    // border so the rule's height = content height (avoiding the
+    // `rect(height: 100%)` page-stretch bug).
+    markup.push_str(&format!(
+        r#"  #block(stroke: 0.5pt + luma(180), radius: 4pt, inset: 0pt, width: 100%, breakable: false)[
     #grid(
       columns: (13mm, 1fr),
       rows: auto,
@@ -2147,109 +2205,101 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
       pad(top: 11pt, bottom: 9pt)[#text(font: "Courier Prime", size: 18pt, weight: "bold", tracking: 0.04em, fill: {})[{:02}]],
       block(width: 100%, inset: (top: 9pt, bottom: 10pt, left: 11pt, right: 11pt), stroke: (left: 0.5pt + luma(215)))[
 "#,
-                    number_color, scene_num,
-                ));
+        number_color, scene_num,
+    ));
 
-                // Eyebrow row — "INTERIOR · DAY" on the left,
-                // scheduled-date stamp on the right when set. Both
-                // share the same tracked-caps register so the row
-                // reads as one band of metadata.
-                if !eyebrow_text.is_empty() || !scheduled_date.is_empty() {
-                    if !scheduled_date.is_empty() {
-                        markup.push_str(&format!(
-                            "        #grid(columns: (1fr, auto), align: (left, right))[\n          #text(size: 7pt, weight: \"bold\", tracking: 0.2em, fill: luma(135))[{}]\n        ][\n          #text(font: \"Courier Prime\", size: 7pt, weight: \"bold\", tracking: 0.12em, fill: luma(135))[{}]\n        ]\n        #v(2pt)\n",
-                            escape_typst(&eyebrow_text),
-                            escape_typst(scheduled_date)
-                        ));
-                    } else {
-                        markup.push_str(&format!(
-                            "        #text(size: 7pt, weight: \"bold\", tracking: 0.2em, fill: luma(135))[{}]\n        #v(2pt)\n",
-                            escape_typst(&eyebrow_text)
-                        ));
-                    }
-                }
-
-                // Slug (the heading text, Courier bold)
-                if !heading.trim().is_empty() {
-                    markup.push_str(&format!(
-                        "        #text(font: \"Courier Prime\", size: 9.5pt, weight: \"bold\", tracking: 0.03em)[{}]\n",
-                        escape_typst(heading.trim())
-                    ));
-                }
-
-                // Location group — the production-unit cluster
-                // tag the writer assigns in the editor (e.g.
-                // "STAGE-3" or "VILLAGE-EAST"). Sits right under
-                // the slug so the AD reads "this slug, in THIS
-                // production cluster". Prefix matches the on-screen
-                // card's "Location group" label, abbreviated to
-                // "LOC" so the line stays readable on a half-column
-                // card.
-                if !location_group.is_empty() {
-                    markup.push_str(&format!(
-                        "        #v(3pt)\n        #text(size: 8pt, fill: luma(110))[#text(font: \"Courier Prime\", weight: \"bold\", tracking: 0.1em, fill: luma(140))[LOC] #text(font: \"Courier Prime\", weight: \"bold\", tracking: 0.04em)[{}]]\n",
-                        escape_typst(&location_group.to_uppercase())
-                    ));
-                }
-
-                // Cast line with the "w/" call-sheet mark
-                if !characters.is_empty() {
-                    markup.push_str(&format!(
-                        "        #v(4pt)\n        #text(size: 8.5pt, fill: luma(110))[#text(font: \"Courier Prime\", weight: \"bold\", fill: luma(140))[w/] {}]\n",
-                        escape_typst(characters)
-                    ));
-                }
-
-                // Description (body prose)
-                if !description.is_empty() {
-                    markup.push_str(&format!(
-                        "        #v(6pt)\n        #text(size: 9.5pt)[{}]\n",
-                        escape_typst(description)
-                    ));
-                }
-
-                // Notes (italic, smaller, muted)
-                if !shoot_notes.is_empty() {
-                    markup.push_str(&format!(
-                        "        #v(6pt)\n        #text(size: 8.5pt, style: \"italic\", fill: luma(110))[{}]\n",
-                        escape_typst(shoot_notes)
-                    ));
-                }
-
-                // Empty-state placeholder — when the writer has not
-                // yet filled in description or shoot notes, drop a
-                // muted em-dash so the card reads as "intentionally
-                // pending" rather than as a layout gap. Keeps every
-                // card visually anchored to the same body register.
-                if description.is_empty() && shoot_notes.is_empty() {
-                    markup.push_str(
-                        "        #v(6pt)\n        #text(size: 9.5pt, fill: luma(180))[—]\n",
-                    );
-                }
-
-                // Page estimate as a small Courier corner footer.
-                if !page_estimate.is_empty() {
-                    markup.push_str(&format!(
-                        "        #v(7pt)\n        #align(right)[#text(font: \"Courier Prime\", size: 7.5pt, weight: \"bold\", tracking: 0.08em, fill: luma(135))[{}]]\n",
-                        escape_typst(&page_estimate.to_uppercase())
-                    ));
-                }
-
-                // Close the inner grid + block. Cards are
-                // separated by a small vertical gap; the last card
-                // gets no trailing space so the columns balance
-                // cleanly at the foot.
-                markup.push_str("      ]\n    )\n  ]\n");
-                if card_idx + 1 < cards.len() {
-                    markup.push_str("  #v(10pt)\n");
-                }
-            }
-
-            markup.push_str("]\n\n");
+    // Eyebrow row — "INTERIOR · DAY" on the left, scheduled-date
+    // stamp on the right when set. One band of metadata.
+    if !eyebrow_text.is_empty() || !scheduled_date.is_empty() {
+        if !scheduled_date.is_empty() {
+            markup.push_str(&format!(
+                "        #grid(columns: (1fr, auto), align: (left, right))[\n          #text(size: 7pt, weight: \"bold\", tracking: 0.2em, fill: luma(135))[{}]\n        ][\n          #text(font: \"Courier Prime\", size: 7pt, weight: \"bold\", tracking: 0.12em, fill: luma(135))[{}]\n        ]\n        #v(2pt)\n",
+                escape_typst(&eyebrow_text),
+                escape_typst(scheduled_date)
+            ));
+        } else {
+            markup.push_str(&format!(
+                "        #text(size: 7pt, weight: \"bold\", tracking: 0.2em, fill: luma(135))[{}]\n        #v(2pt)\n",
+                escape_typst(&eyebrow_text)
+            ));
         }
     }
 
-    markup
+    // Slug
+    if !heading.trim().is_empty() {
+        markup.push_str(&format!(
+            "        #text(font: \"Courier Prime\", size: 9.5pt, weight: \"bold\", tracking: 0.03em)[{}]\n",
+            escape_typst(heading.trim())
+        ));
+    }
+
+    // Location group — only in detailed mode. Compact view
+    // intentionally drops it to keep cards minimal.
+    if !compact && !location_group.is_empty() {
+        markup.push_str(&format!(
+            "        #v(3pt)\n        #text(size: 8pt, fill: luma(110))[#text(font: \"Courier Prime\", weight: \"bold\", tracking: 0.1em, fill: luma(140))[LOC] #text(font: \"Courier Prime\", weight: \"bold\", tracking: 0.04em)[{}]]\n",
+            escape_typst(&location_group.to_uppercase())
+        ));
+    }
+
+    // Cast — shown in both modes; the "w/" call-sheet mark stays
+    // useful even on a compact at-a-glance card.
+    if !characters.is_empty() {
+        markup.push_str(&format!(
+            "        #v(4pt)\n        #text(size: 8.5pt, fill: luma(110))[#text(font: \"Courier Prime\", weight: \"bold\", fill: luma(140))[w/] {}]\n",
+            escape_typst(characters)
+        ));
+    }
+
+    if !compact {
+        // For wide (full-page) cards, render description + notes
+        // inside a 2-column inner flow so line lengths stay in
+        // the comfortable 60–80ch reading range. For compact-width
+        // cards, single-column body is already narrow enough.
+        let has_body = !description.is_empty() || !shoot_notes.is_empty();
+        if has_body && full_width {
+            markup.push_str("        #v(6pt)\n");
+            markup.push_str("        #columns(2, gutter: 12pt)[\n");
+            if !description.is_empty() {
+                markup.push_str(&format!(
+                    "          #text(size: 9.5pt)[{}]\n",
+                    escape_typst(description)
+                ));
+            }
+            if !shoot_notes.is_empty() {
+                markup.push_str(&format!(
+                    "          #v(6pt)\n          #text(size: 8.5pt, style: \"italic\", fill: luma(110))[{}]\n",
+                    escape_typst(shoot_notes)
+                ));
+            }
+            markup.push_str("        ]\n");
+        } else {
+            if !description.is_empty() {
+                markup.push_str(&format!(
+                    "        #v(6pt)\n        #text(size: 9.5pt)[{}]\n",
+                    escape_typst(description)
+                ));
+            }
+            if !shoot_notes.is_empty() {
+                markup.push_str(&format!(
+                    "        #v(6pt)\n        #text(size: 8.5pt, style: \"italic\", fill: luma(110))[{}]\n",
+                    escape_typst(shoot_notes)
+                ));
+            }
+            // Empty-state placeholder — only for half-width detailed
+            // cards. Wide cards by definition have a body; compact
+            // cards are intentionally minimal so the dash would feel
+            // out of place.
+            if description.is_empty() && shoot_notes.is_empty() {
+                markup.push_str(
+                    "        #v(6pt)\n        #text(size: 9.5pt, fill: luma(180))[—]\n",
+                );
+            }
+        }
+    }
+
+    // Close inner block, grid, outer block.
+    markup.push_str("      ]\n    )\n  ]\n");
 }
 
 /// Parse the setting (INTERIOR / EXTERIOR / INT/EXT) and time-of-day

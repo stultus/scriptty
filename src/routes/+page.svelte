@@ -36,21 +36,39 @@
   let activeView = $state<'writing' | 'cards' | 'story'>('writing');
 
   // Per-view sidebar state. Writing remembers its open/closed across
-  // toggles; Cards and Story default closed and don't pollute Writing's
-  // state when the writer toggles them in those views. Click-outside
-  // closes the sidebar in Cards view only (writers in Writing want the
-  // panel pinned during long edit sessions).
+  // toggles AND across sessions (persisted to localStorage); Cards and
+  // Story default closed and don't pollute Writing's state when the
+  // writer toggles them in those views. Click-outside closes the
+  // sidebar in Cards view only (writers in Writing want the panel
+  // pinned during long edit sessions).
+  //
+  // Writing-view default is open: the Scene Navigator is the primary
+  // way to jump around a long script, and discovering it via Cmd+\
+  // shouldn't be the default first-launch experience.
+  function loadWritingPanelDefault(): boolean {
+    if (typeof localStorage === 'undefined') return true;
+    const stored = localStorage.getItem('scriptty-sidebar-writing');
+    // Only an explicit "false" closes it; missing key (= first launch
+    // or user never toggled) → open.
+    return stored !== 'false';
+  }
   let panelOpenByView = $state<Record<'writing' | 'cards' | 'story', boolean>>({
-    writing: false,
+    writing: loadWritingPanelDefault(),
     cards: false,
     story: false,
   });
   let panelOpen = $derived(panelOpenByView[activeView]);
   function togglePanel() {
     panelOpenByView[activeView] = !panelOpenByView[activeView];
+    if (activeView === 'writing' && typeof localStorage !== 'undefined') {
+      localStorage.setItem('scriptty-sidebar-writing', String(panelOpenByView.writing));
+    }
   }
   function closePanel() {
     panelOpenByView[activeView] = false;
+    if (activeView === 'writing' && typeof localStorage !== 'undefined') {
+      localStorage.setItem('scriptty-sidebar-writing', 'false');
+    }
   }
   let findReplaceOpen = $state(false);
   let findReplaceMode = $state<'find' | 'replace'>('find');

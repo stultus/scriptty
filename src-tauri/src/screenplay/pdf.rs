@@ -627,7 +627,12 @@ pub fn generate_title_page_markup(meta: &ScreenplayMeta, page_numbers: bool) -> 
     // labels instead of plain italic.
     page.push_str("  #block(breakable: false, width: 100%)[\n");
     page.push_str("  #align(center)[\n");
-    page.push_str("    #v(8cm)\n");
+    // Was 8cm — pushed the title block past the optical centre and
+    // left the cover feeling bottom-heavy. 5cm puts the eyebrow in
+    // the upper-third zone where book covers traditionally sit
+    // their masthead, with breathing room above and credits +
+    // contact strip naturally falling into the lower half.
+    page.push_str("    #v(5cm)\n");
 
     // Eyebrow — "A SCREENPLAY" set in tracked small caps, flanked by
     // 18mm hairline rules. Uses Typst boxes with a top stroke so the
@@ -672,10 +677,13 @@ pub fn generate_title_page_markup(meta: &ScreenplayMeta, page_numbers: bool) -> 
     let credits = format_credit_lines(&meta.author, &meta.director);
     if !credits.is_empty() {
         // Asterism (· · ·) — classical print divider between the
-        // title block and the credits block. Small luma so it reads
-        // as ornamental, not as content.
+        // title block and the credits block. Bumped 14pt → 18pt so
+        // the three dots have presence as a divider; at 14pt they
+        // read as a small typographic afterthought rather than the
+        // intentional "end of one zone, beginning of another" mark
+        // they're meant to be. luma(170) keeps them ornamental.
         page.push_str("    #v(0.9cm)\n");
-        page.push_str("    #text(size: 14pt, fill: luma(170), tracking: 0.4em)[· · ·]\n");
+        page.push_str("    #text(size: 18pt, fill: luma(170), tracking: 0.4em)[· · ·]\n");
         page.push_str("    #v(0.9cm)\n");
 
         for (i, (label, name)) in credits.iter().enumerate() {
@@ -689,9 +697,14 @@ pub fn generate_title_page_markup(meta: &ScreenplayMeta, page_numbers: bool) -> 
                 escape_typst(&label.to_uppercase())
             ));
             page.push_str("    #v(0.35cm)\n");
-            // Name — larger, prominent.
+            // Name — Courier Prime so the credit reads as a typed
+            // imprint (matches the wordmark / scene-card / running
+            // header vocabulary). 14pt Courier is roughly the
+            // visual size of 16pt Latin text since Courier glyphs
+            // are wider per-character. Slight tracking gives the
+            // credit the considered-set feel rather than typed-out.
             page.push_str(&format!(
-                "    #text(size: 16pt)[{}]\n",
+                "    #text(font: \"Courier Prime\", size: 14pt, tracking: 0.04em)[{}]\n",
                 escape_typst(name)
             ));
         }
@@ -711,6 +724,15 @@ pub fn generate_title_page_markup(meta: &ScreenplayMeta, page_numbers: bool) -> 
         // `#v(1fr)` pushes this content to the bottom of the page.
         // `1fr` is a Typst "fractional" unit — it expands to fill available space.
         page.push_str("    #v(1fr)\n");
+
+        // Hairline rule above the contact block — visually anchors
+        // the contact / draft / registration strip to the page so
+        // it reads as a deliberate footer rather than text floating
+        // disconnected at the bottom-left. 35% width keeps it short
+        // and discreet, matching the eyebrow rule weight (0.5pt).
+        page.push_str(
+            "    #line(length: 35%, stroke: 0.5pt + luma(180))\n    #v(0.35cm)\n",
+        );
 
         if has_contact {
             // Split multi-line contact info by newlines and join with Typst line breaks.
@@ -840,7 +862,7 @@ pub fn generate_typst_markup(
     // Build the numbering suffix conditionally — empty string when the user
     // disables page numbers at export time.
     let numbering_opts = if page_numbers {
-        r#", numbering: "1.", number-align: right + top"#
+        r#", numbering: "1", number-align: right + top"#
     } else {
         ""
     };
@@ -865,7 +887,18 @@ pub fn generate_typst_markup(
     // Hollywood format has specific indentation and spacing rules for each element type.
     // Groups are wrapped in `#block(breakable: false)` to prevent page breaks
     // between related elements (e.g., character name and their dialogue).
-    for group in &groups {
+    //
+    // Indexed iteration (rather than a plain `for group in &groups`)
+    // so each arm can peek at the next group — needed for transition
+    // widow control: when an action is followed by a transition,
+    // we wrap the action in a sticky block so Typst doesn't break
+    // between them (otherwise the lone "CUT TO:" can end up
+    // stranded at the top of a fresh page).
+    for (group_idx, group) in groups.iter().enumerate() {
+        let next_is_transition = matches!(
+            groups.get(group_idx + 1),
+            Some(ScreenplayGroup::Standalone(e)) if e.element_type == "transition"
+        );
         // `match` is Rust's pattern matching — like a switch statement but more powerful.
         // Each arm produces formatted Typst markup for that group type.
         let typst_element = match group {
@@ -996,7 +1029,18 @@ pub fn generate_typst_markup(
                     "action" => {
                         // Action lines: use typst_inline to preserve bold formatting.
                         // Wrap in #par() to ensure paragraph spacing applies consistently.
-                        format!("#par[{}]\n\n", element.typst_inline)
+                        // When the next group is a transition, wrap in
+                        // a sticky block so Typst keeps action + transition
+                        // on the same page — prevents an orphaned
+                        // "CUT TO:" cue at the top of the next page.
+                        if next_is_transition {
+                            format!(
+                                "#block(sticky: true)[#par[{}]]\n\n",
+                                element.typst_inline
+                            )
+                        } else {
+                            format!("#par[{}]\n\n", element.typst_inline)
+                        }
                     }
                     "transition" => {
                         // Transitions: right-aligned, uppercase (e.g., "CUT TO:")
@@ -1292,7 +1336,7 @@ pub fn generate_indian_markup(
     // content is split into two columns rather than centered.
     // Optional numbering suffix — toggled by the export-time option.
     let numbering_opts = if page_numbers {
-        r#", numbering: "1.", number-align: right + top"#
+        r#", numbering: "1", number-align: right + top"#
     } else {
         ""
     };
@@ -1499,10 +1543,26 @@ pub fn generate_indian_markup(
                     // with an empty right column. This keeps action text aligned
                     // with the two-column layout instead of spanning full width.
                     // Use typst_inline to preserve bold formatting.
-                    markup.push_str(&format!(
+                    //
+                    // Transition widow control: peek at the next body
+                    // element. If it's a transition, wrap the action's
+                    // grid row in `#block(sticky: true)` so Typst
+                    // keeps action + transition on the same page —
+                    // prevents an orphaned "CUT TO:" cue at the top
+                    // of the next page.
+                    let next_is_transition = body
+                        .get(i + 1)
+                        .map(|e| e.element_type == "transition")
+                        .unwrap_or(false);
+                    let action_row = format!(
                         "#grid(\n  columns: (50%, 50%),\n  column-gutter: 1em,\n  align(left)[{}],\n  []\n)\n",
                         element.typst_inline
-                    ));
+                    );
+                    if next_is_transition {
+                        markup.push_str(&format!("#block(sticky: true)[{}]\n", action_row));
+                    } else {
+                        markup.push_str(&action_row);
+                    }
                 }
                 "character" => {
                     // A new character element starts a new character block.
@@ -1812,7 +1872,7 @@ pub fn generate_prose_section_markup(section_name: &str, body: &str, font_name: 
     }
 
     let numbering_opts = if page_numbers {
-        r#", numbering: "1.", number-align: right + top"#
+        r#", numbering: "1", number-align: right + top"#
     } else {
         ""
     };
@@ -1898,7 +1958,7 @@ pub fn generate_prose_section_markup(section_name: &str, body: &str, font_name: 
             r#"#block(width: 100%)[
   #align(center)[
     #v(0.9cm)
-    #text(size: 14pt, fill: luma(170), tracking: 0.4em)[· · ·]
+    #text(size: 18pt, fill: luma(170), tracking: 0.4em)[· · ·]
   ]
 ]
 "#,
@@ -1981,7 +2041,7 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
     }
 
     let numbering_opts = if page_numbers {
-        r#", numbering: "1.", number-align: right + top"#
+        r#", numbering: "1", number-align: right + top"#
     } else {
         ""
     };
@@ -2045,7 +2105,7 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
             r#"#block(width: 100%)[
   #align(center)[
     #v(0.9cm)
-    #text(size: 14pt, fill: luma(170), tracking: 0.4em)[· · ·]
+    #text(size: 18pt, fill: luma(170), tracking: 0.4em)[· · ·]
   ]
 ]
 "#,
@@ -2061,7 +2121,7 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
 #block(width: 100%)[
   #align(center)[
     #v(0.25cm)
-    #text(size: 13pt)[{}]
+    #text(font: "Courier Prime", size: 12pt, tracking: 0.04em)[{}]
   ]
 ]
 "#,
@@ -2323,7 +2383,7 @@ pub fn generate_shoot_list_markup(
     }
 
     let numbering_opts = if page_numbers {
-        r#", numbering: "1.", number-align: right + top"#
+        r#", numbering: "1", number-align: right + top"#
     } else {
         ""
     };
@@ -2388,7 +2448,7 @@ pub fn generate_shoot_list_markup(
             r#"#block(width: 100%)[
   #align(center)[
     #v(0.9cm)
-    #text(size: 14pt, fill: luma(170), tracking: 0.4em)[· · ·]
+    #text(size: 18pt, fill: luma(170), tracking: 0.4em)[· · ·]
   ]
 ]
 "#,
@@ -2404,7 +2464,7 @@ pub fn generate_shoot_list_markup(
 #block(width: 100%)[
   #align(center)[
     #v(0.25cm)
-    #text(size: 13pt)[{}]
+    #text(font: "Courier Prime", size: 12pt, tracking: 0.04em)[{}]
   ]
 ]
 "#,

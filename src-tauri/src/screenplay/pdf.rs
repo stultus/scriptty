@@ -2078,18 +2078,25 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
     // breakdown read as a self-contained tear sheet.
     markup.push_str("\n#pagebreak()\n\n");
 
-    // Cards rendered as a two-column FLOW with adaptive width:
-    // - "Compact" cards (short bodies) flow inside `#columns(2)`,
-    //   packing top-down and spilling into the right column.
-    // - "Wide" cards (long bodies — body text exceeds
-    //   LONG_CARD_THRESHOLD) break OUT of the columns flow and
-    //   render full-page-width, with their description split into
-    //   2 inner columns. This keeps a long card from becoming a
-    //   tall narrow tower; instead it gets the width it needs and
-    //   stays roughly square.
+    // Cards rendered as an explicit 2-column GRID with adaptive
+    // width:
+    // - "Compact" cards (short bodies) pair up in a 2-column grid
+    //   row. With `align: top` and the inner block's natural
+    //   height, each card hugs its content; the shorter card in a
+    //   pair leaves transparent whitespace below itself (no
+    //   border) rather than stretching to match its neighbour.
+    // - "Wide" cards (body length exceeds LONG_CARD_THRESHOLD)
+    //   break OUT of the grid and render full-page-width
+    //   standalone. This keeps a long card from becoming a tall
+    //   narrow tower in one column.
     //
-    // Each card is `breakable: false` so it never splits across
-    // columns or pages.
+    // Why grid instead of `#columns(2)`: Typst's columns flow
+    // fills column 1 sequentially and only spills to column 2
+    // when column 1 overflows. Combined with `breakable: false`
+    // on each card, that meant a card too tall for the bottom of
+    // column 1 jumped to a new PAGE column 1 instead of going to
+    // column 2 — leaving column 2 entirely empty. The explicit
+    // grid forces both columns to be used.
     //
     // In compact mode (export setting), every card renders as a
     // minimal slug-only block — no description, notes, location
@@ -2104,9 +2111,9 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
     if let Some(cards) = cards_data.as_array() {
         if !cards.is_empty() {
             // Walk the cards, grouping consecutive non-wide cards
-            // into a single `#columns(2)` block, flushing it when
-            // we hit a wide card (which renders standalone), then
-            // resuming a fresh columns block.
+            // into a single grid block, flushing when we hit a
+            // wide card (rendered standalone), then resuming a
+            // fresh grid block.
             let mut i = 0;
             while i < cards.len() {
                 let run_start = i;
@@ -2118,23 +2125,25 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
                 }
 
                 // Emit the run [run_start..i] of compact-width cards
-                // inside a 2-column flow.
+                // as a 2-column grid. Each card is wrapped in `[...]`
+                // (a content block) so the grid receives positional
+                // args; `align: top` keeps short cards anchored to
+                // the top of their cell instead of centred.
                 if i > run_start {
-                    markup.push_str("#columns(2, gutter: 10pt)[\n");
-                    for (offset, run_card) in cards[run_start..i].iter().enumerate() {
-                        emit_scene_card(&mut markup, run_card, compact, false);
-                        if run_start + offset + 1 < i {
-                            markup.push_str("  #v(10pt)\n");
-                        }
+                    markup.push_str("#grid(\n  columns: (1fr, 1fr),\n  column-gutter: 10pt,\n  row-gutter: 10pt,\n  align: top,\n");
+                    for run_card in cards[run_start..i].iter() {
+                        markup.push_str("  [\n");
+                        emit_scene_card(&mut markup, run_card, compact);
+                        markup.push_str("  ],\n");
                     }
-                    markup.push_str("]\n\n");
+                    markup.push_str(")\n\n");
                 }
 
                 // Emit the wide card (if any) standalone at full
                 // page width. A small vertical gap follows so the
-                // next columns block doesn't butt against it.
+                // next grid block doesn't butt against it.
                 if i < cards.len() {
-                    emit_scene_card(&mut markup, &cards[i], compact, true);
+                    emit_scene_card(&mut markup, &cards[i], compact);
                     markup.push_str("\n#v(10pt)\n\n");
                     i += 1;
                 }
@@ -2157,16 +2166,19 @@ fn card_body_len(card: &Value) -> usize {
 }
 
 /// Emit a single scene card block. Pulled out of the parent
-/// generator so the same code path serves three modes:
-///   - normal: inside `#columns(2)`, half-page width
-///   - wide: standalone, full-page width with the description split
-///     into 2 inner sub-columns so line lengths stay readable
+/// generator so the same code path serves three placement modes:
+///   - paired: inside a 2-column grid, half-page width
+///   - wide: standalone, full-page width
 ///   - compact: minimal — eyebrow, slug, cast only — used by the
 ///     export's "Compact card view" toggle
 ///
+/// The OUTER container (grid cell vs standalone) determines the
+/// card's width; the card content itself is identical in either
+/// position. Only the `compact` flag changes what fields render.
+///
 /// The caller controls inter-card spacing; this function emits
 /// only the card itself.
-fn emit_scene_card(markup: &mut String, card: &Value, compact: bool, full_width: bool) {
+fn emit_scene_card(markup: &mut String, card: &Value, compact: bool) {
     let scene_num = card.get("scene_number").and_then(|v| v.as_u64()).unwrap_or(0);
     let heading = card.get("heading").and_then(|v| v.as_str()).unwrap_or("");
     let characters = card.get("characters").and_then(|v| v.as_str()).unwrap_or("");
@@ -2252,49 +2264,33 @@ fn emit_scene_card(markup: &mut String, card: &Value, compact: bool, full_width:
     }
 
     if !compact {
-        // For wide (full-page) cards, render description + notes
-        // inside a 2-column inner flow so line lengths stay in
-        // the comfortable 60–80ch reading range. For compact-width
-        // cards, single-column body is already narrow enough.
-        let has_body = !description.is_empty() || !shoot_notes.is_empty();
-        if has_body && full_width {
-            markup.push_str("        #v(6pt)\n");
-            markup.push_str("        #columns(2, gutter: 12pt)[\n");
-            if !description.is_empty() {
-                markup.push_str(&format!(
-                    "          #text(size: 9.5pt)[{}]\n",
-                    escape_typst(description)
-                ));
-            }
-            if !shoot_notes.is_empty() {
-                markup.push_str(&format!(
-                    "          #v(6pt)\n          #text(size: 8.5pt, style: \"italic\", fill: luma(110))[{}]\n",
-                    escape_typst(shoot_notes)
-                ));
-            }
-            markup.push_str("        ]\n");
-        } else {
-            if !description.is_empty() {
-                markup.push_str(&format!(
-                    "        #v(6pt)\n        #text(size: 9.5pt)[{}]\n",
-                    escape_typst(description)
-                ));
-            }
-            if !shoot_notes.is_empty() {
-                markup.push_str(&format!(
-                    "        #v(6pt)\n        #text(size: 8.5pt, style: \"italic\", fill: luma(110))[{}]\n",
-                    escape_typst(shoot_notes)
-                ));
-            }
-            // Empty-state placeholder — only for half-width detailed
-            // cards. Wide cards by definition have a body; compact
-            // cards are intentionally minimal so the dash would feel
-            // out of place.
-            if description.is_empty() && shoot_notes.is_empty() {
-                markup.push_str(
-                    "        #v(6pt)\n        #text(size: 9.5pt, fill: luma(180))[—]\n",
-                );
-            }
+        // Single-column body; the surrounding container (grid
+        // cell or standalone wide card) determines the width. We
+        // tried using an inner `#columns(2)` for wide cards but
+        // hit the same Typst columns-flow bug — col 1 fills first
+        // and col 2 stays empty. Single column at full width is
+        // wider than the comfy 60–65ch ideal, but for a wide
+        // card's purpose (one long-body card per page) it's
+        // acceptable and predictable.
+        if !description.is_empty() {
+            markup.push_str(&format!(
+                "        #v(6pt)\n        #text(size: 9.5pt)[{}]\n",
+                escape_typst(description)
+            ));
+        }
+        if !shoot_notes.is_empty() {
+            markup.push_str(&format!(
+                "        #v(6pt)\n        #text(size: 8.5pt, style: \"italic\", fill: luma(110))[{}]\n",
+                escape_typst(shoot_notes)
+            ));
+        }
+        // Empty-state placeholder — when the writer hasn't filled
+        // either body field, drop a muted em-dash so the card
+        // reads as "intentionally pending" rather than a layout gap.
+        if description.is_empty() && shoot_notes.is_empty() {
+            markup.push_str(
+                "        #v(6pt)\n        #text(size: 9.5pt, fill: luma(180))[—]\n",
+            );
         }
     }
 

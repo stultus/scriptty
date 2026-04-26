@@ -111,7 +111,7 @@
             <span>The Manual</span>
             <span class="mh-rule"></span>
           </div>
-          <h2 id="help-title" class="mh-title help-title">How to Use Scriptty</h2>
+          <h2 id="help-title" class="mh-title help-title">How to <em>use</em> Scriptty</h2>
         </div>
         <button class="btn-close" onclick={() => { open = false; }} aria-label="Close help">&times;</button>
       </div>
@@ -305,15 +305,16 @@
 
           <section class="help-section" id="stats">
             <h3>Script Statistics</h3>
-            <p>Press <kbd>Cmd+Shift+I</kbd> or go to <strong>View → Statistics</strong> for a vertical-tab panel covering five views:</p>
+            <p>Press <kbd>Cmd+Shift+I</kbd>, click the <strong>bar-chart icon</strong> in the title bar, or go to <strong>View → Statistics</strong> for a vertical-tab panel covering up to five views:</p>
             <ul>
               <li><strong>Overview</strong> — page count, word count, scene count, dialogue blocks, estimated screen time, INT/EXT and day/night breakdowns</li>
               <li><strong>Characters</strong> — per-character scenes, dialogue blocks, and percentage of total dialogue</li>
               <li><strong>Locations</strong> — every unique slug with scene counts and INT/EXT split</li>
               <li><strong>Schedule</strong> — scheduled scenes grouped by shoot date with per-day totals; collapses cleanly when nothing is scheduled</li>
-              <li><strong>Episodes</strong> (series only) — per-episode totals, status field, and a status pill (Outline / Draft / Revision / Final)</li>
+              <li><strong>Episodes</strong> (series only) — per-episode summary table with pages, scenes, words, dialogue blocks, screen time, INT/EXT counts, cast size, and status (Outline / Draft / Revision / Final)</li>
             </ul>
-            <p>The Characters / Locations / Schedule tables have <strong>sortable columns</strong> — click a column header to sort, click again to reverse — and a <strong>CSV export</strong> button so you can hand the data to a spreadsheet for production planning.</p>
+            <p><strong>Series scope toggle</strong> (series only) — the rail has an <strong>Episode / Series</strong> segmented switch. <em>Episode</em> reflects just the episode you're editing (the default). <em>Series</em> aggregates every episode into one merged document and recomputes Overview, Characters, Locations, and Schedule across the whole show.</p>
+            <p>Every data table has <strong>sortable columns</strong> — click a column header to sort, click again to reverse — and a <strong>CSV export</strong> button so you can hand the data to a spreadsheet for production planning.</p>
           </section>
 
           <section class="help-section" id="export">
@@ -668,26 +669,37 @@
     margin: 4px 0;
   }
 
+  /* Inline `code` chip — Courier Prime so it reads as the same voice as
+     the marketing site's quick-reference column and the editor's body
+     text. The accent-warm-muted surface picks up the marker hue family
+     so a `.screenplay` reference and a `№ 02` numeral feel related. */
   code {
     font-size: 12px;
-    background: var(--surface-hover);
-    padding: 1px 5px;
-    border-radius: 3px;
+    background: var(--accent-warm-muted);
+    padding: 1px 6px;
+    border-radius: 2px;
     color: var(--text-primary);
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-family: var(--editor-font-en), ui-monospace, SFMono-Regular, monospace;
+    letter-spacing: 0.01em;
   }
 
+  /* Physical-key feel via a 2px bottom border, matching the marketing
+     site's `kbd`. Reads as a printable keycap without becoming
+     skeuomorphic — the heavier bottom edge does all the work. */
   kbd {
     display: inline-block;
     font-size: 11px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-family: var(--editor-font-en), ui-monospace, SFMono-Regular, monospace;
     padding: 1px 6px;
     border: 1px solid var(--border-medium);
-    border-radius: 4px;
+    border-bottom-width: 2px;
+    border-radius: 3px;
     background: var(--surface-elevated);
     color: var(--text-primary);
-    box-shadow: 0 1px 0 var(--border-subtle);
     line-height: 1.6;
+    letter-spacing: 0.02em;
+    font-weight: 600;
+    white-space: nowrap;
   }
 
   .accent {

@@ -1,10 +1,40 @@
 <script lang="ts">
   import { focusTrap } from '$lib/actions/focusTrap';
 
-  let { open = $bindable(false), onConfirm } = $props<{
+  // `kind` drives every label/copy/default in the dialog. The shape and
+  // ceremony are identical for both flows; only the copy changes —
+  // hence one component instead of two near-duplicates.
+  type ProjectKind = 'film' | 'series';
+  let { open = $bindable(false), kind = 'series' as ProjectKind, onConfirm } = $props<{
     open: boolean;
+    kind?: ProjectKind;
     onConfirm: (title: string) => void | Promise<void>;
   }>();
+
+  // Per-kind copy table — keeps the markup below clean and makes it
+  // obvious where to add a new project type.
+  const COPY = {
+    film: {
+      eyebrow: 'A New Film',
+      headlineHtml: 'Title <em>your</em> film',
+      fieldLabel: 'Film title',
+      placeholder: 'e.g. The Last Reel',
+      hint: 'You can edit metadata, draft number, and contact info after the film is created.',
+      confirmLabel: 'Create Film',
+      fallback: 'Untitled',
+    },
+    series: {
+      eyebrow: 'A New Series',
+      headlineHtml: 'Title <em>your</em> series',
+      fieldLabel: 'Series title',
+      placeholder: 'e.g. The Return',
+      hint: 'You can add episodes and edit metadata after the series is created.',
+      confirmLabel: 'Create Series',
+      fallback: 'Untitled Series',
+    },
+  } as const;
+
+  let copy = $derived(COPY[(kind ?? 'series') as ProjectKind]);
 
   let title = $state('');
   let inputEl = $state<HTMLInputElement | null>(null);
@@ -19,7 +49,7 @@
   });
 
   function handleCreate() {
-    const trimmed = title.trim() || 'Untitled Series';
+    const trimmed = title.trim() || copy.fallback;
     onConfirm(trimmed);
   }
 
@@ -54,29 +84,37 @@
     tabindex="-1"
   >
     <div class="modal-card" use:focusTrap>
-      <div class="modal-header">
-        <h2>New Series</h2>
+      <!-- Editorial masthead — eyebrow + display title. Reads as the
+           opening page of a film/series bible rather than a generic
+           dialog. Copy is per-kind via the COPY table above. -->
+      <header class="masthead">
+        <div class="mh-eyebrow is-centered" aria-hidden="true">
+          <span class="mh-rule"></span>
+          <span>{copy.eyebrow}</span>
+          <span class="mh-rule"></span>
+        </div>
+        <h2 id="new-project-heading" class="series-display">{@html copy.headlineHtml}</h2>
         <button class="btn-close" onclick={handleCancel} aria-label="Close">&times;</button>
-      </div>
+      </header>
 
       <div class="modal-body">
         <label class="field">
-          <span class="field-label">Series title</span>
+          <span class="field-label">{copy.fieldLabel}</span>
           <input
             bind:this={inputEl}
             bind:value={title}
             type="text"
-            placeholder="e.g. The Return"
+            placeholder={copy.placeholder}
             autocomplete="off"
             spellcheck="false"
           />
         </label>
-        <p class="hint">You can add episodes and edit metadata after the series is created.</p>
+        <p class="hint">{copy.hint}</p>
       </div>
 
       <div class="modal-footer">
         <button class="btn-ghost" onclick={handleCancel}>Cancel</button>
-        <button class="btn-primary" onclick={handleCreate}>Create Series</button>
+        <button class="btn-primary" onclick={handleCreate}>{copy.confirmLabel}</button>
       </div>
     </div>
   </div>
@@ -112,22 +150,43 @@
     to { opacity: 1; transform: scale(1); }
   }
 
-  .modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px;
+  /* Centered editorial masthead — replaces the flat header bar. The
+     close button floats top-right via absolute positioning so the
+     centered composition stays balanced. */
+  .masthead {
+    position: relative;
+    text-align: center;
+    padding: 28px 24px 18px;
     border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
   }
 
-  .modal-header h2 {
+  .series-display {
     margin: 0;
-    font-size: var(--modal-header-size);
-    font-weight: var(--modal-header-weight);
+    font-family: var(--display-font);
+    font-size: 26px;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
     color: var(--text-primary);
   }
 
+  /* `:global` because the <em> is injected via {@html} from the COPY
+     table, so Svelte's CSS pruner can't see it statically and would
+     otherwise drop this rule. */
+  :global(.series-display em) {
+    font-style: italic;
+    font-weight: 500;
+    color: var(--marker-color);
+  }
+
   .btn-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
     width: 28px;
     height: 28px;
     display: flex;
@@ -149,7 +208,7 @@
   }
 
   .modal-body {
-    padding: 20px;
+    padding: 24px 24px 8px;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -158,35 +217,58 @@
   .field {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
   }
 
+  /* Tracked-caps eyebrow label so the single field reads as a
+     ceremonial inscription, not a form input. */
   .field-label {
-    font-size: 12px;
-    color: var(--text-secondary);
+    font-family: var(--editor-font-en), ui-monospace, monospace;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-align: center;
   }
 
+  /* Bare-bones input — no rounded box. Just a hairline rule under a
+     centered display-font value. The series title is the only field
+     so it gets all the visual weight. */
   .field input {
-    height: 34px;
-    padding: 0 10px;
-    background: var(--surface-base);
-    border: 1px solid var(--border-medium);
-    border-radius: 6px;
+    height: 44px;
+    padding: 0 6px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border-medium);
+    border-radius: 0;
     color: var(--text-primary);
-    font-size: 13px;
-    font-family: inherit;
+    font-family: var(--display-font);
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    text-align: center;
     outline: none;
-    transition: border-color 120ms ease;
+    transition: border-color 160ms ease;
+  }
+
+  .field input::placeholder {
+    color: var(--text-muted);
+    font-style: italic;
+    font-weight: 400;
   }
 
   .field input:focus {
-    border-color: var(--accent);
+    border-bottom-color: var(--accent);
   }
 
   .hint {
-    margin: 0;
+    margin: 4px 0 0;
     font-size: 12px;
+    font-style: italic;
     color: var(--text-muted);
+    text-align: center;
+    line-height: 1.5;
   }
 
   .modal-footer {
@@ -222,7 +304,7 @@
   .btn-primary {
     background: var(--accent);
     border: 1px solid var(--accent);
-    color: var(--accent-on);
+    color: var(--text-on-accent);
     font-weight: 500;
   }
 

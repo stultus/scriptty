@@ -21,7 +21,7 @@
   import ExportModal from '$lib/components/ExportModal.svelte';
   import UpdateToast from '$lib/components/UpdateToast.svelte';
   import WelcomeScreen from '$lib/components/WelcomeScreen.svelte';
-  import SeriesTitleDialog from '$lib/components/SeriesTitleDialog.svelte';
+  import NewProjectDialog from '$lib/components/NewProjectDialog.svelte';
   import { documentStore } from '$lib/stores/documentStore.svelte';
   import { editorStore } from '$lib/stores/editorStore.svelte';
   import { themeStore } from '$lib/stores/themeStore.svelte';
@@ -62,6 +62,7 @@
   let showSettings = $state(false);
   let showExport = $state(false);
   let showCommandPalette = $state(false);
+  let showFilmDialog = $state(false);
   let showSeriesDialog = $state(false);
 
   // Remember recent files client-side — welcome screen pulls from this list.
@@ -81,6 +82,12 @@
 
   async function handleOpenFromWelcome() {
     await openFileDialog();
+  }
+
+  async function handleCreateFilmFromDialog(title: string) {
+    showFilmDialog = false;
+    if (!(await documentStore.confirmIfDirty())) return;
+    await documentStore.newDocument(title);
   }
 
   async function handleCreateSeriesFromDialog(title: string) {
@@ -161,8 +168,8 @@
 
   let commands = $derived<Command[]>([
     // File
-    { id: 'file.new-film', group: 'File', label: 'New Film', hint: '⌘N',
-      action: async () => { if (await documentStore.confirmIfDirty()) await documentStore.newDocument(); } },
+    { id: 'file.new-film', group: 'File', label: 'New Film…', hint: '⌘N',
+      action: () => { showFilmDialog = true; } },
     { id: 'file.new-series', group: 'File', label: 'New Series…', hint: '⌘⇧N',
       action: () => { showSeriesDialog = true; } },
     { id: 'file.open', group: 'File', label: 'Open…', hint: '⌘O', action: openFileDialog },
@@ -403,7 +410,7 @@
     (async () => {
       track(await listen('menu-new-film', async () => {
         if (!(await documentStore.confirmIfDirty())) return;
-        await documentStore.newDocument();
+        showFilmDialog = true;
       }));
 
       track(await listen('menu-new-series', async () => {
@@ -621,6 +628,7 @@
     onViewChange={(v) => { activeView = v; }}
     onShowExport={() => { showExport = true; }}
     onShowMetadata={() => { showMetadata = true; }}
+    onShowStatistics={() => { showStatistics = true; }}
   />
   <div class="workspace">
     <!-- Sidebar lives at the workspace level so it overlays whichever
@@ -681,7 +689,8 @@
 <MetadataModal bind:open={showMetadata} />
 <CommandPalette bind:open={showCommandPalette} {commands} />
 <UpdateToast />
-<SeriesTitleDialog bind:open={showSeriesDialog} onConfirm={handleCreateSeriesFromDialog} />
+<NewProjectDialog bind:open={showFilmDialog} kind="film" onConfirm={handleCreateFilmFromDialog} />
+<NewProjectDialog bind:open={showSeriesDialog} kind="series" onConfirm={handleCreateSeriesFromDialog} />
 
 <style>
   main {

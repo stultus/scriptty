@@ -169,6 +169,20 @@
     --mh-asterism-gap: 14px;
     --mh-asterism-color: var(--text-muted);
 
+    /* ─── Marker role (#185) ───
+       Promotes --accent-warm to a typographic-marker role. The same hue
+       was already in use as the dirty-state pip; the marketing site
+       (docs/index.html) uses it as a deliberate marker color for
+       department numerals (`№ 01 · Topic`) and `+/−` disclosure glyphs.
+       Naming it gives surfaces an intentional handle so future editorial
+       moves don't accidentally drift. Don't paint dirty-state with this
+       — keep that wired through --dirty so the indicator stays an
+       indicator, not a decoration. */
+    --marker-color: var(--accent-warm);
+    --mh-marker-size: 10px;
+    --mh-marker-tracking: 0.18em;
+    --mh-marker-weight: 700;
+
     /* ─── Three font roles (issue #66) ───
        --ui-font: chrome, menus, toolbars, buttons, dialogs
        --editor-font-en: Latin script inside the editor page — Courier Prime,
@@ -186,6 +200,12 @@
        on some platforms) would intercept the fallback chain. */
     --ui-font: system-ui, -apple-system, sans-serif;
     --editor-font-en: 'Courier Prime';
+    /* Display-serif role used by the brand wordmark in the title bar.
+       Same family as the marketing site's hero so the app and the site
+       read as one identity. Falls back to Georgia (a near-universal
+       transitional serif) so the wordmark still reads if Fraunces fails
+       to load — never to system-ui, which would lose the serif voice. */
+    --display-font: 'Fraunces', Georgia, 'Times New Roman', serif;
 
     /* ─── Modal architecture tokens (issue #108) ───
        Centered modals (Metadata, Export, Statistics, About, Help, etc.)
@@ -275,6 +295,36 @@
     letter-spacing: var(--mh-title-tracking);
     text-transform: uppercase;
     color: var(--text-primary);
+    line-height: 1;
+  }
+
+  /* Italic + accent emphasis inside any masthead title. Lifted from the
+     marketing site, where one phrase per heading carries the editorial
+     accent (e.g. "Built for how screenwriters *actually* work"). The
+     emphasised run loses the upper-case treatment so the italic reads as
+     copy, not as another tracked-caps token competing for attention. */
+  :global(.mh-title em),
+  :global(.mh-em) {
+    font-style: italic;
+    font-weight: 500;
+    color: var(--accent);
+    text-transform: none;
+    letter-spacing: 0.005em;
+  }
+
+  /* Department / section numeral. Small Courier eyebrow in the marker
+     color, used above section titles ("№ 01 · Idea") and inline alongside
+     section names. Pair with text content like "№ 03 · Treatment".
+     The `--marker-color` token is themed; both modes get the same hue
+     family as the dirty-state pip, so the editorial vocabulary stays
+     coherent with the rest of the chrome. */
+  :global(.mh-marker) {
+    font-family: var(--editor-font-en), ui-monospace, monospace;
+    font-size: var(--mh-marker-size);
+    font-weight: var(--mh-marker-weight);
+    letter-spacing: var(--mh-marker-tracking);
+    text-transform: uppercase;
+    color: var(--marker-color);
     line-height: 1;
   }
 

@@ -290,6 +290,10 @@
       border-radius: 2px;
     }
     .topnav .cta:hover { background: var(--teal-deep); color: var(--paper); }
+    /* On tablet and below, drop the three middle nav items (Features,
+       Guide, What's new) — leaves Credits + the prominent Download CTA.
+       Credits stays visible on every viewport; the people who helped
+       this project get a permanent shoutout. */
     @media (max-width: 700px) {
       .topnav li:nth-child(-n+3) { display: none; }
     }
@@ -519,88 +523,6 @@
       color: var(--text-secondary);
     }
     .dept p strong { color: var(--ink); font-weight: 600; }
-
-    /* ─── DUAL-SCRIPT spread ─── */
-    .spread-grid {
-      max-width: var(--max);
-      margin: 0 auto;
-      padding: 0 var(--gutter);
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 28px;
-    }
-    @media (min-width: 760px) {
-      .spread-grid { grid-template-columns: 1fr 1fr; gap: 36px; }
-    }
-    .script-card {
-      background: var(--paper);
-      border: 1px solid var(--rule-strong);
-      padding: 32px 28px;
-    }
-    .section.warm .script-card { background: #fffaf0; }
-    .script-card .heading {
-      font-family: var(--mono);
-      font-weight: 700;
-      font-size: 13px;
-      letter-spacing: 0.04em;
-      color: var(--ink);
-      padding-bottom: 12px;
-      margin-bottom: 14px;
-      border-bottom: 1px solid var(--rule);
-      text-transform: uppercase;
-    }
-    .script-card .character {
-      font-family: var(--mono);
-      font-weight: 700;
-      font-size: 13px;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      text-align: center;
-      margin: 18px 0 4px;
-      color: var(--ink);
-    }
-    .script-card .paren {
-      font-family: var(--body);
-      font-style: italic;
-      font-size: 14px;
-      color: var(--text-secondary);
-      text-align: center;
-      margin-bottom: 4px;
-    }
-    .script-card .dialog {
-      font-family: var(--body);
-      font-size: 15px;
-      line-height: 1.5;
-      max-width: 22ch;
-      margin: 0 auto 14px;
-      text-align: center;
-      color: var(--ink);
-    }
-    .script-card .action {
-      font-family: var(--body);
-      font-size: 15px;
-      line-height: 1.55;
-      color: var(--ink);
-      margin-bottom: 12px;
-    }
-    .script-card.ml .dialog,
-    .script-card.ml .action {
-      font-family: var(--ml);
-      font-size: 17px;
-      line-height: 1.65;
-    }
-    .script-card .transition {
-      font-family: var(--mono);
-      font-weight: 700;
-      font-size: 11.5px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      text-align: right;
-      margin-top: 10px;
-      padding-top: 12px;
-      border-top: 1px solid var(--rule);
-    }
 
     /* ─── REFERENCE / how-to ─── */
     .reference-cols {
@@ -860,19 +782,51 @@
       * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
     }
 
-    /* ─── Mobile ─── */
+    /* ─── Mobile ───
+       Mobile readers are evaluating the app, not consulting it as a
+       reference. Trim the page aggressively: drop the Quick reference
+       and What's new sections entirely (they're long and reference-
+       grade), cap the Features list at the top 4 cards, and tighten
+       all the section paddings. The result is roughly half the scroll
+       length of the desktop page. */
     @media (max-width: 520px) {
       :root { --gutter: 22px; }
       body { font-size: 16px; }
-      .cover { padding: 64px 0 56px; }
-      .section { padding: 56px 0; }
-      .intro { padding: 56px 0 0; }
-      .intro-body { font-size: 18px; }
-      .cover-deck { font-size: 18px; }
-      .cover-meta { gap: 12px; }
+      .cover { padding: 56px 0 44px; }
+      .section { padding: 44px 0; }
+      .intro { padding: 44px 0 0; }
+      .intro-body { font-size: 17px; }
+      .intro-body p + p { margin-top: 14px; }
+      .cover-deck { font-size: 18px; margin-bottom: 28px; }
+      .cover-meta { gap: 12px; font-size: 10px; }
       .btn { padding: 12px 18px; font-size: 11.5px; flex: 1 1 100%; justify-content: center; }
       .dept h3 { font-size: 19px; }
       .ref h4 { font-size: 17px; }
+
+      /* Hide reference-grade sections on phones — these are pocket-
+         guide and changelog content, not download-decision content. */
+      #guide, #whats-new { display: none; }
+
+      /* Cap the Features grid at the four most decision-relevant cards
+         (Language, Format, Privacy, Three views). The remaining five
+         dept cards (Web series, Production, PDF, Editor, Recovery)
+         are restored on tablet and up. */
+      .departments .dept:nth-child(n+5) { display: none; }
+      .departments { gap: 28px; }
+
+      /* Section heads tighter on mobile so the eyebrow and headline
+         stack closer to the cards below. */
+      .section-head { margin-bottom: 32px; }
+      .section-head h2 { font-size: 30px; }
+      .section-head .lead { font-size: 16px; margin-top: 14px; }
+
+      /* Credits collapse to single column with tighter row spacing. */
+      .credits-grid { gap: 28px; }
+      .credits-group h3 { margin-bottom: 12px; padding-bottom: 10px; }
+
+      /* Footer rows stack more compactly. */
+      footer { padding: 44px 0 32px; }
+      .foot { gap: 28px; }
     }
   </style>
 </head>
@@ -991,36 +945,6 @@
       <p>Background autosave to a hidden recovery file. If the app or your machine crashes, the next launch offers to restore your unsaved work — even an unsaved new document survives a power loss.</p>
     </article>
 
-  </div>
-</section>
-
-<!-- ─── DUAL-SCRIPT spread ─── -->
-<section class="section warm" aria-labelledby="spread-title">
-  <div class="section-head" style="text-align: center; margin-left: auto; margin-right: auto;">
-    <span class="eyebrow with-rules">A two-language sample</span>
-    <h2 id="spread-title" style="margin: 16px auto 0;">Write in the language you dream in.</h2>
-  </div>
-
-  <div class="spread-grid">
-    <article class="script-card" aria-label="Sample scene in English">
-      <p class="heading">INT. CHAYAKKADA — DAWN</p>
-      <p class="action">Steam rises off a kettle. Outside, the rain has stopped. <strong>VARGHESE</strong> sets a glass on the counter and waits.</p>
-      <p class="character">Varghese</p>
-      <p class="paren">(quietly)</p>
-      <p class="dialog">"You don't write the script. You take dictation from it."</p>
-      <p class="action">A bus pulls in. The day begins.</p>
-      <p class="transition">Cut to →</p>
-    </article>
-
-    <article class="script-card ml" aria-label="അതേ രംഗം മലയാളത്തിൽ — Same scene in Malayalam">
-      <p class="heading">INT. CHAYAKKADA — DAWN</p>
-      <p class="action">കെറ്റിലിൽ നിന്ന് ആവി ഉയരുന്നു. പുറത്ത് മഴ തോർന്നു. <strong>വർഗീസ്</strong> ഒരു ഗ്ലാസ് കൗണ്ടറിൽ വെച്ച് കാത്തിരിക്കുന്നു.</p>
-      <p class="character">VARGHESE</p>
-      <p class="paren">(quietly)</p>
-      <p class="dialog">"സ്ക്രിപ്റ്റ് നീ എഴുതുകയല്ല. അത് നിന്നോട് പറയുന്നത് കേട്ടെഴുതുക മാത്രം."</p>
-      <p class="action">ഒരു ബസ് വന്നു നിൽക്കുന്നു. ദിവസം തുടങ്ങുന്നു.</p>
-      <p class="transition">Cut to →</p>
-    </article>
   </div>
 </section>
 
@@ -1162,15 +1086,16 @@
           <span class="name">Hiran Venugopalan</span>
           <span class="link"><a href="https://hiran.in">hiran.in</a></span>
         </li>
+        <li>
+          <span class="name">Abraham Joseph</span>
+          <span class="link"><a href="mailto:dreamingnomad@gmail.com">dreamingnomad@gmail.com</a></span>
+        </li>
       </ul>
     </div>
 
     <div class="credits-group">
       <h3>Inputs &amp; feedback</h3>
       <ul>
-        <li>
-          <span class="name">Abraham Joseph</span>
-        </li>
         <li>
           <span class="name">Aashiq Abu</span>
           <span class="role">Filmmaker</span>

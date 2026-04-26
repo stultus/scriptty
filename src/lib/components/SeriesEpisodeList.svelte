@@ -394,12 +394,15 @@
     gap: 4px;
   }
 
+  /* Marker eyebrow above the series title — Courier in marker color,
+     matching the dept-marker vocabulary across the app. */
   .series-eyebrow {
+    font-family: var(--editor-font-en), ui-monospace, monospace;
     font-size: 9.5px;
     font-weight: 700;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: var(--marker-color);
   }
 
   /* Title is interactive — click to rename. Hover reveals a small

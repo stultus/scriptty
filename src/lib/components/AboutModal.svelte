@@ -44,37 +44,40 @@
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div class="modal-backdrop" onclick={handleBackdropClick} onkeydown={handleKeydown} role="dialog" aria-modal="true" tabindex="-1">
     <div class="modal-card" use:focusTrap>
-      <!-- Editorial masthead — same vocabulary as the WelcomeScreen
-           and the SceneCardsView hero. Eyebrow + tracked-caps title
-           + italic Manjari tagline + asterism divider. -->
+      <!-- Editorial masthead — eyebrow + display wordmark + italic
+           tagline + asterism. Mirrors the magazine-cover hero on
+           stultus.in/scriptty so the app's About reads as the same
+           publication's colophon. -->
       <img src="/app-icon.png" alt="" class="logo-img" aria-hidden="true" />
 
-      <div class="masthead-eyebrow" aria-hidden="true">
-        <span class="eyebrow-rule"></span>
-        <span class="eyebrow-text">{version ? `Version ${version}` : 'About'}</span>
-        <span class="eyebrow-rule"></span>
+      <div class="mh-eyebrow is-centered" aria-hidden="true">
+        <span class="mh-rule"></span>
+        <span>{version ? `Version ${version}` : 'About'}</span>
+        <span class="mh-rule"></span>
       </div>
 
-      <h1 class="app-name">SCRIPTTY</h1>
-      <p class="tagline">Write in the language you dream in.</p>
+      <h1 class="app-display">Scriptty<span class="dot">.</span></h1>
+      <p class="tagline">Write in the language you <em>dream</em> in.</p>
 
       <div class="asterism" aria-hidden="true">· · ·</div>
 
       <div class="credits-section">
-        <h3 class="credits-heading">Developers</h3>
-        <p class="credits-name">Hrishikesh Bhaskaran (stultus)</p>
+        <h3 class="credits-heading">№ 01 · Developers</h3>
+        <p class="credits-name">Hrishikesh Bhaskaran <span class="credits-handle">(stultus)</span></p>
         <p class="credits-contact"><a href="mailto:hello@stultus.in" class="credits-link" onclick={(e) => openExternal(e, 'mailto:hello@stultus.in')}>hello@stultus.in</a> &middot; <a href="https://stultus.in" class="credits-link" onclick={(e) => openExternal(e, 'https://stultus.in')}>stultus.in</a></p>
         <p class="credits-name with-gap">Hiran Venugopalan</p>
         <p class="credits-contact"><a href="mailto:hiran.v@gmail.com" class="credits-link" onclick={(e) => openExternal(e, 'mailto:hiran.v@gmail.com')}>hiran.v@gmail.com</a> &middot; <a href="https://hiran.in" class="credits-link" onclick={(e) => openExternal(e, 'https://hiran.in')}>hiran.in</a></p>
+        <p class="credits-name with-gap">Abraham Joseph</p>
+        <p class="credits-contact"><a href="mailto:dreamingnomad@gmail.com" class="credits-link" onclick={(e) => openExternal(e, 'mailto:dreamingnomad@gmail.com')}>dreamingnomad@gmail.com</a></p>
       </div>
 
       <div class="credits-section">
-        <h3 class="credits-heading">Inputs &amp; Feedback</h3>
-        <p class="credits-name">Abraham Joseph</p>
-        <p class="credits-name">Aashiq Abu (Filmmaker)</p>
+        <h3 class="credits-heading">№ 02 · Inputs &amp; Feedback</h3>
+        <p class="credits-name">Aashiq Abu <span class="credits-handle">(Filmmaker)</span></p>
         <p class="credits-name">Sijith Vijayakumar</p>
       </div>
 
+      <p class="colophon">Set in <em>Courier Prime</em>, <em>Manjari</em>, <em>Noto Sans Malayalam</em>, and <em>Fraunces</em>.</p>
       <p class="license">MIT License &middot; &copy; 2026 Hrishikesh B.</p>
 
       <div class="modal-footer">
@@ -128,51 +131,48 @@
     opacity: 0.92;
   }
 
-  /* ─── Editorial masthead — centered frontispiece ─── */
-  .masthead-eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 12px;
+  /* mh-eyebrow utility (from +layout.svelte) handles the tracked-caps +
+     flanking rules. Just space it from the wordmark below. */
+  .modal-card :global(.mh-eyebrow) {
     margin-bottom: 14px;
   }
 
-  .eyebrow-rule {
-    display: inline-block;
-    width: 28px;
-    height: 1px;
-    background: var(--border-medium);
-  }
-
-  .eyebrow-text {
-    font-family: var(--ui-font);
-    font-size: 9.5px;
-    font-weight: 700;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: var(--text-secondary);
-  }
-
-  /* SCRIPTTY in Courier Prime — the screenplay's own typeface, so
-     the wordmark reads as a printed cover-sheet title. Same
-     treatment as the Welcome screen. */
-  .app-name {
+  /* The display wordmark — Fraunces SemiBold, mixed case, period in
+     marker color. Same vocabulary as the title-bar wordmark and the
+     marketing-site hero. Scaled larger here because the About modal
+     is the ceremonial "cover" surface. */
+  .app-display {
     margin: 0;
-    font-family: var(--editor-font-en), ui-monospace, monospace;
-    font-size: 36px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-family: var(--display-font);
+    font-size: 44px;
+    font-weight: 600;
+    letter-spacing: -0.015em;
     color: var(--text-primary);
-    line-height: 1;
+    line-height: 0.95;
   }
 
+  .app-display .dot {
+    color: var(--marker-color);
+  }
+
+  /* Tagline now uses the display font in italic so it reads as a
+     deck under the wordmark — magazine-issue voice rather than a
+     UI subtitle. The emphasised word picks up the accent. */
   .tagline {
-    margin: 8px 0 0;
-    font-family: 'Manjari', var(--ui-font);
-    font-size: 13.5px;
+    margin: 14px 0 0;
+    font-family: var(--display-font);
+    font-size: 15.5px;
     font-style: italic;
+    font-weight: 400;
     color: var(--text-secondary);
     line-height: 1.4;
+    letter-spacing: 0.005em;
+  }
+
+  .tagline em {
+    font-style: italic;
+    color: var(--accent);
+    font-weight: 500;
   }
 
   /* Horizontal masthead break — same vocabulary as the welcome
@@ -217,61 +217,104 @@
      centered masthead. Classical magazine layout: display centered,
      body flush-left. */
   .credits-section {
-    margin-bottom: 18px;
+    margin-bottom: 22px;
     text-align: left;
     align-self: stretch;
   }
 
-  /* Eyebrow style for credits headings — matches the masthead
-     vocabulary so they read as section subheads in the same system. */
+  .credits-section:last-of-type {
+    margin-bottom: 0;
+  }
+
+  /* Department-style credits heading — Courier numeral in marker color.
+     No hairline rule; the marker-color Courier is loud enough to mark
+     a section break on its own, and the asterism above is doing the
+     structural-divider work for the whole credits block. */
   .credits-heading {
-    font-family: var(--ui-font);
-    font-size: 9.5px;
+    font-family: var(--editor-font-en), ui-monospace, monospace;
+    font-size: 10px;
     font-weight: 700;
-    color: var(--text-muted);
+    color: var(--marker-color);
     text-transform: uppercase;
     letter-spacing: 0.18em;
-    margin: 0 0 8px;
+    margin: 0 0 10px;
   }
 
   .credits-name {
-    font-family: var(--ui-font);
-    font-size: 13px;
+    font-family: var(--display-font);
+    font-size: 16px;
+    font-weight: 600;
     color: var(--text-primary);
-    margin: 2px 0;
+    margin: 6px 0 2px;
+    line-height: 1.2;
+    letter-spacing: -0.005em;
+  }
+
+  .credits-name .credits-handle {
+    font-family: var(--editor-font-en), ui-monospace, monospace;
+    font-size: 10.5px;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-left: 4px;
+    text-transform: uppercase;
   }
 
   .credits-name.with-gap {
-    margin-top: 10px;
+    margin-top: 14px;
   }
 
   .credits-contact {
-    font-family: var(--ui-font);
-    font-size: 11.5px;
-    color: var(--text-secondary);
-    margin: 2px 0;
-    font-style: italic;
+    font-family: var(--editor-font-en), ui-monospace, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin: 0 0 4px;
+    font-style: normal;
+    text-transform: lowercase;
   }
 
   .credits-link {
-    color: var(--accent);
+    color: var(--text-secondary);
     text-decoration: none;
+    transition: color 120ms ease;
   }
 
   .credits-link:hover {
+    color: var(--accent);
     text-decoration: underline;
   }
 
+  /* Colophon — the printer's mark at the back of a magazine, listing
+     the typefaces used. Italic display-font, quiet color. No hairline
+     rule above; the generous top-margin and shift to italic display
+     type already mark the change of voice from credits to colophon. */
+  .colophon {
+    margin: 32px 0 0;
+    font-family: var(--display-font);
+    font-size: 12.5px;
+    font-style: italic;
+    line-height: 1.5;
+    color: var(--text-muted);
+    align-self: stretch;
+    text-align: center;
+    letter-spacing: 0.005em;
+  }
+
+  .colophon em {
+    font-style: italic;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
   .license {
-    margin: 18px 0 0;
-    font-family: var(--ui-font);
+    margin: 10px 0 0;
+    font-family: var(--editor-font-en), ui-monospace, monospace;
     font-size: 9.5px;
     font-weight: 700;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--text-muted);
-    padding-top: 18px;
-    border-top: 1px solid var(--border-subtle);
+    color: var(--text-quiet, var(--text-muted));
     align-self: stretch;
     text-align: center;
   }

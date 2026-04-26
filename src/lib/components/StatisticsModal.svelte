@@ -54,8 +54,41 @@
     schedule: ScheduleEntry[];
   }
 
-  type Tab = 'overview' | 'characters' | 'locations' | 'schedule';
+  /** One row in the Episodes report (series only) — per-episode summary
+   *  numbers, used by the Episodes tab to give a season-at-a-glance view.
+   *  Mirrors the most useful fields from the Overview hero stats so a
+   *  showrunner can spot a too-short episode or an arc imbalance fast. */
+  interface EpisodeStat {
+    number: number;
+    title: string;
+    status: string;
+    pageCount: number;
+    sceneCount: number;
+    wordCount: number;
+    dialogueLineCount: number;
+    screenTimeMinutes: number;
+    intCount: number;
+    extCount: number;
+    characterCount: number;
+  }
+
+  type Tab = 'overview' | 'characters' | 'locations' | 'schedule' | 'episodes';
   let activeTab = $state<Tab>('overview');
+
+  // ─── Scope (series only) ────────────────────────────────────────────
+  // Default 'episode' preserves the legacy behaviour — stats reflect the
+  // episode the writer is editing. 'series' aggregates every episode into
+  // one merged document and runs the same stats math on it. The toggle
+  // is hidden for film projects (no scope concept applies).
+  let statsScope = $state<'episode' | 'series'>('episode');
+  let isSeriesProject = $derived(documentStore.isSeries);
+
+  // Reset scope to 'episode' whenever the modal opens — fresh session,
+  // and a series writer who switched episodes between visits expects
+  // the active-episode default each time.
+  $effect(() => {
+    if (open) statsScope = 'episode';
+  });
 
   // ─── Per-table sort state (#135) ────────────────────────────────────
   // Each table starts in its computed default order (sortKey === null).
@@ -74,12 +107,25 @@
     | 'scheduledDate';
   type SortDir = 'asc' | 'desc';
 
+  type EpSortKey =
+    | 'number'
+    | 'title'
+    | 'status'
+    | 'pageCount'
+    | 'sceneCount'
+    | 'wordCount'
+    | 'dialogueLineCount'
+    | 'screenTimeMinutes'
+    | 'characterCount';
+
   let charSortKey = $state<CharSortKey | null>(null);
   let charSortDir = $state<SortDir>('asc');
   let locSortKey = $state<LocSortKey | null>(null);
   let locSortDir = $state<SortDir>('asc');
   let schedSortKey = $state<SchedSortKey | null>(null);
   let schedSortDir = $state<SortDir>('asc');
+  let epSortKey = $state<EpSortKey | null>(null);
+  let epSortDir = $state<SortDir>('asc');
 
   function cycleCharSort(key: CharSortKey) {
     if (charSortKey !== key) { charSortKey = key; charSortDir = 'asc'; }
@@ -96,6 +142,11 @@
     else if (schedSortDir === 'asc') { schedSortDir = 'desc'; }
     else { schedSortKey = null; schedSortDir = 'asc'; }
   }
+  function cycleEpSort(key: EpSortKey) {
+    if (epSortKey !== key) { epSortKey = key; epSortDir = 'asc'; }
+    else if (epSortDir === 'asc') { epSortDir = 'desc'; }
+    else { epSortKey = null; epSortDir = 'asc'; }
+  }
 
   /** Stable comparator: numbers compared numerically, strings via
    *  localeCompare. Returns -1/0/1 in the asc direction. */
@@ -109,16 +160,20 @@
   /** Label pair surfaced in the right pane's header — eyebrow gives the
    *  category, title gives the human-readable name. Keeps the right-pane
    *  geometry stable while signalling which view is active. */
+  // Pane titles get an HTML <em> slot so the mh-title rule colorises one
+   // word per heading — same editorial accent as the marketing site.
   let activeTabLabel = $derived.by<{ eyebrow: string; title: string }>(() => {
     switch (activeTab) {
-      case 'overview':   return { eyebrow: 'At a glance', title: 'Overview' };
-      case 'characters': return { eyebrow: 'Cast report', title: 'Characters by dialogue' };
-      case 'locations':  return { eyebrow: 'Production prep', title: 'Locations' };
-      case 'schedule':   return { eyebrow: 'Production prep', title: 'Shoot schedule' };
+      case 'overview':   return { eyebrow: 'At a glance', title: 'The <em>script</em> at a glance' };
+      case 'characters': return { eyebrow: 'Cast report', title: 'Characters by <em>dialogue</em>' };
+      case 'locations':  return { eyebrow: 'Production prep', title: 'Where it <em>happens</em>' };
+      case 'schedule':   return { eyebrow: 'Production prep', title: 'The <em>shoot</em> schedule' };
+      case 'episodes':   return { eyebrow: 'Series report',   title: 'Every <em>episode</em>, side by side' };
     }
   });
 
   let stats = $state<Stats>(untrack(() => computeStats()));
+  let episodeStats = $state<EpisodeStat[]>(untrack(() => computeEpisodeStats()));
 
   // Recompute stats only when the modal opens — not on every keystroke while
   // it's open. The $effect previously read `documentStore.activeContent`
@@ -128,12 +183,28 @@
   // The Refresh button gives the writer an explicit way to re-snapshot.
   $effect(() => {
     if (open) {
-      untrack(() => { stats = computeStats(); });
+      untrack(() => {
+        stats = computeStats();
+        episodeStats = computeEpisodeStats();
+      });
       // Reset sorts on open so the writer always sees the default
       // ordering first — sort choices are session-only (#135).
       charSortKey = null; charSortDir = 'asc';
       locSortKey = null; locSortDir = 'asc';
       schedSortKey = null; schedSortDir = 'asc';
+      epSortKey = null; epSortDir = 'asc';
+    }
+  });
+
+  // Flipping the scope toggle is an explicit user action, so we *do*
+  // want to recompute on change — but still wrap in untrack() so we
+  // don't pull the document content into the reactive graph. We track
+  // statsScope explicitly by referencing it before the untrack() call.
+  $effect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    statsScope;
+    if (open) {
+      untrack(() => { stats = computeStats(); });
     }
   });
 
@@ -163,6 +234,15 @@
     const arr = [...stats.schedule];
     const key = schedSortKey;
     const dir = schedSortDir === 'asc' ? 1 : -1;
+    arr.sort((a, b) => cmp(a[key], b[key]) * dir);
+    return arr;
+  });
+
+  let sortedEpisodes = $derived.by(() => {
+    if (!epSortKey) return episodeStats;
+    const arr = [...episodeStats];
+    const key = epSortKey;
+    const dir = epSortDir === 'asc' ? 1 : -1;
     arr.sort((a, b) => cmp(a[key], b[key]) * dir);
     return arr;
   });
@@ -282,14 +362,40 @@
     await saveCsv('schedule', buildCsv(rows));
   }
 
+  async function exportEpisodesCsv() {
+    const rows: Array<Array<string | number>> = [
+      ['#', 'Title', 'Status', 'Pages', 'Scenes', 'Words', 'Dialogue', 'Screen time', 'INT', 'EXT', 'Cast'],
+    ];
+    sortedEpisodes.forEach((e) => {
+      rows.push([
+        e.number,
+        e.title,
+        e.status,
+        e.pageCount,
+        e.sceneCount,
+        e.wordCount,
+        e.dialogueLineCount,
+        e.screenTimeMinutes,
+        e.intCount,
+        e.extCount,
+        e.characterCount,
+      ]);
+    });
+    await saveCsv('episodes', buildCsv(rows));
+  }
+
   let canExportCsv = $derived(
-    activeTab === 'characters' || activeTab === 'locations' || activeTab === 'schedule',
+    activeTab === 'characters' ||
+    activeTab === 'locations' ||
+    activeTab === 'schedule' ||
+    activeTab === 'episodes',
   );
 
   async function exportActiveCsv() {
     if (activeTab === 'characters') await exportCharactersCsv();
     else if (activeTab === 'locations') await exportLocationsCsv();
     else if (activeTab === 'schedule') await exportScheduleCsv();
+    else if (activeTab === 'episodes') await exportEpisodesCsv();
   }
 
   let groupedSchedule = $derived.by<ScheduleGroup[]>(() => {
@@ -331,6 +437,7 @@
 
   function refresh() {
     stats = computeStats();
+    episodeStats = computeEpisodeStats();
   }
 
   /** Pull location and time-of-day out of a scene heading. Mirrors the
@@ -363,27 +470,100 @@
     return { setting, location: rest, time: '' };
   }
 
+  /** Build the inputs (content + scene-cards) for the current scope.
+   *  - episode scope (or film): the active episode's content + cards.
+   *  - series scope: every episode's content nodes concatenated, with
+   *    each episode's scene_cards rebased so scene_index points to the
+   *    correct position in the merged document. */
+  function buildScopeInputs(): {
+    content: { content?: Array<{ type?: string; content?: Array<{ text?: string }> }> } | null;
+    cards: Array<{ scene_index: number; scheduled_date?: string; location_group?: string }>;
+  } {
+    if (isSeriesProject && statsScope === 'series') {
+      const eps = documentStore.document?.series?.episodes ?? [];
+      const merged: Array<{ type?: string; content?: Array<{ text?: string }> }> = [];
+      const cards: Array<{ scene_index: number; scheduled_date?: string; location_group?: string }> = [];
+      let sceneOffset = 0;
+      for (const ep of eps) {
+        const c = ep.content as { content?: Array<{ type?: string; content?: Array<{ text?: string }> }> } | null;
+        const nodes = c?.content ?? [];
+        merged.push(...nodes);
+        // Rebase each card's scene_index against the merged doc.
+        for (const card of ep.scene_cards) {
+          cards.push({
+            scene_index: card.scene_index + sceneOffset,
+            scheduled_date: card.scheduled_date,
+            location_group: card.location_group,
+          });
+        }
+        // Count scene_headings in this episode so the next one's cards
+        // get the right offset.
+        for (const n of nodes) if (n.type === 'scene_heading') sceneOffset++;
+      }
+      return { content: { content: merged }, cards };
+    }
+
+    // Default — episode (series) or film. Use the active content.
+    const activeContent = documentStore.activeContent;
+    return {
+      content: activeContent as { content?: Array<{ type?: string; content?: Array<{ text?: string }> }> } | null,
+      cards: documentStore.activeSceneCards.map((c) => ({
+        scene_index: c.scene_index,
+        scheduled_date: c.scheduled_date,
+        location_group: c.location_group,
+      })),
+    };
+  }
+
   function computeStats(): Stats {
+    const { content, cards } = buildScopeInputs();
+    return computeStatsFor(content, cards);
+  }
+
+  /** Per-episode summary table (series only). For films, returns an
+   *  empty array — the Episodes tab is hidden in that case anyway. */
+  function computeEpisodeStats(): EpisodeStat[] {
+    if (!isSeriesProject) return [];
+    const eps = documentStore.document?.series?.episodes ?? [];
+    return eps.map((ep): EpisodeStat => {
+      const epContent = ep.content as { content?: Array<{ type?: string; content?: Array<{ text?: string }> }> } | null;
+      const epCards = ep.scene_cards.map((c) => ({
+        scene_index: c.scene_index,
+        scheduled_date: c.scheduled_date,
+        location_group: c.location_group,
+      }));
+      const s = computeStatsFor(epContent, epCards);
+      return {
+        number: ep.number,
+        title: ep.title?.trim() || '',
+        status: ep.status ?? 'draft',
+        pageCount: s.pageCount,
+        sceneCount: s.sceneCount,
+        wordCount: s.wordCount,
+        dialogueLineCount: s.dialogueLineCount,
+        screenTimeMinutes: s.screenTimeMinutes,
+        intCount: s.intCount,
+        extCount: s.extCount,
+        characterCount: s.characters.length,
+      };
+    });
+  }
+
+  /** Pure stats walker — runs against any (content, cards) pair. The
+   *  scope-aware wrapper computeStats() chooses what to feed in based on
+   *  the current statsScope; the Episodes tab calls this in a loop with
+   *  one episode's content at a time. */
+  function computeStatsFor(
+    content: { content?: Array<{ type?: string; content?: Array<{ text?: string }> }> } | null,
+    sceneCards: Array<{ scene_index: number; scheduled_date?: string; location_group?: string }>,
+  ): Stats {
     const empty: Stats = {
       pageCount: 0, sceneCount: 0, wordCount: 0, dialogueLineCount: 0,
       intCount: 0, extCount: 0, dayCount: 0, nightCount: 0,
       screenTimeMinutes: 0, characters: [], locations: [], schedule: [],
     };
 
-    // Stats reflect the active episode in series projects, not the top-level
-    // film placeholder. Using activeContent keeps the numbers in sync with
-    // what the writer is actually editing.
-    const activeContent = documentStore.activeContent;
-    if (!activeContent) return empty;
-
-    const content = activeContent as {
-      type?: string;
-      content?: Array<{
-        type?: string;
-        content?: Array<{ text?: string }>;
-      }>;
-    };
-    if (!content.content) return empty;
+    if (!content?.content) return empty;
 
     const nodes = content.content;
 
@@ -422,10 +602,10 @@
     const schedule: ScheduleEntry[] = [];
 
     // Pull SceneCard scheduling fields up-front so the per-scene loop
-    // can attach them by 0-based index. activeSceneCards is small (≤ scene
+    // can attach them by 0-based index. sceneCards is small (≤ scene
     // count); a Map is cheaper to look up per scene than a linear find. (#124)
     const cardsByIndex = new Map<number, { scheduled_date: string; location_group: string }>();
-    for (const c of documentStore.activeSceneCards) {
+    for (const c of sceneCards) {
       cardsByIndex.set(c.scene_index, {
         scheduled_date: c.scheduled_date ?? '',
         location_group: c.location_group ?? '',
@@ -596,6 +776,31 @@
         <div class="rail-header">
           <h2>Statistics</h2>
         </div>
+
+        {#if isSeriesProject}
+          <!-- Scope toggle (series only). Mirrors the Export modal's
+               "This episode / Full series" segmented control so the
+               two surfaces speak the same vocabulary about scope. The
+               labels swap at this size — "Episode" / "Series" — to fit
+               the narrower rail without losing meaning. -->
+          <div class="scope-segmented" role="group" aria-label="Statistics scope">
+            <button
+              type="button"
+              class="scope-seg"
+              class:active={statsScope === 'episode'}
+              onclick={() => { statsScope = 'episode'; }}
+              title="Stats for the active episode"
+            >Episode</button>
+            <button
+              type="button"
+              class="scope-seg"
+              class:active={statsScope === 'series'}
+              onclick={() => { statsScope = 'series'; }}
+              title="Stats aggregated across every episode"
+            >Series</button>
+          </div>
+        {/if}
+
         <div class="rail-nav" role="tablist" aria-label="Statistics views">
           <button
             class="rail-item"
@@ -654,6 +859,27 @@
             <span class="rail-label">Schedule</span>
             <span class="rail-count">{stats.schedule.length}</span>
           </button>
+          {#if isSeriesProject}
+            <!-- Episodes tab — series only. Per-episode summary so a
+                 showrunner can spot a too-short episode at a glance.
+                 Always renders against the full series regardless of
+                 the scope toggle (the table itself is the season view). -->
+            <button
+              class="rail-item"
+              class:active={activeTab === 'episodes'}
+              role="tab"
+              aria-selected={activeTab === 'episodes'}
+              onclick={() => { activeTab = 'episodes'; }}
+            >
+              <svg class="rail-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3"  y="5"  width="6" height="14" rx="1"/>
+                <rect x="11" y="5"  width="6" height="14" rx="1"/>
+                <rect x="19" y="5"  width="2" height="14" rx="1"/>
+              </svg>
+              <span class="rail-label">Episodes</span>
+              <span class="rail-count">{episodeStats.length}</span>
+            </button>
+          {/if}
         </div>
         <div class="rail-footer">
           <button class="rail-action" onclick={refresh} title="Re-snapshot the document">
@@ -676,7 +902,7 @@
               <span class="mh-rule"></span>
               <span>{activeTabLabel.eyebrow}</span>
             </div>
-            <h3 class="mh-title pane-title">{activeTabLabel.title}</h3>
+            <h3 class="mh-title pane-title">{@html activeTabLabel.title}</h3>
           </div>
           <div class="pane-actions">
             {#if canExportCsv}
@@ -856,7 +1082,7 @@
                 <p>No locations parsed — write scene headings like <em>INT. KITCHEN — DAY</em> to populate this report.</p>
               </div>
             {/if}
-          {:else}
+          {:else if activeTab === 'schedule'}
             {#if stats.schedule.length > 0}
               <div class="data-table-wrap">
                 <table class="data-table schedule-table">
@@ -961,6 +1187,97 @@
                 <p>No scenes yet.</p>
               </div>
             {/if}
+          {:else if activeTab === 'episodes'}
+            <!-- Episodes — per-episode summary table (series only).
+                 Same column-sort vocabulary as the other tables; default
+                 order is the production order (episode #), which is the
+                 reading order for a season planner. -->
+            {#if episodeStats.length > 0}
+              <div class="data-table-wrap">
+                <table class="data-table episodes-table">
+                  <thead>
+                    <tr>
+                      <th class="col-snum" aria-sort={ariaSortFor(epSortKey === 'number', epSortDir)}>
+                        <button class="sort-btn align-end" onclick={() => cycleEpSort('number')}>
+                          #
+                          <span class="sort-ind" class:active={epSortKey === 'number'} data-dir={epSortKey === 'number' ? epSortDir : ''} aria-hidden="true"></span>
+                        </button>
+                      </th>
+                      <th class="col-name" aria-sort={ariaSortFor(epSortKey === 'title', epSortDir)}>
+                        <button class="sort-btn" onclick={() => cycleEpSort('title')}>
+                          Title
+                          <span class="sort-ind" class:active={epSortKey === 'title'} data-dir={epSortKey === 'title' ? epSortDir : ''} aria-hidden="true"></span>
+                        </button>
+                      </th>
+                      <th class="col-meta" aria-sort={ariaSortFor(epSortKey === 'status', epSortDir)}>
+                        <button class="sort-btn" onclick={() => cycleEpSort('status')}>
+                          Status
+                          <span class="sort-ind" class:active={epSortKey === 'status'} data-dir={epSortKey === 'status' ? epSortDir : ''} aria-hidden="true"></span>
+                        </button>
+                      </th>
+                      <th class="col-num" aria-sort={ariaSortFor(epSortKey === 'pageCount', epSortDir)}>
+                        <button class="sort-btn align-end" onclick={() => cycleEpSort('pageCount')}>
+                          Pages
+                          <span class="sort-ind" class:active={epSortKey === 'pageCount'} data-dir={epSortKey === 'pageCount' ? epSortDir : ''} aria-hidden="true"></span>
+                        </button>
+                      </th>
+                      <th class="col-num" aria-sort={ariaSortFor(epSortKey === 'sceneCount', epSortDir)}>
+                        <button class="sort-btn align-end" onclick={() => cycleEpSort('sceneCount')}>
+                          Scenes
+                          <span class="sort-ind" class:active={epSortKey === 'sceneCount'} data-dir={epSortKey === 'sceneCount' ? epSortDir : ''} aria-hidden="true"></span>
+                        </button>
+                      </th>
+                      <th class="col-num" aria-sort={ariaSortFor(epSortKey === 'wordCount', epSortDir)}>
+                        <button class="sort-btn align-end" onclick={() => cycleEpSort('wordCount')}>
+                          Words
+                          <span class="sort-ind" class:active={epSortKey === 'wordCount'} data-dir={epSortKey === 'wordCount' ? epSortDir : ''} aria-hidden="true"></span>
+                        </button>
+                      </th>
+                      <th class="col-num" aria-sort={ariaSortFor(epSortKey === 'dialogueLineCount', epSortDir)}>
+                        <button class="sort-btn align-end" onclick={() => cycleEpSort('dialogueLineCount')}>
+                          Dialogue
+                          <span class="sort-ind" class:active={epSortKey === 'dialogueLineCount'} data-dir={epSortKey === 'dialogueLineCount' ? epSortDir : ''} aria-hidden="true"></span>
+                        </button>
+                      </th>
+                      <th class="col-num" aria-sort={ariaSortFor(epSortKey === 'screenTimeMinutes', epSortDir)}>
+                        <button class="sort-btn align-end" onclick={() => cycleEpSort('screenTimeMinutes')}>
+                          ~min
+                          <span class="sort-ind" class:active={epSortKey === 'screenTimeMinutes'} data-dir={epSortKey === 'screenTimeMinutes' ? epSortDir : ''} aria-hidden="true"></span>
+                        </button>
+                      </th>
+                      <th class="col-num" aria-sort={ariaSortFor(epSortKey === 'characterCount', epSortDir)}>
+                        <button class="sort-btn align-end" onclick={() => cycleEpSort('characterCount')}>
+                          Cast
+                          <span class="sort-ind" class:active={epSortKey === 'characterCount'} data-dir={epSortKey === 'characterCount' ? epSortDir : ''} aria-hidden="true"></span>
+                        </button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {#each sortedEpisodes as ep (ep.number)}
+                      <tr>
+                        <td class="col-snum"><span class="ep-pip">{String(ep.number).padStart(2, '0')}</span></td>
+                        <td class="col-name">
+                          {#if ep.title}{ep.title}{:else}<span class="ep-untitled">Untitled</span>{/if}
+                        </td>
+                        <td class="col-meta"><span class="status-pill status-{ep.status}">{ep.status}</span></td>
+                        <td class="col-num">{ep.pageCount}</td>
+                        <td class="col-num">{ep.sceneCount}</td>
+                        <td class="col-num">{ep.wordCount.toLocaleString()}</td>
+                        <td class="col-num">{ep.dialogueLineCount}</td>
+                        <td class="col-num">~{ep.screenTimeMinutes}</td>
+                        <td class="col-num">{ep.characterCount}</td>
+                      </tr>
+                    {/each}
+                  </tbody>
+                </table>
+              </div>
+            {:else}
+              <div class="empty-pane">
+                <span class="empty-glyph">∅</span>
+                <p>No episodes yet.</p>
+              </div>
+            {/if}
           {/if}
         </div>
       </section>
@@ -1016,13 +1333,15 @@
     padding: 0 6px 18px;
   }
 
+  /* Rail header — sits above the tab list as a department marker. */
   .rail-header h2 {
     margin: 0;
+    font-family: var(--editor-font-en), ui-monospace, monospace;
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: var(--marker-color);
   }
 
   .rail-nav {
@@ -1093,6 +1412,46 @@
   .rail-item.active .rail-count {
     background: var(--accent);
     color: var(--text-on-accent);
+  }
+
+  /* ─── Scope segmented (series only) ───
+     Sits between the rail header and the tab list. Mirrors the Export
+     modal's scope-segmented vocabulary so writers learn the pattern
+     once and recognise it everywhere. */
+  .scope-segmented {
+    display: flex;
+    margin: 0 0 14px;
+    padding: 2px;
+    background: var(--surface-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+  }
+
+  .scope-seg {
+    flex: 1;
+    padding: 5px 8px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: var(--text-muted);
+    font-family: var(--editor-font-en), ui-monospace, monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background var(--motion-fast, 100ms) ease,
+                color var(--motion-fast, 100ms) ease;
+  }
+
+  .scope-seg:hover:not(.active) {
+    color: var(--text-primary);
+  }
+
+  .scope-seg.active {
+    background: var(--surface-float);
+    color: var(--marker-color);
+    box-shadow: 0 1px 2px var(--shadow-soft);
   }
 
   .rail-footer {
@@ -1249,9 +1608,12 @@
     pointer-events: none;
   }
 
+  /* Big stat numerals stay in Courier Prime so the figures align as
+     tabular-nums across rows. Promotion: lift the size and tighten so
+     the digits read as the loud center of each tile. */
   .hero-value {
     font-family: var(--editor-font-en), var(--ui-font);
-    font-size: 30px;
+    font-size: 34px;
     font-weight: 700;
     color: var(--text-primary);
     line-height: 1;
@@ -1267,12 +1629,15 @@
     letter-spacing: 0;
   }
 
+  /* Hero label — Courier marker eyebrow. Reads as a department label
+     above each big stat. */
   .hero-label {
-    font-size: 10.5px;
-    font-weight: 600;
-    letter-spacing: 0.1em;
+    font-family: var(--editor-font-en), ui-monospace, monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: var(--marker-color);
   }
 
   /* ─── Block heading (centered with rule) ─── */
@@ -1621,6 +1986,68 @@
   .setting-pill.setting-both {
     background: var(--accent);
     color: var(--text-on-accent);
+  }
+
+  /* ─── Episodes table pieces ─── */
+  /* Zero-padded Courier pip — same identifier system the navigator
+     and the cards view use, so the same episode reads as the same
+     thing in every surface. */
+  .ep-pip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    padding: 1px 6px;
+    background: var(--surface-base);
+    color: var(--marker-color);
+    font-family: var(--editor-font-en), ui-monospace, monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums;
+    border-radius: 4px;
+    border: 1px solid var(--border-subtle);
+  }
+
+  .ep-untitled {
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  /* Status pill — one for each EpisodeStatus. Same hue family as the
+     SeriesEpisodeList status pills so the writer sees the same colors
+     in the navigator and in the stats table. */
+  .status-pill {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: var(--surface-base);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .status-pill.status-outline {
+    color: var(--text-muted);
+  }
+
+  .status-pill.status-draft {
+    color: var(--marker-color);
+    border-color: var(--accent-warm-muted);
+  }
+
+  .status-pill.status-revision {
+    color: var(--accent);
+    border-color: var(--accent-muted);
+  }
+
+  .status-pill.status-final {
+    background: var(--accent);
+    color: var(--text-on-accent);
+    border-color: var(--accent);
   }
 
   /* Empty state — composed, calm, never apologetic. */

@@ -446,10 +446,16 @@ class DocumentStore {
     };
   }
 
-  /** Create a new empty screenplay via the Rust backend */
-  async newDocument(): Promise<void> {
+  /** Create a new empty screenplay via the Rust backend.
+   *  Optional `title` is written into meta.title so the title-page
+   *  preview, the OS window title, and the eventual "Save As" filename
+   *  all carry the writer's chosen name from the first frame. */
+  async newDocument(title?: string): Promise<void> {
     try {
       const doc = await invoke<ScreenplayDocument>('new_screenplay');
+      if (title && title.trim()) {
+        doc.meta.title = title.trim();
+      }
       this.document = doc;
       this.currentPath = null;
       this.isDirty = false;

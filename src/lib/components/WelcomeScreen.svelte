@@ -1,7 +1,7 @@
 <script lang="ts">
   import { documentStore } from '$lib/stores/documentStore.svelte';
   import { open } from '@tauri-apps/plugin-dialog';
-  import SeriesTitleDialog from './SeriesTitleDialog.svelte';
+  import NewProjectDialog from './NewProjectDialog.svelte';
   import PasteScriptDialog from './PasteScriptDialog.svelte';
 
   let {
@@ -16,6 +16,7 @@
   // welcome-local instead of in the documentStore so it stays a pure UI
   // concern and the store doesn't grow a persistent-state dependency.
   let recent = $state<{ path: string; name: string }[]>(loadRecent());
+  let showFilmDialog = $state(false);
   let showSeriesDialog = $state(false);
   let showPasteDialog = $state(false);
 
@@ -33,9 +34,14 @@
     }
   }
 
-  async function handleNewFilm() {
+  function handleNewFilm() {
+    showFilmDialog = true;
+  }
+
+  async function handleCreateFilm(title: string) {
+    showFilmDialog = false;
     if (!(await documentStore.confirmIfDirty())) return;
-    await documentStore.newDocument();
+    await documentStore.newDocument(title);
   }
 
   function handleNewSeries() {
@@ -73,14 +79,14 @@
          surface speak the same design system. -->
     <img class="logo" src="/app-icon.png" alt="" aria-hidden="true" />
 
-    <div class="masthead-eyebrow" aria-hidden="true">
-      <span class="eyebrow-rule"></span>
-      <span class="eyebrow-text">A Screenplay Editor</span>
-      <span class="eyebrow-rule"></span>
+    <div class="mh-eyebrow is-centered" aria-hidden="true">
+      <span class="mh-rule"></span>
+      <span>A Screenplay Editor</span>
+      <span class="mh-rule"></span>
     </div>
 
-    <h1 class="title">SCRIPTTY</h1>
-    <p class="subtitle">for Malayalam &amp; English screenwriters</p>
+    <h1 class="title">Scriptty<span class="dot">.</span></h1>
+    <p class="subtitle">For Malayalam &amp; <em>English</em> screenwriters</p>
 
     <div class="masthead-divider" aria-hidden="true"></div>
 
@@ -117,10 +123,10 @@
 
     {#if recent.length > 0}
       <div class="recent">
-        <div class="recent-eyebrow" aria-hidden="true">
-          <span class="eyebrow-rule"></span>
-          <span class="eyebrow-text">Recent</span>
-          <span class="eyebrow-rule"></span>
+        <div class="mh-eyebrow is-centered recent-eyebrow" aria-hidden="true">
+          <span class="mh-rule"></span>
+          <span>Recent</span>
+          <span class="mh-rule"></span>
         </div>
         <ul>
           {#each recent as item (item.path)}
@@ -137,7 +143,8 @@
   </div>
 </div>
 
-<SeriesTitleDialog bind:open={showSeriesDialog} onConfirm={handleCreateSeries} />
+<NewProjectDialog bind:open={showFilmDialog} kind="film" onConfirm={handleCreateFilm} />
+<NewProjectDialog bind:open={showSeriesDialog} kind="series" onConfirm={handleCreateSeries} />
 <PasteScriptDialog bind:open={showPasteDialog} onConfirm={handlePasteConfirm} />
 
 <style>
@@ -181,59 +188,50 @@
     opacity: 0.92;
   }
 
-  /* ─── Editorial masthead ──────────────────────────────────────────── */
-  /* Frontispiece-style centered masthead: tracked-caps eyebrow
-     flanked by hairline rules on both sides, big confident title,
-     italic Manjari subtitle. The flanking rules give the eyebrow
-     visual weight on a centered axis without it disappearing into
-     the surrounding negative space. */
-  .masthead-eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 12px;
+  /* ─── Editorial masthead ────────────────────────────────────────────
+     The mh-eyebrow utility (defined in +layout.svelte) handles the
+     tracked-caps row and flanking rules. Just space it from the
+     wordmark below. */
+  .welcome-card :global(.mh-eyebrow) {
     margin-bottom: 14px;
   }
 
-  .eyebrow-rule {
-    display: inline-block;
-    width: 28px;
-    height: 1px;
-    background: var(--border-medium);
-  }
-
-  .eyebrow-text {
-    font-family: var(--ui-font);
-    font-size: 9.5px;
-    font-weight: 700;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: var(--text-secondary);
-  }
-
-  /* SCRIPTTY in Courier Prime — the screenplay's own typeface. Sets
-     the wordmark in the same vocabulary as a printed cover sheet,
-     so the welcome reads as a title-page extract from the form of
-     work the app produces. Sized to dominate the masthead block
-     without crowding the eyebrow above or subtitle below. */
+  /* The wordmark — Fraunces SemiBold "Scriptty." with a terracotta
+     period. Same family + same composition as the title-bar mark
+     and the marketing-site hero, scaled up for the welcome-cover
+     surface. */
   .title {
     margin: 0;
-    font-family: var(--editor-font-en), ui-monospace, monospace;
-    font-size: 44px;
-    font-weight: 700;
+    font-family: var(--display-font);
+    font-size: 56px;
+    font-weight: 600;
     color: var(--text-primary);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    line-height: 1;
+    letter-spacing: -0.02em;
+    line-height: 0.95;
   }
 
+  .title .dot {
+    color: var(--marker-color);
+  }
+
+  /* Italic deck under the wordmark — display-font in italic, with
+     one emphasised word picking up the accent. Reads as a magazine
+     deck rather than a UI subtitle. */
   .subtitle {
-    margin: 12px 0 0;
-    font-family: 'Manjari', var(--ui-font);
-    font-size: 14px;
+    margin: 14px 0 0;
+    font-family: var(--display-font);
+    font-size: 16px;
     font-style: italic;
+    font-weight: 400;
     color: var(--text-secondary);
-    line-height: 1.3;
+    line-height: 1.35;
     letter-spacing: 0.005em;
+  }
+
+  .subtitle em {
+    font-style: italic;
+    color: var(--accent);
+    font-weight: 500;
   }
 
   /* Horizontal section break — classical magazine divider:
@@ -428,17 +426,8 @@
 
   .recent-eyebrow {
     display: flex;
-    align-items: center;
     justify-content: center;
-    gap: 12px;
     margin-bottom: 14px;
-    text-align: center;
-  }
-
-  .recent-eyebrow .eyebrow-rule {
-    flex: 1;
-    width: auto;
-    max-width: 60px;
   }
 
   .recent ul {
@@ -463,7 +452,7 @@
   .recent-item {
     width: 100%;
     display: grid;
-    grid-template-columns: 32px 1fr;
+    grid-template-columns: 48px 1fr;
     align-items: baseline;
     gap: 12px;
     padding: 10px 8px;
@@ -479,14 +468,15 @@
 
   .recent-item::before {
     counter-increment: recent-counter;
-    content: counter(recent-counter, decimal-leading-zero);
+    content: "№ " counter(recent-counter, decimal-leading-zero);
     font-family: var(--editor-font-en), ui-monospace, monospace;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
-    color: var(--text-muted);
-    letter-spacing: 0.04em;
+    color: var(--marker-color);
+    letter-spacing: 0.08em;
     text-align: right;
-    transition: color 120ms ease;
+    transition: opacity 120ms ease;
+    opacity: 0.65;
   }
 
   .recent-item:hover {
@@ -494,7 +484,7 @@
   }
 
   .recent-item:hover::before {
-    color: var(--accent);
+    opacity: 1;
   }
 
   .recent-name {

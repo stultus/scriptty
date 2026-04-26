@@ -653,12 +653,16 @@
     min-width: 0;
   }
 
+  /* Marker eyebrow — Courier in marker color, matches the dept
+     vocabulary across the rest of the app (Settings sections,
+     Stats rail, About credits). */
   .nav-eyebrow {
-    font-size: 10.5px;
+    font-family: var(--editor-font-en), ui-monospace, monospace;
+    font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: var(--marker-color);
   }
 
   .nav-count {

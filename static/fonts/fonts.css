@@ -74,3 +74,19 @@
   font-display: swap;
   unicode-range: U+0000-024F, U+1E00-1EFF, U+2000-206F, U+20A0-20CF, U+2100-214F;
 }
+
+/* Fraunces — display serif used for the brand wordmark in the title bar
+   and (latently) any future masthead surface that wants the magazine-cover
+   voice from the marketing site. The 9pt optical cut is the text-grade
+   master, tuned for legibility at small sizes (the wordmark sits around
+   18–22px in the title bar). Latin-only via unicode-range so Malayalam
+   runs always fall through to Manjari/Noto Sans Malayalam. OFL-1.1
+   licensed (see Fraunces-OFL.txt). */
+@font-face {
+  font-family: 'Fraunces';
+  src: url('/fonts/Fraunces-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-024F, U+1E00-1EFF, U+2000-206F, U+20A0-20CF, U+2100-214F;
+}

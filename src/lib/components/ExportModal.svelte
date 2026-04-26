@@ -447,6 +447,75 @@
     };
   }
 
+  /** Strip characters that cause friction in cross-platform filenames
+   *  (slashes, colons, control chars), collapse internal whitespace,
+   *  and trim. Doesn't touch Unicode letters — Malayalam titles
+   *  survive intact and get saved as ".സ്ക്രിപ്റ്റ്.pdf" if the writer
+   *  named the doc that way. */
+  function sanitizeForFilename(s: string): string {
+    return s
+      .replace(/[\\/:*?"<>|\x00-\x1f]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /** Derive a contextual default filename (without extension) for a
+   *  PDF / Fountain / plain-text export. Reads the document title,
+   *  series state, scope, and which sections are included so the
+   *  Save dialog opens with a name the writer would have typed
+   *  themselves. Falls back gracefully if no title is set. */
+  function defaultExportName(): string {
+    const meta = documentStore.activeMeta;
+    const seriesTitle = documentStore.document?.series?.title?.trim();
+    const ep = documentStore.activeEpisode;
+
+    // Base — the project's editorial name.
+    let base: string;
+    if (isSeriesProject) {
+      const series = sanitizeForFilename(seriesTitle || '') || 'Untitled Series';
+      if (exportScope === 'series') {
+        base = `${series} — All episodes`;
+      } else {
+        const epNum = ep ? String(ep.number).padStart(2, '0') : '01';
+        const epTitle = sanitizeForFilename(ep?.title?.trim() || '');
+        base = epTitle ? `${series} — Ep ${epNum} · ${epTitle}` : `${series} — Ep ${epNum}`;
+      }
+    } else {
+      const docTitle = sanitizeForFilename(meta?.title?.trim() || '');
+      if (docTitle) {
+        base = docTitle;
+      } else {
+        // No title — fall back to the .screenplay filename stem so the
+        // PDF lands next to its source with the same name.
+        const path = documentStore.currentPath;
+        if (path) {
+          const file = path.split('/').pop() ?? path.split('\\').pop() ?? path;
+          base = sanitizeForFilename(file.replace(/\.screenplay$/, '')) || 'Screenplay';
+        } else {
+          base = 'Screenplay';
+        }
+      }
+    }
+
+    // Section suffix — only when the export is *just* one supplemental
+    // section (not the full screenplay). Reading "Title — Cards.pdf"
+    // tells you what's in the file at a glance. When the screenplay
+    // is included we leave the base bare since it's the canonical doc.
+    if (!includeScreenplay) {
+      const onlyOne = (a: boolean, b: boolean, c: boolean, d: boolean, e: boolean) =>
+        [a, b, c, d, e].filter(Boolean).length === 1;
+      if (onlyOne(includeSceneCards, includeShootList, includeSynopsis, includeTreatment, includeNarrative)) {
+        if (includeSceneCards) base += ' — Cards';
+        else if (includeShootList) base += ' — Shoot List';
+        else if (includeSynopsis) base += ' — Synopsis';
+        else if (includeTreatment) base += ' — Treatment';
+        else if (includeNarrative) base += ' — Narrative';
+      }
+    }
+
+    return base;
+  }
+
   function buildDocumentForExport(): ScreenplayDocument | null {
     // For a series in "series" scope, flatten every episode into one
     // combined document. Otherwise start from the "active export document" —
@@ -524,9 +593,8 @@
         document: doc,
       });
 
-      const title = doc.meta.title || 'screenplay';
       const path = await save({
-        defaultPath: `${title}.txt`,
+        defaultPath: `${defaultExportName()}.txt`,
         filters: [{ name: 'Plain Text', extensions: ['txt'] }],
       });
 
@@ -557,9 +625,8 @@
         document: doc,
       });
 
-      const title = doc.meta.title || 'screenplay';
       const path = await save({
-        defaultPath: `${title}.fountain`,
+        defaultPath: `${defaultExportName()}.fountain`,
         filters: [{ name: 'Fountain', extensions: ['fountain'] }],
       });
 
@@ -611,7 +678,7 @@
       });
 
       const path = await save({
-        defaultPath: 'screenplay.pdf',
+        defaultPath: `${defaultExportName()}.pdf`,
         filters: [{ name: 'PDF', extensions: ['pdf'] }],
       });
 
@@ -645,7 +712,7 @@
             <span class="mh-rule"></span>
             <span>Build &amp; export</span>
           </div>
-          <h2 class="mh-title export-title">Export</h2>
+          <h2 class="mh-title export-title">Print to <em>paper</em></h2>
         </div>
         <button class="btn-close" onclick={() => { open = false; }} disabled={anyExporting} aria-label="Close export">&times;</button>
       </header>

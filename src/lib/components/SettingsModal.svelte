@@ -68,7 +68,7 @@
 
       <!-- ── Writing ─────────────────────────────────────────── -->
       <div class="section">
-        <div class="section-title">Writing</div>
+        <div class="section-title">№ 01 · Writing</div>
 
         <div class="setting-row">
           <div class="setting-label">
@@ -134,7 +134,7 @@
 
       <!-- ── Editor ──────────────────────────────────────────── -->
       <div class="section">
-        <div class="section-title">Editor</div>
+        <div class="section-title">№ 02 · Editor</div>
 
         <div class="setting-row">
           <div class="setting-label">
@@ -242,7 +242,7 @@
 
       <!-- ── Appearance ──────────────────────────────────────── -->
       <div class="section">
-        <div class="section-title">Appearance</div>
+        <div class="section-title">№ 03 · Appearance</div>
 
         <div class="setting-row">
           <div class="setting-label">
@@ -416,13 +416,17 @@
     border-top: 1px solid var(--border-subtle);
   }
 
+  /* Section titles are mini department markers — Courier in marker
+     color, tighter tracking. Reads as the same vocabulary as the
+     №-numerals across the rest of the app. */
   .section-title {
+    font-family: var(--editor-font-en), ui-monospace, monospace;
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-muted);
-    margin: 2px 0 6px 0;
+    letter-spacing: 0.18em;
+    color: var(--marker-color);
+    margin: 2px 0 8px 0;
   }
 
   .setting-row {
@@ -454,14 +458,20 @@
     line-height: 1.3;
   }
 
+  /* kbd matches the HelpModal vocabulary — Courier Prime, 2px bottom
+     border for the physical-key feel. */
   .setting-desc kbd {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-family: var(--editor-font-en), ui-monospace, monospace;
     font-size: 10px;
-    background: var(--surface-base);
-    border: 1px solid var(--border-subtle);
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-medium);
+    border-bottom-width: 2px;
     border-radius: 3px;
-    padding: 1px 4px;
+    padding: 1px 5px;
     color: var(--text-secondary);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
   }
 
   .segmented {

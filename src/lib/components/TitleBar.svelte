@@ -7,6 +7,7 @@
     onViewChange,
     onShowExport,
     onShowMetadata,
+    onShowStatistics,
   } = $props<{
     onToggleSidebar?: () => void;
     activeView?: 'writing' | 'cards' | 'story';
@@ -14,6 +15,8 @@
     onShowExport?: () => void;
     /** Open the title-page / cover-sheet metadata editor (#165). */
     onShowMetadata?: () => void;
+    /** Open the script statistics panel (page count, characters, locations). */
+    onShowStatistics?: () => void;
   }>();
 
   /** "Untitled" state — a brand-new doc with no title yet. The metadata
@@ -128,16 +131,14 @@
 
 <div class="title-bar">
   <div class="btn-group left">
-    <!-- App wordmark — colophon-style mark + mixed-case Courier
-         "Scriptty" + hairline rule. Reads as a refined publisher's
-         imprint rather than UI chrome: the small filled square is
-         the press mark, the wordmark is the imprint, the hairline
-         rule is the gutter to the rest of the toolbar. Matches the
-         editorial vocabulary used by the welcome / about / PDF
-         covers but tightens the typography for the smaller surface. -->
+    <!-- App wordmark — Fraunces SemiBold "Scriptty." with the period in
+         the marker color, mirroring the magazine-cover hero on the
+         marketing site (stultus.in/scriptty). The dot is the visual
+         signature; everything else is restraint. The hairline rule
+         keeps the gutter divider between the mark and the toolbar
+         icons. -->
     <span class="wordmark" aria-hidden="true" title="Scriptty">
-      <span class="wordmark-mark"></span>
-      <span class="wordmark-text">Scriptty</span>
+      <span class="wordmark-text">Scriptty<span class="wordmark-dot">.</span></span>
     </span>
     <span class="wordmark-rule" aria-hidden="true"></span>
     <button
@@ -289,6 +290,22 @@
         <span class="incomplete-dot" aria-hidden="true"></span>
       {/if}
     </button>
+    <button
+      class="btn-icon"
+      onclick={() => onShowStatistics?.()}
+      title="Script statistics (⌘⇧I)"
+      aria-label="Script statistics"
+    >
+      <!-- Bar-chart glyph — three rising bars on a baseline. Same
+           visual idea as the Statistics rail's Overview icon, just
+           reduced to the essentials so it reads at title-bar size. -->
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="4" y1="20" x2="20" y2="20"/>
+        <rect x="6"  y="13" width="3" height="6"  rx="0.5"/>
+        <rect x="11" y="9"  width="3" height="10" rx="0.5"/>
+        <rect x="16" y="5"  width="3" height="14" rx="0.5"/>
+      </svg>
+    </button>
     <button class="btn-ghost" onclick={() => onShowExport?.()} title="Export document">Export</button>
     <button
       class="btn-primary"
@@ -321,44 +338,41 @@
     flex-shrink: 0;
   }
 
-  /* App wordmark — colophon idiom: small accent press-mark, the
-     mixed-case Courier wordmark, and a hairline gutter rule. Mixed
-     case (not all-caps) gives the typewriter face room to breathe
-     and feels more imprint-of-a-press than enterprise-software. */
+  /* Brand wordmark — Fraunces SemiBold display serif, mixed case,
+     period in the marker color. Mirrors the magazine-cover hero on
+     stultus.in/scriptty so the app and the marketing site read as
+     one identity. */
   .wordmark {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
     height: 26px;
     margin: 0 0 0 2px;
-    padding: 0 8px 0 4px;
+    padding: 0 8px 0 6px;
     line-height: 1;
     user-select: none;
     -webkit-app-region: drag;
   }
 
-  /* Press mark — tiny filled square in accent. Sized at 5px so it
-     reads as a typographic ornament, not a UI element. */
-  .wordmark-mark {
-    width: 5px;
-    height: 5px;
-    background: var(--accent);
-    flex-shrink: 0;
-    /* very subtle rotation so the square reads as a print-ornament
-       diamond rather than a generic dot. */
-    transform: rotate(45deg);
+  .wordmark-text {
+    font-family: var(--display-font);
+    /* Slight optical lift so descender alignment with the period
+       feels even — Fraunces SemiBold sits a touch low against the
+       baseline at this size. */
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+    line-height: 1;
   }
 
-  .wordmark-text {
-    font-family: var(--editor-font-en), ui-monospace, monospace;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    color: var(--text-primary);
-    /* Tiny micro-shift on the cap S so the wordmark feels deliberately
-       set rather than typed. font-feature-settings 'ss01' would be
-       ideal but Courier Prime doesn't ship stylistic sets — the
-       letter-spacing alone does most of the work. */
+  /* The period — the visual signature of the wordmark. Painted in
+     --marker-color (terracotta) so the punctuation reads as the
+     editorial accent, not as flat punctuation. Negative margin pulls
+     it tight against the final 'y' so the dot kisses the wordmark
+     rather than floating away from it. */
+  .wordmark-dot {
+    color: var(--marker-color);
+    margin-left: -0.04em;
   }
 
   /* Hairline gutter rule — separates the colophon from the icon

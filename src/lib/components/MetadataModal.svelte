@@ -138,9 +138,9 @@
         <div class="header-text">
           <div class="mh-eyebrow" aria-hidden="true">
             <span class="mh-rule"></span>
-            <span>Title page · cover sheet</span>
+            <span>Title page</span>
           </div>
-          <h2 class="mh-title meta-title">Document Properties</h2>
+          <h2 class="mh-title meta-title">The <em>cover</em> sheet</h2>
         </div>
         <button class="btn-close" onclick={handleCancel} aria-label="Close metadata">&times;</button>
       </header>
@@ -224,7 +224,7 @@
           </div>
 
           <div class="form-group">
-            <h3 class="form-section-heading">Production</h3>
+            <h3 class="form-section-heading">№ 02 · Production</h3>
 
             <div class="field">
               <label for="meta-contact">
@@ -509,14 +509,17 @@
   }
 
   /* Section group — heading + fields cluster, with a soft divider between
-     groups instead of the noisy top-border-on-every-heading. */
+     groups instead of the noisy top-border-on-every-heading.
+     The numeral picks up --marker-color so the section reads as a
+     department block. */
   .form-section-heading {
     margin: 0 0 12px;
+    font-family: var(--editor-font-en), ui-monospace, monospace;
     font-size: 10.5px;
     font-weight: 700;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: var(--marker-color);
     display: inline-flex;
     align-items: center;
     gap: 10px;

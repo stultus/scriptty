@@ -1065,9 +1065,7 @@
                  hint of the populated values. -->
             <details class="production-disclosure" open={hasProduction}>
               <summary class="production-summary">
-                <svg class="caret" width="9" height="9" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true">
-                  <path d="M3 2 L7 5 L3 8 Z" />
-                </svg>
+                <span class="prod-toggle" aria-hidden="true"></span>
                 <span class="production-label">Production</span>
                 {#if hasProduction}
                   <span class="production-hint">
@@ -1998,15 +1996,32 @@
     display: none;
   }
 
-  .production-summary .caret {
-    color: var(--text-muted);
-    transition: transform 160ms ease;
+  /* Editorial +/− disclosure marker (#185). Lifted from the marketing
+     site's "Other platforms" details. The pseudo-element flips between
+     `+` and `−` on [open], painted in --marker-color so the toggle reads
+     as the same vocabulary as the other section numerals. Mono-font
+     keeps the glyphs centered and uniform. */
+  .prod-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 12px;
+    height: 12px;
     flex-shrink: 0;
+    font-family: var(--editor-font-en), ui-monospace, monospace;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--marker-color);
     transform: translateY(-1px);
   }
 
-  .production-disclosure[open] .production-summary .caret {
-    transform: rotate(90deg) translateX(-1px);
+  .prod-toggle::before {
+    content: "+";
+  }
+
+  .production-disclosure[open] .prod-toggle::before {
+    content: "−";
   }
 
   .production-label {

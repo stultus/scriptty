@@ -244,13 +244,16 @@
     padding: 6px 0;
   }
 
+  /* Group labels read as Courier marker chips — same vocabulary as
+     the rest of the section eyebrows across the app. */
   .group-label {
-    padding: 10px 18px 4px;
-    font-size: 10.5px;
+    padding: 12px 18px 6px;
+    font-family: var(--editor-font-en), ui-monospace, monospace;
+    font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-muted);
-    font-weight: 600;
+    letter-spacing: 0.18em;
+    color: var(--marker-color);
+    font-weight: 700;
   }
 
   .item {
@@ -284,10 +287,13 @@
     text-overflow: ellipsis;
   }
 
+  /* Shortcut hint pill — Courier in the marker vocabulary so the
+     keystroke reads as the same family as kbd elsewhere. */
   .hint {
     flex-shrink: 0;
     color: var(--text-muted);
-    font-size: 11px;
+    font-family: var(--editor-font-en), ui-monospace, monospace;
+    font-size: 10.5px;
     letter-spacing: 0.04em;
     font-variant-numeric: tabular-nums;
   }

@@ -77,13 +77,19 @@
   >
     <div class="modal-card paste-card" use:focusTrap>
       <div class="modal-header">
-        <h2>Paste Script</h2>
+        <div class="header-text">
+          <div class="mh-eyebrow" aria-hidden="true">
+            <span class="mh-rule"></span>
+            <span>Import</span>
+          </div>
+          <h2 class="header-display">Paste a draft, get a <em>screenplay</em>.</h2>
+        </div>
         <button class="btn-close" onclick={handleCancel} aria-label="Close">&times;</button>
       </div>
 
       <p class="hint">
-        Paste plain text and Scriptty detects scene headings (INT./EXT.), character names
-        (Latin ALL CAPS, or Malayalam names suffixed with <code>:</code> like
+        Scriptty detects scene headings (<code>INT.</code>/<code>EXT.</code>), character names
+        (Latin <code>ALL CAPS</code>, or Malayalam names suffixed with <code>:</code> like
         <code>രമേശ്:</code>), dialogue, parentheticals, and transitions. The preview shows
         what was detected — refine in the editor after.
       </p>
@@ -167,15 +173,32 @@ CUT TO:`}
 
   .modal-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
+    gap: 16px;
   }
 
-  .modal-header h2 {
+  .header-text {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .header-display {
     margin: 0;
-    font-size: var(--modal-header-size);
-    font-weight: var(--modal-header-weight);
+    font-family: var(--display-font);
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
     color: var(--text-primary);
+  }
+
+  .header-display em {
+    font-style: italic;
+    font-weight: 500;
+    color: var(--accent);
   }
 
   .btn-close {
@@ -209,10 +232,11 @@ CUT TO:`}
   .hint code {
     font-family: var(--editor-font-en), ui-monospace, monospace;
     font-size: 11.5px;
-    padding: 1px 4px;
-    border-radius: 3px;
-    background: var(--surface-base);
-    color: var(--text-secondary);
+    padding: 1px 5px;
+    border-radius: 2px;
+    background: var(--accent-warm-muted);
+    color: var(--text-primary);
+    letter-spacing: 0.01em;
   }
 
   .paste-grid {

@@ -37,11 +37,14 @@
   // Tab state — persisted to localStorage so a user returning to Story Mode
   // lands on the section they were last editing.
   type StoryField = 'idea' | 'synopsis' | 'treatment' | 'narrative';
-  const tabs: { id: StoryField; label: string; placeholder: string }[] = [
-    { id: 'idea', label: 'Idea', placeholder: 'The core premise. One to three lines.' },
-    { id: 'synopsis', label: 'Synopsis', placeholder: 'The full story in prose — beginning, middle, end. 300–800 words.' },
-    { id: 'treatment', label: 'Treatment', placeholder: 'Full narrative prose. Scene by scene, every beat written out.' },
-    { id: 'narrative', label: 'Narrative', placeholder: 'Full-length story. Write freely — no formatting constraints, no element types.' },
+  // marker is the editorial numeral shown above each tab label
+  // (`№ 01 · Idea`). Stable per-section so the same numeral travels with
+  // the section across renders and active-state changes.
+  const tabs: { id: StoryField; label: string; marker: string; placeholder: string }[] = [
+    { id: 'idea',      label: 'Idea',      marker: '№ 01', placeholder: 'The core premise. One to three lines.' },
+    { id: 'synopsis',  label: 'Synopsis',  marker: '№ 02', placeholder: 'The full story in prose — beginning, middle, end. 300–800 words.' },
+    { id: 'treatment', label: 'Treatment', marker: '№ 03', placeholder: 'Full narrative prose. Scene by scene, every beat written out.' },
+    { id: 'narrative', label: 'Narrative', marker: '№ 04', placeholder: 'Full-length story. Write freely — no formatting constraints, no element types.' },
   ];
 
   function initialTab(): StoryField {
@@ -158,7 +161,8 @@
             aria-selected={activeTab === tab.id}
             onclick={() => { activeTab = tab.id; }}
           >
-            {tab.label}
+            <span class="mh-marker tab-marker" aria-hidden="true">{tab.marker}</span>
+            <span class="tab-label">{tab.label}</span>
           </button>
         {/each}
       </div>
@@ -270,41 +274,65 @@
 
   .tab-bar {
     display: flex;
-    gap: 4px;
+    gap: 18px;
     margin: 0 0 24px;
     padding-bottom: 0;
     justify-content: center;
   }
 
-  /* Tab labels act as the title-page-like heading of Story view — Courier
-     Prime bold, wider tracking. Matches the display rhythm of scene headings
-     in the editor so both pages read as the same typographic system. */
+  /* Tabs are department blocks now — small Courier numeral on top
+     (the .mh-marker utility), then the section label below. Borrows the
+     marketing-site's `№ 0X · Topic` editorial vocabulary. */
   .tab {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
     border: none;
     background: transparent;
-    padding: 8px 14px;
+    padding: 8px 12px;
     margin-bottom: -1px;
-    font-family: var(--editor-font-en), var(--ui-font);
-    /* Tabs are Latin-only labels, so no Malayalam fallback is required. */
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
     cursor: pointer;
     border-bottom: 2px solid transparent;
     transition: color 120ms ease, border-color 120ms ease;
   }
 
+  .tab-marker {
+    /* Inactive tabs read as quiet — keep the marker hue muted until the
+       tab activates so the row doesn't become a wall of warm dots. */
+    color: var(--text-muted);
+    transition: color 120ms ease;
+  }
+
+  .tab-label {
+    font-family: var(--editor-font-en), var(--ui-font);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    line-height: 1;
+    transition: color 120ms ease;
+  }
+
   /* Use --text-on-page so hover stays legible on the cream page background
      in dark mode — --text-primary is off-white and disappears there. */
-  .tab:hover {
+  .tab:hover .tab-label {
     color: var(--text-on-page);
   }
 
   .tab.active {
-    color: var(--accent);
     border-bottom-color: var(--accent);
+  }
+
+  .tab.active .tab-label {
+    color: var(--accent);
+  }
+
+  /* Active tab promotes the marker into its true marker color — the
+     numeral pops, signalling the live section. */
+  .tab.active .tab-marker {
+    color: var(--marker-color);
   }
 
   .story-section {

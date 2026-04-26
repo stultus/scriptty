@@ -2078,75 +2078,30 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
     // breakdown read as a self-contained tear sheet.
     markup.push_str("\n#pagebreak()\n\n");
 
-    // Cards rendered as an explicit 2-column GRID with adaptive
-    // width:
-    // - "Compact" cards (short bodies) pair up in a 2-column grid
-    //   row. With `align: top` and the inner block's natural
-    //   height, each card hugs its content; the shorter card in a
-    //   pair leaves transparent whitespace below itself (no
-    //   border) rather than stretching to match its neighbour.
-    // - "Wide" cards (body length exceeds LONG_CARD_THRESHOLD)
-    //   break OUT of the grid and render full-page-width
-    //   standalone. This keeps a long card from becoming a tall
-    //   narrow tower in one column.
+    // Every card renders full-page-width, one per row, with a
+    // small vertical gap between cards. We previously tried a
+    // 2-column grid (and before that, a `#columns(2)` flow), but
+    // both made short cards leave visible empty space in the
+    // unused half of the row, and Typst's column-flow couldn't
+    // be made to balance. Full-width-everything reads as a
+    // consistent stack of production briefs — predictable layout,
+    // every card has the same shape, vertical reading order
+    // matches the script's scene order. Trade: more pages for a
+    // long breakdown, but no wasted half-rows.
     //
-    // Why grid instead of `#columns(2)`: Typst's columns flow
-    // fills column 1 sequentially and only spills to column 2
-    // when column 1 overflows. Combined with `breakable: false`
-    // on each card, that meant a card too tall for the bottom of
-    // column 1 jumped to a new PAGE column 1 instead of going to
-    // column 2 — leaving column 2 entirely empty. The explicit
-    // grid forces both columns to be used.
-    //
-    // In compact mode (export setting), every card renders as a
-    // minimal slug-only block — no description, notes, location
-    // group, or empty-state — and the wide-spanning logic is
-    // bypassed (compact cards are never long enough to span).
+    // In compact mode (export setting), each card still renders
+    // full-width but as a minimal slug-only block (no
+    // description / notes / location group / empty-state) — so
+    // each card row is short and many fit per page.
     //
     // cards_data is a JSON array of:
     // [{ scene_number, heading, location, time, characters,
     //    description, shoot_notes, scheduled_date, location_group }]
-    const LONG_CARD_THRESHOLD: usize = 500;
-
     if let Some(cards) = cards_data.as_array() {
-        if !cards.is_empty() {
-            // Walk the cards, grouping consecutive non-wide cards
-            // into a single grid block, flushing when we hit a
-            // wide card (rendered standalone), then resuming a
-            // fresh grid block.
-            let mut i = 0;
-            while i < cards.len() {
-                let run_start = i;
-                while i < cards.len() {
-                    if !compact && card_body_len(&cards[i]) > LONG_CARD_THRESHOLD {
-                        break;
-                    }
-                    i += 1;
-                }
-
-                // Emit the run [run_start..i] of compact-width cards
-                // as a 2-column grid. Each card is wrapped in `[...]`
-                // (a content block) so the grid receives positional
-                // args; `align: top` keeps short cards anchored to
-                // the top of their cell instead of centred.
-                if i > run_start {
-                    markup.push_str("#grid(\n  columns: (1fr, 1fr),\n  column-gutter: 10pt,\n  row-gutter: 10pt,\n  align: top,\n");
-                    for run_card in cards[run_start..i].iter() {
-                        markup.push_str("  [\n");
-                        emit_scene_card(&mut markup, run_card, compact);
-                        markup.push_str("  ],\n");
-                    }
-                    markup.push_str(")\n\n");
-                }
-
-                // Emit the wide card (if any) standalone at full
-                // page width. A small vertical gap follows so the
-                // next grid block doesn't butt against it.
-                if i < cards.len() {
-                    emit_scene_card(&mut markup, &cards[i], compact);
-                    markup.push_str("\n#v(10pt)\n\n");
-                    i += 1;
-                }
+        for (idx, card) in cards.iter().enumerate() {
+            emit_scene_card(&mut markup, card, compact);
+            if idx + 1 < cards.len() {
+                markup.push_str("#v(10pt)\n\n");
             }
         }
     }
@@ -2154,27 +2109,13 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
     markup
 }
 
-/// Total character length of the writer-authored body fields on a
-/// card — used to decide whether a card should break out of the
-/// 2-column flow and render full-width. Counts description + shoot
-/// notes; eyebrow / slug / cast / dates are short and bounded so
-/// they don't drive the decision.
-fn card_body_len(card: &Value) -> usize {
-    let d = card.get("description").and_then(|v| v.as_str()).unwrap_or("").len();
-    let s = card.get("shoot_notes").and_then(|v| v.as_str()).unwrap_or("").len();
-    d + s
-}
-
-/// Emit a single scene card block. Pulled out of the parent
-/// generator so the same code path serves three placement modes:
-///   - paired: inside a 2-column grid, half-page width
-///   - wide: standalone, full-page width
-///   - compact: minimal — eyebrow, slug, cast only — used by the
-///     export's "Compact card view" toggle
-///
-/// The OUTER container (grid cell vs standalone) determines the
-/// card's width; the card content itself is identical in either
-/// position. Only the `compact` flag changes what fields render.
+/// Emit a single scene card block. Always renders full-page-width;
+/// the parent generator stacks cards vertically with a small gap
+/// between them. The `compact` flag controls which fields render:
+///   - false (default): eyebrow, slug, location group, cast,
+///     description, shoot notes, empty-state placeholder
+///   - true ("Compact card view" export toggle): eyebrow, slug,
+///     cast only — minimal at-a-glance card for shoot-day overviews
 ///
 /// The caller controls inter-card spacing; this function emits
 /// only the card itself.

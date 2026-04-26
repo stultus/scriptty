@@ -1321,12 +1321,17 @@
   }
 
   /* ─── Left rail ─── */
+  /* `min-height: 0` + `overflow-y: auto` so a series with many episodes
+     doesn't push the rail past the modal edge. Same grid-child gotcha
+     as .stats-pane below. */
   .stats-rail {
     background: var(--surface-base);
     border-right: 1px solid var(--border-subtle);
     display: flex;
     flex-direction: column;
     padding: 22px 14px 14px;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .rail-header {
@@ -1483,10 +1488,15 @@
   }
 
   /* ─── Right pane ─── */
+  /* `min-height: 0` is required because grid items default to `min-height: auto`,
+     which lets the pane grow taller than its grid track when the table inside
+     is long. Without it, .pane-content's flex+overflow never has a bound to
+     scroll within and the table just gets clipped at the modal edge. */
   .stats-pane {
     display: flex;
     flex-direction: column;
     min-width: 0;
+    min-height: 0;
     background: var(--surface-float);
   }
 

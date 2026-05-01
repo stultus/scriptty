@@ -111,10 +111,20 @@ An array of scene card objects. Each card stores user-written notes for a specif
 | Field | Type | Description |
 |---|---|---|
 | `scene_index` | integer | Zero-based index matching the scene's position in the screenplay. The first scene heading is index 0, the second is index 1, etc. |
-| `description` | string | What happens in the scene (2–4 lines typical). |
-| `shoot_notes` | string | Production notes: equipment, VFX, stunts, location details. |
+| `description` | string | What happens in the scene (2–4 lines typical). Fountain synopses (`= ...`) imported into Scriptty land here — and they're emitted back as `=` lines on Fountain export, so this field is semi-public. |
+| `shoot_notes` | string | Production notes: equipment, VFX, stunts, location details. Also the storage site for Fountain inline notes (`[[ ... ]]`) and section headers attached during import — see the section-marker convention below. |
 
 Scene metadata like location, time of day, characters, and page count are computed automatically from the screenplay content — they are **not** stored in scene cards.
+
+### Fountain section-marker convention
+
+When a Fountain file is imported, section headers (`# Act One`, `## Sequence A`, …) attach to the next scene's `shoot_notes` with an internal marker so the round-trip back to Fountain can re-emit them at the right depth:
+
+```
+[[#section depth=1]] Act One
+```
+
+Multiple lines (sections + free-form notes + inline `[[ ... ]]` notes) are joined with `\n` in the same field. The Fountain exporter recognises the marker prefix and emits a `# Act One` heading before the scene; lines without the marker emit as inline `[[ ... ]]` notes. Don't author the marker syntax by hand — let the importer manage it.
 
 **Example:**
 

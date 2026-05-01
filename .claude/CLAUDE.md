@@ -530,7 +530,7 @@ This means:
 
 - FDX (Final Draft XML) export
 - Rachana font / traditional Malayalam orthography
-- Import from Final Draft / Fountain
+- Import from Final Draft (FDX) — Fountain import is implemented (#184)
 - Real-time collaboration
 - Cloud sync
 - Mobile support

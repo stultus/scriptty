@@ -6,6 +6,9 @@ pub mod document;
 /// Fountain export: converts ProseMirror JSON to Fountain plain text.
 pub mod fountain;
 
+/// Fountain import: parses .fountain text into ScreenplayDocument + summary.
+pub mod fountain_import;
+
 /// Plain text export: converts ProseMirror JSON to formatted screenplay text.
 pub mod plaintext;
 

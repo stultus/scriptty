@@ -443,5 +443,11 @@ pub fn export_plaintext(document: ScreenplayDocument) -> Result<String, String> 
 /// * `Err(String)` — An error message if conversion fails.
 #[tauri::command]
 pub fn export_fountain(document: ScreenplayDocument) -> Result<String, String> {
-    Ok(fountain::generate_fountain(&document.content, &document.meta))
+    // Pass scene_cards so the export round-trips synopses, sections, and
+    // inline notes back into Fountain (#188).
+    Ok(fountain::generate_fountain(
+        &document.content,
+        &document.meta,
+        &document.scene_cards,
+    ))
 }

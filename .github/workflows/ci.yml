@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel an in-flight CI run when a new commit is pushed to the same branch /
+# PR — saves CI minutes and keeps the head of the queue current.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust:
+    name: Rust — clippy & tests
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      # Tauri lib pulls webkit at build time even for `cargo check` / `cargo test`,
+      # so we install the same Linux deps the release job uses.
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: cargo clippy (lib + tests, deny warnings)
+        working-directory: src-tauri
+        run: cargo clippy --lib --tests -- -D warnings
+
+      - name: cargo test --lib
+        working-directory: src-tauri
+        run: cargo test --lib
+
+  frontend:
+    name: Frontend — svelte-check
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      # `npm run check` runs `svelte-kit sync` first (generates routing types)
+      # and points svelte-check at the project's tsconfig. The trailing
+      # `-- --fail-on-warnings` matches the project gate per CLAUDE.md
+      # ("zero warnings on cargo clippy and svelte-check").
+      - name: svelte-check (via npm run check)
+        run: npm run check -- --fail-on-warnings

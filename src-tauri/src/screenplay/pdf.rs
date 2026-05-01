@@ -2653,6 +2653,20 @@ mod tests {
         ScreenplayMeta::default()
     }
 
+    /// Test helper that constructs a `ScreenplayElement` from short string
+    /// slices. Centralised so when the struct gains another field (as
+    /// happened with `typst_inline` — issue #189) we update one place
+    /// instead of every test. The `typst_inline` value is the typst-escaped
+    /// version of `text`, matching what `extract_elements` produces for
+    /// content with no inline marks.
+    fn el(element_type: &str, text: &str) -> ScreenplayElement {
+        ScreenplayElement {
+            element_type: element_type.to_string(),
+            text: text.to_string(),
+            typst_inline: escape_typst(text),
+        }
+    }
+
     #[test]
     fn test_escape_typst_special_characters() {
         assert_eq!(escape_typst("hello #world"), "hello \\#world");
@@ -2739,12 +2753,17 @@ mod tests {
         assert!(markup.contains("Noto Sans Malayalam"));
         // Scene heading text should be uppercased
         assert!(markup.contains("INT. OFFICE - DAY"));
-        // Should include scene number
-        assert!(markup.contains("1. INT. OFFICE - DAY"));
+        // Scene number is rendered as `{n}.#h(0.6em){HEADING}` so the gap
+        // between the digit and the slug is a typed Typst horizontal-space
+        // directive, not a literal space.
+        assert!(markup.contains("1.#h(0.6em)INT. OFFICE - DAY"));
         // Should be bold
         assert!(markup.contains("weight: \"bold\""));
-        // Should be wrapped in an unbreakable block for page break control
-        assert!(markup.contains("block(breakable: false)"));
+        // Wrapped in an unbreakable block for page-break control. The block
+        // takes additional args (`width: 100%`, sometimes `sticky: true`),
+        // so we look for the prefix up to the first comma rather than a
+        // closed-paren form.
+        assert!(markup.contains("block(breakable: false,"));
     }
 
     #[test]
@@ -2768,18 +2787,18 @@ mod tests {
         });
 
         let markup = generate_typst_markup(&doc, "Manjari", &empty_meta(), false, 1, false, &[], false);
-        // Character name should be uppercase and left-padded to Hollywood spec position
-        // (9cm from page left with a 3.81cm left margin = pad(left: 5.19cm))
+        // Character cue is uppercased and centred (the renderer switched
+        // from `pad(left: 5.19cm)` to `#align(center)` when character +
+        // parenthetical + dialogue were unified onto a shared centerline).
         assert!(markup.contains("JOHN"));
-        assert!(markup.contains("pad(left: 5.19cm)"));
-        // Parenthetical should be italic with correct padding
-        assert!(markup.contains("emph"));
-        assert!(markup.contains("pad(left: 3.69cm, right: 3.5cm)"));
-        // Dialogue should be padded to Hollywood spec
-        assert!(markup.contains("pad(left: 2.69cm, right: 3cm)"));
+        assert!(markup.contains("#align(center)[#text(weight: \"bold\")[JOHN]]"));
+        // Parenthetical: centred, italic, parens preserved in display text.
+        assert!(markup.contains("#align(center)[#emph[(softly)]]"));
+        // Dialogue: rendered inside a 9cm centred box (Hollywood measure).
+        assert!(markup.contains("box(width: 9cm)"));
         assert!(markup.contains("I need to go."));
-        // Entire character block should be wrapped in an unbreakable block
-        assert!(markup.contains("block(breakable: false)"));
+        // Entire character block is wrapped in an unbreakable, sticky block.
+        assert!(markup.contains("block(breakable: false, sticky: true,"));
     }
 
     #[test]
@@ -2805,30 +2824,27 @@ mod tests {
     fn test_group_elements_scene_heading_with_action() {
         // A scene heading followed by an action should be grouped into a SceneBlock
         let elements = vec![
-            ScreenplayElement {
-                element_type: "scene_heading".to_string(),
-                text: "INT. OFFICE - DAY".to_string(),
-            },
-            ScreenplayElement {
-                element_type: "action".to_string(),
-                text: "John walks in.".to_string(),
-            },
+            el("scene_heading", "INT. OFFICE - DAY"),
+            el("action", "John walks in."),
         ];
 
         let groups = group_elements(elements, 1);
         assert_eq!(groups.len(), 1);
 
-        // `matches!` is a macro that checks if a value matches a pattern.
-        // Returns true/false — useful for checking enum variants without destructuring.
         match &groups[0] {
             ScreenplayGroup::SceneBlock {
                 heading_text,
                 scene_number,
-                first_action,
+                scene_index,
+                first_action_typst,
             } => {
                 assert_eq!(heading_text, "INT. OFFICE - DAY");
                 assert_eq!(*scene_number, 1);
-                assert_eq!(first_action.as_deref(), Some("John walks in."));
+                assert_eq!(*scene_index, 0);
+                // `first_action_typst` holds typst markup; for plain text
+                // with no specials it round-trips through `escape_typst`
+                // unchanged, so a literal-string equality is fine here.
+                assert_eq!(first_action_typst.as_deref(), Some("John walks in."));
             }
             _ => panic!("Expected SceneBlock"),
         }
@@ -2836,16 +2852,11 @@ mod tests {
 
     #[test]
     fn test_group_elements_scene_heading_without_action() {
-        // A scene heading followed by a non-action element should have first_action = None
+        // A scene heading followed by a non-action element should leave
+        // first_action_typst = None (no action to absorb into the block).
         let elements = vec![
-            ScreenplayElement {
-                element_type: "scene_heading".to_string(),
-                text: "INT. OFFICE - DAY".to_string(),
-            },
-            ScreenplayElement {
-                element_type: "character".to_string(),
-                text: "John".to_string(),
-            },
+            el("scene_heading", "INT. OFFICE - DAY"),
+            el("character", "John"),
         ];
 
         let groups = group_elements(elements, 1);
@@ -2853,9 +2864,9 @@ mod tests {
 
         match &groups[0] {
             ScreenplayGroup::SceneBlock {
-                first_action, ..
+                first_action_typst, ..
             } => {
-                assert!(first_action.is_none());
+                assert!(first_action_typst.is_none());
             }
             _ => panic!("Expected SceneBlock"),
         }
@@ -2865,18 +2876,9 @@ mod tests {
     fn test_group_elements_character_block() {
         // A character followed by parenthetical and dialogue should be grouped
         let elements = vec![
-            ScreenplayElement {
-                element_type: "character".to_string(),
-                text: "John".to_string(),
-            },
-            ScreenplayElement {
-                element_type: "parenthetical".to_string(),
-                text: "(softly)".to_string(),
-            },
-            ScreenplayElement {
-                element_type: "dialogue".to_string(),
-                text: "I need to go.".to_string(),
-            },
+            el("character", "John"),
+            el("parenthetical", "(softly)"),
+            el("dialogue", "I need to go."),
         ];
 
         let groups = group_elements(elements, 1);
@@ -2886,14 +2888,16 @@ mod tests {
             ScreenplayGroup::CharacterBlock { name, lines } => {
                 assert_eq!(name, "John");
                 assert_eq!(lines.len(), 2);
-                // Verify the first line is a parenthetical
+                // Each DialogueLine carries (plain_text, typst_inline). We
+                // bind the typst markup to `_` because these tests focus on
+                // grouping/ordering — the markup is exercised in PDF
+                // rendering tests below.
                 match &lines[0] {
-                    DialogueLine::Parenthetical(text) => assert_eq!(text, "(softly)"),
+                    DialogueLine::Parenthetical(text, _) => assert_eq!(text, "(softly)"),
                     _ => panic!("Expected Parenthetical"),
                 }
-                // Verify the second line is dialogue
                 match &lines[1] {
-                    DialogueLine::Dialogue(text) => assert_eq!(text, "I need to go."),
+                    DialogueLine::Dialogue(text, _) => assert_eq!(text, "I need to go."),
                     _ => panic!("Expected Dialogue"),
                 }
             }
@@ -2904,10 +2908,7 @@ mod tests {
     #[test]
     fn test_group_elements_standalone_action() {
         // An action not preceded by a scene heading should be standalone
-        let elements = vec![ScreenplayElement {
-            element_type: "action".to_string(),
-            text: "The door opens.".to_string(),
-        }];
+        let elements = vec![el("action", "The door opens.")];
 
         let groups = group_elements(elements, 1);
         assert_eq!(groups.len(), 1);
@@ -2925,22 +2926,10 @@ mod tests {
     fn test_group_elements_scene_numbering() {
         // Multiple scene headings should be numbered sequentially
         let elements = vec![
-            ScreenplayElement {
-                element_type: "scene_heading".to_string(),
-                text: "INT. OFFICE - DAY".to_string(),
-            },
-            ScreenplayElement {
-                element_type: "action".to_string(),
-                text: "First action.".to_string(),
-            },
-            ScreenplayElement {
-                element_type: "scene_heading".to_string(),
-                text: "EXT. PARK - NIGHT".to_string(),
-            },
-            ScreenplayElement {
-                element_type: "action".to_string(),
-                text: "Second action.".to_string(),
-            },
+            el("scene_heading", "INT. OFFICE - DAY"),
+            el("action", "First action."),
+            el("scene_heading", "EXT. PARK - NIGHT"),
+            el("action", "Second action."),
         ];
 
         let groups = group_elements(elements, 1);
@@ -2964,22 +2953,10 @@ mod tests {
     fn test_group_elements_character_with_multiple_dialogue_lines() {
         // A character with multiple consecutive dialogue lines should all be grouped
         let elements = vec![
-            ScreenplayElement {
-                element_type: "character".to_string(),
-                text: "Mary".to_string(),
-            },
-            ScreenplayElement {
-                element_type: "dialogue".to_string(),
-                text: "First line.".to_string(),
-            },
-            ScreenplayElement {
-                element_type: "parenthetical".to_string(),
-                text: "(beat)".to_string(),
-            },
-            ScreenplayElement {
-                element_type: "dialogue".to_string(),
-                text: "Second line.".to_string(),
-            },
+            el("character", "Mary"),
+            el("dialogue", "First line."),
+            el("parenthetical", "(beat)"),
+            el("dialogue", "Second line."),
         ];
 
         let groups = group_elements(elements, 1);
@@ -3000,22 +2977,10 @@ mod tests {
         // into the character block. The character block should end before the
         // action, and the action should be standalone.
         let elements = vec![
-            ScreenplayElement {
-                element_type: "character".to_string(),
-                text: "John".to_string(),
-            },
-            ScreenplayElement {
-                element_type: "dialogue".to_string(),
-                text: "First line.".to_string(),
-            },
-            ScreenplayElement {
-                element_type: "action".to_string(),
-                text: "He pauses.".to_string(),
-            },
-            ScreenplayElement {
-                element_type: "dialogue".to_string(),
-                text: "Second line.".to_string(),
-            },
+            el("character", "John"),
+            el("dialogue", "First line."),
+            el("action", "He pauses."),
+            el("dialogue", "Second line."),
         ];
 
         let groups = group_elements(elements, 1);
@@ -3029,7 +2994,7 @@ mod tests {
                 // Only the first dialogue should be in the block — NOT the action or second dialogue
                 assert_eq!(lines.len(), 1);
                 match &lines[0] {
-                    DialogueLine::Dialogue(text) => assert_eq!(text, "First line."),
+                    DialogueLine::Dialogue(text, _) => assert_eq!(text, "First line."),
                     _ => panic!("Expected Dialogue"),
                 }
             }
@@ -3060,26 +3025,11 @@ mod tests {
         // Full screenplay sequence: scene heading + action, then character block,
         // then standalone transition
         let elements = vec![
-            ScreenplayElement {
-                element_type: "scene_heading".to_string(),
-                text: "INT. OFFICE - DAY".to_string(),
-            },
-            ScreenplayElement {
-                element_type: "action".to_string(),
-                text: "The room is empty.".to_string(),
-            },
-            ScreenplayElement {
-                element_type: "character".to_string(),
-                text: "John".to_string(),
-            },
-            ScreenplayElement {
-                element_type: "dialogue".to_string(),
-                text: "Hello.".to_string(),
-            },
-            ScreenplayElement {
-                element_type: "transition".to_string(),
-                text: "CUT TO:".to_string(),
-            },
+            el("scene_heading", "INT. OFFICE - DAY"),
+            el("action", "The room is empty."),
+            el("character", "John"),
+            el("dialogue", "Hello."),
+            el("transition", "CUT TO:"),
         ];
 
         let groups = group_elements(elements, 1);
@@ -3108,9 +3058,10 @@ mod tests {
         });
 
         let markup = generate_typst_markup(&doc, "Noto Sans Malayalam", &empty_meta(), false, 1, false, &[], false);
-        // The scene heading and first action should be inside a single unbreakable block
-        assert!(markup.contains("block(breakable: false)"));
-        assert!(markup.contains("1. INT. OFFICE - DAY"));
+        // The scene heading and first action should be inside a single
+        // unbreakable block. (Block takes additional args, so match prefix.)
+        assert!(markup.contains("block(breakable: false,"));
+        assert!(markup.contains("1.#h(0.6em)INT. OFFICE - DAY"));
         assert!(markup.contains("John walks in."));
     }
 
@@ -3142,8 +3093,10 @@ mod tests {
         assert_eq!(groups.len(), 2);
 
         match &groups[0] {
-            ScreenplayGroup::SceneBlock { first_action, .. } => {
-                assert_eq!(first_action.as_deref(), Some("First action."));
+            ScreenplayGroup::SceneBlock { first_action_typst, .. } => {
+                // typst markup; equality holds because "First action." has
+                // no characters that `escape_typst` modifies.
+                assert_eq!(first_action_typst.as_deref(), Some("First action."));
             }
             _ => panic!("Expected SceneBlock"),
         }

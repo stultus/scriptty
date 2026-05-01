@@ -489,8 +489,12 @@ mod tests {
     /// preserving original spelling and value text.
     #[test]
     fn extra_field_round_trips_arbitrary_keys() {
-        let mut meta = ScreenplayMeta::default();
-        meta.title = "The Return".to_string();
+        // Struct-update syntax keeps clippy's `field_reassign_with_default`
+        // happy (it flags the `default()` + reassign pattern).
+        let mut meta = ScreenplayMeta {
+            title: "The Return".to_string(),
+            ..ScreenplayMeta::default()
+        };
         meta.extra
             .insert("Source".to_string(), "Based on a true story".to_string());
         meta.extra

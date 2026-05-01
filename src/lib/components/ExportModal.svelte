@@ -1,6 +1,7 @@
 <script lang="ts">
   import { invoke } from '@tauri-apps/api/core';
-  import { save } from '@tauri-apps/plugin-dialog';
+  // `open` would collide with the bindable `open` prop below — alias it.
+  import { save, open as openDialog } from '@tauri-apps/plugin-dialog';
   import { writeFile } from '@tauri-apps/plugin-fs';
   import { documentStore, type ScreenplayDocument, type ScreenplayMeta } from '$lib/stores/documentStore.svelte';
   import { focusTrap } from '$lib/actions/focusTrap';
@@ -83,6 +84,13 @@
   // single combined export.
   let exportScope = $state<'episode' | 'series'>('episode');
   let isSeriesProject = $derived(documentStore.isSeries);
+
+  // Per-episode Fountain export (#187) — only meaningful when a Series
+  // is open. When checked, the Fountain button asks for a directory and
+  // writes one .fountain file per episode (`NN-title.fountain`). Plain-
+  // text gets the same treatment for symmetry. PDF stays single-file
+  // (a folder of per-episode PDFs is rarely what writers want).
+  let fountainPerEpisode = $state(false);
 
   // Derived: check if synopsis/treatment have content
   let hasSynopsis = $derived((documentStore.activeStory?.synopsis ?? '').trim().length > 0);
@@ -615,6 +623,14 @@
   }
 
   async function handleFountainExport() {
+    // Per-episode branch (#187): only available when the writer has a
+    // Series open AND has opted into the per-episode toggle. Writes one
+    // .fountain file per episode to a chosen directory.
+    if (isSeriesProject && fountainPerEpisode) {
+      await handleFountainExportPerEpisode();
+      return;
+    }
+
     const doc = buildDocumentForExport();
     if (!doc) return;
     exportingFountain = true;
@@ -641,6 +657,92 @@
       open = false;
     } catch (e) {
       console.error('[ExportModal] Fountain export failed:', e);
+      errorMessage = String(e);
+    } finally {
+      exportingFountain = false;
+    }
+  }
+
+  /** Build a film-shaped ScreenplayDocument from a single episode so the
+   *  existing `export_fountain` command works without modification. The
+   *  series title is folded into the meta title so the resulting file
+   *  carries enough context to stand alone in a co-writer's hand-off. */
+  function buildEpisodeFilmDocument(episodeIndex: number): ScreenplayDocument | null {
+    const doc = documentStore.document;
+    if (!doc || doc.type !== 'series' || !doc.series) return null;
+    const ep = doc.series.episodes[episodeIndex];
+    if (!ep) return null;
+    const seriesTitle = doc.series.title ?? '';
+    const epTitle = ep.title.trim();
+    const composedTitle = epTitle
+      ? (seriesTitle ? `${seriesTitle} — Ep ${ep.number}: ${epTitle}` : `Ep ${ep.number}: ${epTitle}`)
+      : (seriesTitle ? `${seriesTitle} — Ep ${ep.number}` : `Episode ${ep.number}`);
+    return {
+      type: 'film',
+      series: null,
+      content: ep.content,
+      meta: { ...ep.meta, title: ep.meta.title || composedTitle },
+      settings: ep.settings,
+      story: ep.story,
+      scene_cards: ep.scene_cards,
+    };
+  }
+
+  /** Slugify an episode title for use in a filename. Conservative — keeps
+   *  Latin letters/digits/dashes and squashes everything else to `-`. We
+   *  fall back to `episode` if the slug is empty so we never write
+   *  ambiguous bare-number filenames like `01-.fountain`. */
+  function slugForFilename(title: string): string {
+    const slug = title
+      .normalize('NFKD')
+      .replace(/[̀-ͯ]/g, '') // strip combining marks
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    return slug || 'episode';
+  }
+
+  async function handleFountainExportPerEpisode() {
+    const doc = documentStore.document;
+    if (!doc || doc.type !== 'series' || !doc.series) return;
+    const episodes = doc.series.episodes;
+    if (episodes.length === 0) return;
+
+    exportingFountain = true;
+    errorMessage = '';
+
+    try {
+      // Tauri's `open` dialog handles directory selection via
+      // `directory: true`. Cancellation returns null.
+      const dir = await openDialog({
+        directory: true,
+        multiple: false,
+        title: 'Choose a folder for per-episode Fountain files',
+      });
+      if (typeof dir !== 'string') {
+        exportingFountain = false;
+        return;
+      }
+
+      const encoder = new TextEncoder();
+      // Sequential — keeps disk traffic predictable and the error
+      // message specific if a single file fails to write.
+      for (let i = 0; i < episodes.length; i++) {
+        const film = buildEpisodeFilmDocument(i);
+        if (!film) continue;
+        const ep = episodes[i];
+        const text = await invoke<string>('export_fountain', { document: film });
+        const filename = `${String(ep.number).padStart(2, '0')}-${slugForFilename(ep.title)}.fountain`;
+        // Path separator is `/` on macOS/Linux, `\` on Windows. Tauri's
+        // writeFile takes a string path and the OS handles separator
+        // semantics, so a forward slash works on every platform Tauri
+        // currently targets.
+        const path = `${dir}/${filename}`;
+        await writeFile(path, encoder.encode(text));
+      }
+      open = false;
+    } catch (e) {
+      console.error('[ExportModal] Per-episode Fountain export failed:', e);
       errorMessage = String(e);
     } finally {
       exportingFountain = false;
@@ -1109,6 +1211,20 @@
 
       {#if errorMessage}
         <p class="error-message">{errorMessage}</p>
+      {/if}
+
+      {#if isSeriesProject}
+        <!-- Per-episode Fountain toggle (#187). Only meaningful for series
+             projects — checking it routes the Fountain button at one file
+             per episode rather than a single combined / single-episode
+             export. Lives just above the footer so it reads as a modifier
+             on the export buttons that follow. -->
+        <div class="footer-options">
+          <label class="footer-checkbox">
+            <input type="checkbox" bind:checked={fountainPerEpisode} disabled={anyExporting} />
+            <span>Fountain: one file per episode</span>
+          </label>
+        </div>
       {/if}
 
       <footer class="export-footer">
@@ -1767,6 +1883,37 @@
 
   .footer-spacer {
     flex: 1;
+  }
+
+  /* Per-episode toggle row (#187) — sits above the footer with a thin
+     top border so it reads as a modifier on the action row below. */
+  .footer-options {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 8px 28px;
+    background: var(--surface-float);
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .footer-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--ui-font);
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .footer-checkbox input[type='checkbox'] {
+    cursor: pointer;
+    accent-color: var(--accent);
+  }
+
+  .footer-checkbox:hover {
+    color: var(--text-primary);
   }
 
   .btn-ghost {

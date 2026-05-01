@@ -1,10 +1,3 @@
-// `parse_fountain` and its helpers have no in-crate callers yet — the
-// frontend wiring (Tauri command `import_fountain_as_film`) lands in #187.
-// Until then everything below is reachable only from this module's own
-// tests, so clippy's `dead_code` lint fires on the public surface. Remove
-// this allow when #187 lands.
-#![allow(dead_code)]
-
 // Fountain import: .fountain plain text → ProseMirror JSON + meta + scene_cards.
 //
 // Implements a hand-rolled parser following the Fountain spec at

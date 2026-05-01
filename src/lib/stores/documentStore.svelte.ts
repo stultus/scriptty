@@ -22,6 +22,10 @@ export interface ScreenplayMeta {
   draft_date: string;
   created_at: string;
   updated_at: string;
+  /** Non-standard Fountain title-page keys (`Source`, `Copyright`, custom
+   *  keys) preserved verbatim for round-trip. Empty/absent on documents
+   *  that never went through Fountain import. (#185 / #184) */
+  extra?: Record<string, string>;
 }
 
 export interface ScreenplaySettings {
@@ -115,6 +119,28 @@ export interface AutosaveInfo {
   document: ScreenplayDocument;
   autosave_time_ms: number;
   original_time_ms: number;
+}
+
+/** Counts and warnings produced by the Fountain importer. Mirrors
+ *  `ImportSummary` in `src-tauri/src/screenplay/fountain_import.rs`.
+ *  The frontend renders these into the import-summary toast so the
+ *  writer knows what was transformed or dropped. (#187) */
+export interface FountainImportSummary {
+  boneyards_dropped: number;
+  notes_count: number;
+  synopses_count: number;
+  sections_count: number;
+  dual_dialogue_count: number;
+  scene_numbers_dropped: number;
+  emphasis_stripped: number;
+  warnings: string[];
+}
+
+/** Bundle returned by `import_fountain_as_film` / `import_fountain_as_episode`.
+ *  Matches `FountainImportResult` on the Rust side. */
+export interface FountainImportResult {
+  document: ScreenplayDocument;
+  summary: FountainImportSummary;
 }
 
 /** Convert a ProseMirror-ish content payload into canonical
@@ -580,6 +606,86 @@ class DocumentStore {
       this.#bumpContentVersion(true);
     } catch (error) {
       console.error('Failed to open screenplay:', error);
+    }
+  }
+
+  /** Parse a .fountain file into a brand-new Film document and load it
+   *  into the store. Goes through the dirty-state guard via the caller.
+   *  Returns the import summary (dropped boneyards, stripped emphasis,
+   *  warnings) so the UI can surface a toast. Returns null if loading
+   *  failed at the Tauri layer (file unreadable / parse error) — in
+   *  that case an error message has already been logged. (#187) */
+  async importFountainAsFilm(path: string): Promise<FountainImportSummary | null> {
+    try {
+      const result = await invoke<FountainImportResult>('import_fountain_as_film', { path });
+      const doc = result.document;
+      doc.content = normalizeContentPayload(doc.content);
+      this.document = doc;
+      // Imported docs are dirty by default — the writer hasn't saved as a
+      // .screenplay yet, and we want Save to surface the file dialog
+      // rather than silently writing back to the .fountain path.
+      this.currentPath = null;
+      this.isDirty = true;
+      this.lastSavedAt = null;
+      this.activeEpisodeIndex = 0;
+      this.loadedContent = doc.content;
+      this.loadTrigger++;
+      this.#bumpContentVersion(true);
+      return result.summary;
+    } catch (error) {
+      console.error('Failed to import Fountain file:', error);
+      await message(`Could not import Fountain file: ${error}`, {
+        title: 'Import failed',
+        kind: 'error',
+      });
+      return null;
+    }
+  }
+
+  /** Parse a .fountain file as a single episode and append it to the
+   *  current Series document. Switches the active episode pointer to
+   *  the new one so the editor lands on the imported content. Errors
+   *  out via a native dialog if the current document isn't a series.
+   *  (#187) */
+  async importFountainAsEpisode(path: string): Promise<FountainImportSummary | null> {
+    if (!this.document || this.document.type !== 'series') {
+      await message(
+        'Open a Series project first — Fountain files can only be imported as episodes into an existing series.',
+        { title: 'No series open', kind: 'info' },
+      );
+      return null;
+    }
+    try {
+      const result = await invoke<FountainImportResult>('import_fountain_as_episode', {
+        path,
+        currentDocument: this.document,
+      });
+      const doc = result.document;
+      // Normalize the new episode's content along with the rest.
+      if (doc.type === 'series' && doc.series) {
+        for (const ep of doc.series.episodes) {
+          ep.content = normalizeContentPayload(ep.content);
+        }
+      }
+      this.document = doc;
+      this.isDirty = true;
+      this.lastSavedAt = null;
+      // Land the editor on the freshly-imported episode (always the last
+      // entry, since we appended).
+      const lastIdx = (doc.series?.episodes.length ?? 1) - 1;
+      this.activeEpisodeIndex = lastIdx;
+      this.loadedContent =
+        doc.series?.episodes?.[lastIdx]?.content ?? doc.content;
+      this.loadTrigger++;
+      this.#bumpContentVersion(true);
+      return result.summary;
+    } catch (error) {
+      console.error('Failed to import Fountain as episode:', error);
+      await message(`Could not import Fountain file: ${error}`, {
+        title: 'Import failed',
+        kind: 'error',
+      });
+      return null;
     }
   }
 

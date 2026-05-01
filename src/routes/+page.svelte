@@ -20,9 +20,10 @@
   import SettingsModal from '$lib/components/SettingsModal.svelte';
   import ExportModal from '$lib/components/ExportModal.svelte';
   import UpdateToast from '$lib/components/UpdateToast.svelte';
+  import ImportSummaryToast from '$lib/components/ImportSummaryToast.svelte';
   import WelcomeScreen from '$lib/components/WelcomeScreen.svelte';
   import NewProjectDialog from '$lib/components/NewProjectDialog.svelte';
-  import { documentStore } from '$lib/stores/documentStore.svelte';
+  import { documentStore, type FountainImportSummary } from '$lib/stores/documentStore.svelte';
   import { editorStore } from '$lib/stores/editorStore.svelte';
   import { themeStore } from '$lib/stores/themeStore.svelte';
   import { updateStore } from '$lib/stores/updateStore.svelte';
@@ -82,6 +83,17 @@
   let showCommandPalette = $state(false);
   let showFilmDialog = $state(false);
   let showSeriesDialog = $state(false);
+
+  // Active Fountain-import summary, shown as a toast until the writer
+  // dismisses it. Holds both the summary itself and the source filename
+  // (used as the toast headline). (#187)
+  let importToast = $state<{ summary: FountainImportSummary; filename: string } | null>(null);
+  function dismissImportToast() {
+    importToast = null;
+  }
+  function basename(path: string): string {
+    return path.split('/').pop() ?? path.split('\\').pop() ?? path;
+  }
 
   // Remember recent files client-side — welcome screen pulls from this list.
   function pushRecentFile(path: string) {
@@ -165,12 +177,56 @@
     if (!(await documentStore.confirmIfDirty())) return;
     const path = await open({
       multiple: false,
-      filters: [{ name: 'Screenplay', extensions: ['screenplay'] }]
+      // The Open dialog accepts both formats. `.fountain` files route
+      // through the importer; `.screenplay` keeps the existing path.
+      // Single combined filter so the writer doesn't have to switch
+      // dropdowns on macOS to see their Fountain hand-offs. (#187)
+      filters: [
+        { name: 'Screenplay or Fountain', extensions: ['screenplay', 'fountain'] },
+        { name: 'Screenplay', extensions: ['screenplay'] },
+        { name: 'Fountain', extensions: ['fountain'] },
+      ],
     });
-    if (typeof path === 'string') {
+    if (typeof path !== 'string') return;
+    if (path.toLowerCase().endsWith('.fountain')) {
+      const summary = await documentStore.importFountainAsFilm(path);
+      if (summary) importToast = { summary, filename: basename(path) };
+    } else {
       await documentStore.openDocument(path);
       if (documentStore.currentPath) pushRecentFile(documentStore.currentPath);
     }
+  }
+
+  /** Open a Fountain-only file dialog and route through the requested
+   *  import method. Used for both `Import Fountain` (always Film) and
+   *  `Import Fountain as Episode` (appends to active Series). The
+   *  dirty-state guard runs ahead of the dialog so unsaved work isn't
+   *  clobbered. (#187) */
+  async function pickFountainAndImport(asEpisode: boolean) {
+    if (asEpisode) {
+      // Series-mode-only — bail early with a friendly nudge if the
+      // current document isn't a series, before we even open a dialog.
+      if (!documentStore.document || documentStore.document.type !== 'series') {
+        await message(
+          'Open a Series project first — Fountain files can only be imported as episodes into an existing series.',
+          { title: 'No series open', kind: 'info' },
+        );
+        return;
+      }
+    } else {
+      // Importing as a fresh film replaces the current document, so
+      // confirm unsaved changes first.
+      if (!(await documentStore.confirmIfDirty())) return;
+    }
+    const path = await open({
+      multiple: false,
+      filters: [{ name: 'Fountain', extensions: ['fountain'] }],
+    });
+    if (typeof path !== 'string') return;
+    const summary = asEpisode
+      ? await documentStore.importFountainAsEpisode(path)
+      : await documentStore.importFountainAsFilm(path);
+    if (summary) importToast = { summary, filename: basename(path) };
   }
 
   function toggleOutlinePeek() {
@@ -191,6 +247,12 @@
     { id: 'file.new-series', group: 'File', label: 'New Series…', hint: '⌘⇧N',
       action: () => { showSeriesDialog = true; } },
     { id: 'file.open', group: 'File', label: 'Open…', hint: '⌘O', action: openFileDialog },
+    { id: 'file.import-fountain', group: 'File', label: 'Import Fountain…',
+      keywords: 'import fountain spmd interop highland slugline',
+      action: () => pickFountainAndImport(false) },
+    { id: 'file.import-fountain-episode', group: 'File', label: 'Import Fountain as Episode…',
+      keywords: 'import fountain episode series',
+      action: () => pickFountainAndImport(true) },
     { id: 'file.save', group: 'File', label: 'Save', hint: '⌘S', action: () => documentStore.saveWithDialog() },
     { id: 'file.saveas', group: 'File', label: 'Save As…', hint: '⌘⇧S', action: () => documentStore.saveAsDialog() },
     { id: 'file.export', group: 'File', label: 'Export…', keywords: 'pdf fountain plain text hollywood indian', action: () => { showExport = true; } },
@@ -437,15 +499,17 @@
       }));
 
       track(await listen('menu-open', async () => {
-        if (!(await documentStore.confirmIfDirty())) return;
-        const path = await open({
-          multiple: false,
-          filters: [{ name: 'Screenplay', extensions: ['screenplay'] }]
-        });
-        if (typeof path === 'string') {
-          await documentStore.openDocument(path);
-          if (documentStore.currentPath) pushRecentFile(documentStore.currentPath);
-        }
+        // Same flow as the toolbar/Welcome `openFileDialog` — handles
+        // .screenplay and .fountain via a single combined filter (#187).
+        await openFileDialog();
+      }));
+
+      track(await listen('menu-import-fountain', async () => {
+        await pickFountainAndImport(false);
+      }));
+
+      track(await listen('menu-import-fountain-episode', async () => {
+        await pickFountainAndImport(true);
       }));
 
       track(await listen('menu-save', () => {
@@ -707,6 +771,11 @@
 <MetadataModal bind:open={showMetadata} />
 <CommandPalette bind:open={showCommandPalette} {commands} />
 <UpdateToast />
+<ImportSummaryToast
+  summary={importToast?.summary ?? null}
+  filename={importToast?.filename ?? ''}
+  onDismiss={dismissImportToast}
+/>
 <NewProjectDialog bind:open={showFilmDialog} kind="film" onConfirm={handleCreateFilmFromDialog} />
 <NewProjectDialog bind:open={showSeriesDialog} kind="series" onConfirm={handleCreateSeriesFromDialog} />
 

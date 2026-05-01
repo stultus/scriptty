@@ -5,3 +5,6 @@ pub mod file;
 
 /// Commands for PDF, Fountain, and plain text export.
 pub mod export;
+
+/// Commands for importing .fountain files (#187).
+pub mod import;

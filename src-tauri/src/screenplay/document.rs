@@ -3,6 +3,11 @@
 // `use` brings these traits into scope so we can derive them on our structs.
 // Serialize/Deserialize let us convert structs to/from JSON automatically.
 use serde::{Deserialize, Serialize};
+// `BTreeMap` is a sorted-key map. We use it (instead of `HashMap`) for
+// `ScreenplayMeta::extra` so the on-disk JSON has stable, alphabetical key
+// ordering — diff-friendly for git-tracked .screenplay files and predictable
+// for round-tripping through Fountain export.
+use std::collections::BTreeMap;
 
 /// Metadata about the screenplay — title, author info, and draft tracking.
 ///
@@ -52,6 +57,23 @@ pub struct ScreenplayMeta {
     /// ISO timestamp of the most recent save
     #[serde(default)]
     pub updated_at: String,
+    /// Non-standard title-page metadata preserved for Fountain round-trip.
+    ///
+    /// Fountain's title page allows arbitrary `Key: value` pairs. Keys we
+    /// don't map to a first-class field (`title`, `author`, `director`,
+    /// `tagline`, `registration_number`, `footnote`, `contact`, `draft_*`)
+    /// land here verbatim — original key spelling, original value, no
+    /// transformation. The Fountain exporter emits these back at the top
+    /// of the file so a co-writer's custom keys survive a Scriptty
+    /// edit-and-resend round-trip.
+    ///
+    /// `BTreeMap` (not `HashMap`) so the on-disk JSON has stable
+    /// alphabetical key ordering — diff-friendly for git-tracked files.
+    /// `skip_serializing_if` keeps existing `.screenplay` files byte-clean
+    /// when they have no extra metadata: load → save without imports
+    /// must not introduce `"extra": {}` into the JSON.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub extra: BTreeMap<String, String>,
 }
 
 /// Default draft number for `ScreenplayMeta::draft_number` when the field
@@ -78,6 +100,7 @@ impl Default for ScreenplayMeta {
             draft_date: String::new(),
             created_at: String::new(),
             updated_at: String::new(),
+            extra: BTreeMap::new(),
         }
     }
 }
@@ -426,4 +449,80 @@ pub struct ScreenplayDocument {
     /// Uses `default` so old .screenplay files without this field still load.
     #[serde(default)]
     pub scene_cards: Vec<SceneCard>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A `.screenplay` file written before `meta.extra` existed must load
+    /// unchanged. Re-serializing it must NOT introduce an empty `"extra": {}`
+    /// key — that would dirty every legacy file the moment it's opened.
+    #[test]
+    fn legacy_meta_round_trips_byte_clean_without_extra_field() {
+        let legacy = r#"{
+            "title": "Old Film",
+            "author": "Hrishi",
+            "director": "",
+            "tagline": "",
+            "registration_number": "",
+            "footnote": "",
+            "contact": "",
+            "draft_number": 1,
+            "draft_date": "",
+            "created_at": "",
+            "updated_at": ""
+        }"#;
+
+        let meta: ScreenplayMeta = serde_json::from_str(legacy).expect("legacy meta should load");
+        assert!(meta.extra.is_empty());
+
+        let reserialized = serde_json::to_string(&meta).expect("meta should serialize");
+        assert!(
+            !reserialized.contains("\"extra\""),
+            "empty `extra` must be skipped on serialize, got: {reserialized}"
+        );
+    }
+
+    /// Non-standard Fountain title-page keys (e.g. `Source:`, `Copyright:`,
+    /// any custom key the writer invents) round-trip through `meta.extra`
+    /// preserving original spelling and value text.
+    #[test]
+    fn extra_field_round_trips_arbitrary_keys() {
+        let mut meta = ScreenplayMeta::default();
+        meta.title = "The Return".to_string();
+        meta.extra
+            .insert("Source".to_string(), "Based on a true story".to_string());
+        meta.extra
+            .insert("Copyright".to_string(), "© 2026 Stultus".to_string());
+
+        let json = serde_json::to_string(&meta).expect("serialize");
+        let reloaded: ScreenplayMeta = serde_json::from_str(&json).expect("deserialize");
+
+        assert_eq!(reloaded.extra.len(), 2);
+        assert_eq!(
+            reloaded.extra.get("Source").map(String::as_str),
+            Some("Based on a true story")
+        );
+        assert_eq!(
+            reloaded.extra.get("Copyright").map(String::as_str),
+            Some("© 2026 Stultus")
+        );
+    }
+
+    /// `BTreeMap` ordering means keys serialize alphabetically — predictable
+    /// output for diffs and Fountain export.
+    #[test]
+    fn extra_serializes_keys_in_sorted_order() {
+        let mut meta = ScreenplayMeta::default();
+        meta.extra.insert("Zeta".to_string(), "z".to_string());
+        meta.extra.insert("Alpha".to_string(), "a".to_string());
+        meta.extra.insert("Mu".to_string(), "m".to_string());
+
+        let json = serde_json::to_string(&meta).expect("serialize");
+        let alpha = json.find("Alpha").expect("alpha present");
+        let mu = json.find("Mu").expect("mu present");
+        let zeta = json.find("Zeta").expect("zeta present");
+        assert!(alpha < mu && mu < zeta, "expected sorted order in {json}");
+    }
 }

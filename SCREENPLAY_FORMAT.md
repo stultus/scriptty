@@ -37,6 +37,7 @@ All five keys should be present. Missing keys will be filled with defaults, but 
 | `draft_date` | string | yes | `""` | Human-readable date, e.g. `"2026-03-14"` or `"March 14, 2026"`. |
 | `created_at` | string | yes | `""` | ISO 8601 timestamp of document creation, e.g. `"2026-01-15T09:30:00Z"`. |
 | `updated_at` | string | yes | `""` | ISO 8601 timestamp of most recent save. |
+| `extra` | object | no | `{}` | Non-standard title-page metadata preserved for Fountain round-trip — string-to-string map. Holds Fountain title-page keys that don't map to a first-class meta field (e.g. `Source`, `Copyright`, custom keys). Original key spelling preserved. Omitted from the JSON when empty so legacy files stay byte-clean on resave. |
 
 **Example:**
 

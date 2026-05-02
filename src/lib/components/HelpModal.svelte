@@ -25,6 +25,7 @@
     { id: 'series', title: 'Web Series' },
     { id: 'writing', title: 'Writing in the Editor' },
     { id: 'paste-to-script', title: 'Paste to Screenplay' },
+    { id: 'import', title: 'Import Fountain & Final Draft' },
     { id: 'malayalam', title: 'Malayalam Input' },
     { id: 'autocomplete', title: 'Character Autocomplete' },
     { id: 'formatting', title: 'Text Formatting' },
@@ -207,6 +208,22 @@
             <p class="hint">The result is a regular screenplay you can edit normally — you can re-run the import on a different draft any time.</p>
           </section>
 
+          <section class="help-section" id="import">
+            <h3>Import Fountain &amp; Final Draft</h3>
+            <p>Co-writing handoffs from Highland, Slugline, Beat, WriterDuet, or Final Draft work as a single import flow. Open <strong>File → Import Screenplay…</strong> (also in the Command Palette) and pick:</p>
+            <ul>
+              <li><strong>Format</strong> — <em>Fountain</em> (<code>.fountain</code> plain-text) or <em>Final Draft</em> (<code>.fdx</code> XML)</li>
+              <li><strong>Destination</strong> — <em>As a new film</em> (replaces the current document) or <em>As an episode</em> (appended to your open series; disabled until a series is open)</li>
+            </ul>
+            <p>The standard <kbd>Cmd+O</kbd> Open dialog also accepts <code>.fountain</code> and <code>.fdx</code> directly — pick a file with that extension and it routes through the importer automatically.</p>
+            <p><strong>What carries over.</strong> Scene headings, action, character cues, parentheticals, dialogue, and transitions all map to native Scriptty elements. Bold, italic, and underline runs are preserved as inline marks. Title-page metadata fills the matching Metadata fields (title, author, draft date, contact); non-standard keys (<em>Source</em>, <em>Copyright</em>, anything custom) round-trip through a hidden <code>extra</code> map so you don't lose them on save.</p>
+            <p><strong>Fountain quirks.</strong> Synopses (<code>= …</code>) attach to the matching scene's description in Scene Cards. Sections (<code># …</code>) attach to the next scene's shoot notes with a depth marker so they re-export cleanly. Inline notes (<code>[[ … ]]</code>) attach to the containing scene's shoot notes. Boneyard blocks (<code>/* … */</code>) and dual-dialogue cues are dropped — the dual cues collapse to sequential pairs.</p>
+            <p><strong>Final Draft quirks.</strong> Dual-dialogue blocks collapse to sequential pairs. Revision marks, locked scene numbers, script notes, page tagging, and headers/footers are dropped — Scriptty has no equivalent concepts yet.</p>
+            <p><strong>Malayalam-specific:</strong> in Fountain, character cues with caseless scripts (Malayalam, Tamil, Devanagari) need the <code>@</code> forced-character prefix to import correctly — without it, they'll come in as action lines. The importer warns you when a file looks Malayalam-heavy but has no <code>@</code>-prefixed cues. Final Draft files don't have this problem since FDX tags every paragraph type explicitly.</p>
+            <p>After every import, a small toast in the bottom-left summarises what was transformed or dropped (synopses absorbed, sections noted, boneyards dropped, etc.) so you know what changed before you continue editing.</p>
+            <p class="hint">Imports always land as a fresh, unsaved document — your first <kbd>Cmd+S</kbd> will prompt for a <code>.screenplay</code> location rather than overwriting the original <code>.fountain</code> or <code>.fdx</code>.</p>
+          </section>
+
           <section class="help-section" id="malayalam">
             <h3>Malayalam Input</h3>
             <p>Scriptty has built-in Malayalam input — no OS keyboard setup required.</p>
@@ -346,9 +363,10 @@
             <p>The selected Malayalam font (Manjari or Noto Sans Malayalam) is embedded in the PDF, and Courier Prime is always bundled alongside it for the editorial accent typography (slugs, hero numerals, credit names). Bold, italic, and underline formatting is preserved.</p>
             <p>You can also export as:</p>
             <ul>
-              <li><strong>Fountain</strong> — plain-text screenwriting format, compatible with Highland, Fade In, and other tools</li>
+              <li><strong>Fountain</strong> — plain-text screenwriting format, compatible with Highland, Slugline, Beat, WriterDuet, and Fade In. Round-trip aware: synopses, sections, inline notes, and any non-standard title-page keys you imported are re-emitted on export, so a co-writer can edit your document and send it back without silent data loss.</li>
               <li><strong>Plain Text</strong> — formatted .txt file with proper screenplay indentation</li>
             </ul>
+            <p><strong>Series projects</strong> get a "one file per episode" toggle for Fountain export — pick a folder and Scriptty writes <code>01-pilot.fountain</code>, <code>02-the-return.fountain</code>, … one for each episode. Useful for episode-by-episode handoffs to your co-writers' tools.</p>
           </section>
 
           <section class="help-section" id="fonts">

@@ -945,6 +945,12 @@
       <p>Background autosave to a hidden recovery file. If the app or your machine crashes, the next launch offers to restore your unsaved work — even an unsaved new document survives a power loss.</p>
     </article>
 
+    <article class="dept">
+      <span class="dept-num">№ 10 · Interop</span>
+      <h3>Imports <em>Fountain</em> and <em>Final Draft</em></h3>
+      <p>Co-writers' <code>.fountain</code> and <code>.fdx</code> hand-offs flow in through one <strong>Import Screenplay…</strong> wizard. Round-trip-aware Fountain export sends them back without silent data loss. Per-episode Fountain export for series.</p>
+    </article>
+
   </div>
 </section>
 
@@ -1000,10 +1006,17 @@
       <h4>The .screenplay format</h4>
       <p>Plain JSON. Human-readable. Open it in any text editor if you ever need to.</p>
 
+      <h4>Import</h4>
+      <ul>
+        <li><strong>Fountain</strong> (<code>.fountain</code>) — Highland, Slugline, Beat, WriterDuet hand-offs. Round-trip aware: synopses, sections, inline notes, and non-standard title-page keys re-emit on Fountain export.</li>
+        <li><strong>Final Draft</strong> (<code>.fdx</code>) — XML format from FD 8 onwards. Six native paragraph types map directly; bold / italic / underline runs preserve as marks; dual dialogue collapses to sequential pairs; revisions and locked numbers drop with a summary toast.</li>
+        <li>Both flows pick film-or-episode destination via a single <strong>File → Import Screenplay…</strong> wizard.</li>
+      </ul>
+
       <h4>Export</h4>
       <ul>
         <li><strong>PDF</strong> — Hollywood or Indian, with optional Title page, Synopsis, Treatment, Narrative, Scene Cards, Daily Shoot List sections</li>
-        <li><strong>Fountain</strong> — plain text format compatible with Highland and Fade In</li>
+        <li><strong>Fountain</strong> — plain text format compatible with Highland, Slugline, Beat, WriterDuet, and Fade In. Series projects can export one file per episode.</li>
         <li><strong>Plain text</strong> — formatted .txt with proper indentation</li>
       </ul>
 
@@ -1017,7 +1030,7 @@
 <!-- ─── WHAT'S NEW ─── -->
 <section class="section warm" id="whats-new" aria-labelledby="whats-new-title">
   <div class="section-head" style="text-align: center; margin-left: auto; margin-right: auto;">
-    <span class="eyebrow with-rules">v0.8.0</span>
+    <span class="eyebrow with-rules">v0.10.0</span>
     <h2 id="whats-new-title" style="margin: 16px auto 0;">What's <em>new</em>.</h2>
   </div>
 
@@ -1026,13 +1039,37 @@
     <article class="note">
       <span class="note-num">№ 01</span>
       <div>
+        <h3>Final Draft (<code>.fdx</code>) import</h3>
+        <p>Co-writers handing off Final Draft files now flow into Scriptty as a film or as a new episode of an open series. Six paragraph types map directly; bold / italic / underline runs preserve as inline marks; dual-dialogue blocks collapse to sequential pairs; revisions, locked numbers, script notes, and tagging drop with a summary toast that tells you exactly what was transformed or dropped.</p>
+      </div>
+    </article>
+
+    <article class="note">
+      <span class="note-num">№ 02</span>
+      <div>
+        <h3>Round-trip-safe Fountain import</h3>
+        <p>The earlier release added Fountain import; this one closes the loop. Synopses absorb into scene-card descriptions, sections attach to the next scene's shoot notes with a depth marker, inline notes attach to the containing scene, and non-standard title-page keys round-trip via a hidden <code>extra</code> map. A co-writer can edit your Fountain in Scriptty and send it back without silent data loss.</p>
+      </div>
+    </article>
+
+    <article class="note">
+      <span class="note-num">№ 03</span>
+      <div>
+        <h3>One designed import surface</h3>
+        <p>Both formats live behind a single <strong>File → Import Screenplay…</strong> wizard — pick the format and where it lands (new film or new episode of an active series). The standard <kbd>Cmd+O</kbd> Open dialog also accepts <code>.fountain</code> and <code>.fdx</code> directly.</p>
+      </div>
+    </article>
+
+    <article class="note">
+      <span class="note-num">№ 04</span>
+      <div>
         <h3>Production planning, end to end</h3>
         <p>Scene cards carry a location group, shoot date, and extras. Daily Shoot List PDF groups scenes by day &amp; location with industry-standard page-eighths. Statistics adds Schedule and Episodes views with sortable columns and CSV export.</p>
       </div>
     </article>
 
     <article class="note">
-      <span class="note-num">№ 02</span>
+      <span class="note-num">№ 05</span>
       <div>
         <h3>Editorial-grade PDF redesign</h3>
         <p>Title page, prose covers, and scene-card / shoot-list openers share one masthead vocabulary. Per-section page numbering. Transition widow control. Courier Prime now bundled into every PDF.</p>
@@ -1040,7 +1077,7 @@
     </article>
 
     <article class="note">
-      <span class="note-num">№ 03</span>
+      <span class="note-num">№ 06</span>
       <div>
         <h3>Episode Breakout view</h3>
         <p>For series projects: a top-level card per episode with a scene preview list. Click an episode to drill into its scenes. IDE-style explorer with per-episode status, drag-to-reorder, hover-rename.</p>
@@ -1048,7 +1085,7 @@
     </article>
 
     <article class="note">
-      <span class="note-num">№ 04</span>
+      <span class="note-num">№ 07</span>
       <div>
         <h3>Paste to Screenplay</h3>
         <p>Drop plain text into the editor and Scriptty converts it into a properly formatted screenplay — Hollywood-style detection plus a Malayalam-aware character-cue path.</p>
@@ -1056,7 +1093,7 @@
     </article>
 
     <article class="note">
-      <span class="note-num">№ 05</span>
+      <span class="note-num">№ 08</span>
       <div>
         <h3>Autosave &amp; crash recovery</h3>
         <p>Background autosave to a hidden recovery file. Survives crashes and power loss. A normal save clears it.</p>

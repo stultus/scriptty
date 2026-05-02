@@ -14,6 +14,7 @@
 // (counts + warnings) so the frontend can render an informational toast.
 
 use crate::screenplay::document::{Episode, EpisodeStatus, ProjectType, ScreenplayDocument};
+use crate::screenplay::fdx_import::{parse_fdx, FdxImportSummary};
 use crate::screenplay::fountain_import::{parse_fountain, ImportSummary};
 
 /// Bundle returned by both import commands. We use a named struct (not a
@@ -102,6 +103,82 @@ pub fn import_fountain_as_episode(
     });
 
     Ok(FountainImportResult {
+        document: current_document,
+        summary,
+    })
+}
+
+// ─── Final Draft (.fdx) ──────────────────────────────────────────────────────
+
+/// Bundle returned by the FDX import commands. Matches the Fountain
+/// importer's shape so the frontend's two summary toasts share render
+/// scaffolding.
+#[derive(serde::Serialize)]
+pub struct FdxImportResult {
+    pub document: ScreenplayDocument,
+    pub summary: FdxImportSummary,
+}
+
+/// Read a .fdx file from disk and parse it into a Film document. (#192)
+#[tauri::command]
+pub fn import_fdx_as_film(path: String) -> Result<FdxImportResult, String> {
+    let text = std::fs::read_to_string(&path)
+        .map_err(|e| format!("Failed to read Final Draft file '{}': {}", path, e))?;
+    let (document, summary) = parse_fdx(&text)?;
+    Ok(FdxImportResult { document, summary })
+}
+
+/// Read a .fdx file and append it as a new episode to the Series the
+/// frontend hands us. Mirrors `import_fountain_as_episode` — same id
+/// minting, same fallback title behaviour, same active-episode pointer
+/// semantics. (#192)
+#[tauri::command]
+pub fn import_fdx_as_episode(
+    path: String,
+    mut current_document: ScreenplayDocument,
+) -> Result<FdxImportResult, String> {
+    if current_document.project_type != ProjectType::Series {
+        return Err("Cannot import a Final Draft file as an episode unless a Series is open.".into());
+    }
+
+    let text = std::fs::read_to_string(&path)
+        .map_err(|e| format!("Failed to read Final Draft file '{}': {}", path, e))?;
+    let (parsed, summary) = parse_fdx(&text)?;
+
+    let new_id = format!(
+        "ep-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis())
+            .unwrap_or(0)
+    );
+
+    let title = if parsed.meta.title.is_empty() {
+        "Imported episode".to_string()
+    } else {
+        parsed.meta.title.clone()
+    };
+
+    let series = current_document
+        .series
+        .as_mut()
+        .ok_or_else(|| "Series document missing series payload.".to_string())?;
+
+    let next_number = series.episodes.last().map(|e| e.number + 1).unwrap_or(1);
+
+    series.episodes.push(Episode {
+        id: new_id,
+        number: next_number,
+        title,
+        status: EpisodeStatus::Outline,
+        content: parsed.content,
+        meta: parsed.meta,
+        settings: parsed.settings,
+        story: parsed.story,
+        scene_cards: parsed.scene_cards,
+    });
+
+    Ok(FdxImportResult {
         document: current_document,
         summary,
     })

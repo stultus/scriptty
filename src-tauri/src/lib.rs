@@ -59,6 +59,12 @@ pub fn run() {
           // we don't need to rebuild the menu on document-type change.
           &MenuItem::with_id(app, "import-fountain", "Import Fountain...", true, None::<&str>)?,
           &MenuItem::with_id(app, "import-fountain-episode", "Import Fountain as Episode...", true, None::<&str>)?,
+          // Final Draft (.fdx) import (#190/#192). Same two flavours as
+          // Fountain — episode form is enabled at all times here and the
+          // frontend nudges if no Series is open, matching the Fountain
+          // pattern (no menu rebuild on document-type change).
+          &MenuItem::with_id(app, "import-fdx", "Import Final Draft...", true, None::<&str>)?,
+          &MenuItem::with_id(app, "import-fdx-episode", "Import Final Draft as Episode...", true, None::<&str>)?,
           &PredefinedMenuItem::separator(app)?,
           &MenuItem::with_id(app, "save", "Save", true, Some("CmdOrCtrl+S"))?,
           &MenuItem::with_id(app, "save-as", "Save As...", true, Some("CmdOrCtrl+Shift+S"))?,
@@ -201,6 +207,8 @@ pub fn run() {
           "open" => { let _ = app.emit("menu-open", ()); }
           "import-fountain" => { let _ = app.emit("menu-import-fountain", ()); }
           "import-fountain-episode" => { let _ = app.emit("menu-import-fountain-episode", ()); }
+          "import-fdx" => { let _ = app.emit("menu-import-fdx", ()); }
+          "import-fdx-episode" => { let _ = app.emit("menu-import-fdx-episode", ()); }
           "save" => { let _ = app.emit("menu-save", ()); }
           "save-as" => { let _ = app.emit("menu-save-as", ()); }
           "about" => { let _ = app.emit("menu-about", ()); }
@@ -270,6 +278,8 @@ pub fn run() {
       commands::file::load_autosave,
       commands::import::import_fountain_as_film,
       commands::import::import_fountain_as_episode,
+      commands::import::import_fdx_as_film,
+      commands::import::import_fdx_as_episode,
     ])
     .build(tauri::generate_context!())
     .expect("error while building tauri application")

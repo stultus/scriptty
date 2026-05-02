@@ -9,6 +9,9 @@ pub mod fountain;
 /// Fountain import: parses .fountain text into ScreenplayDocument + summary.
 pub mod fountain_import;
 
+/// Final Draft (FDX) import: parses .fdx XML into ScreenplayDocument + summary.
+pub mod fdx_import;
+
 /// Plain text export: converts ProseMirror JSON to formatted screenplay text.
 pub mod plaintext;
 

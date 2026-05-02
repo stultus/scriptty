@@ -143,6 +143,36 @@ export interface FountainImportResult {
   summary: FountainImportSummary;
 }
 
+/** Counts and warnings produced by the Final Draft (.fdx) importer.
+ *  Mirrors `FdxImportSummary` in `src-tauri/src/screenplay/fdx_import.rs`.
+ *  The shape differs from FountainImportSummary because the two formats
+ *  drop different things — FDX has revisions/notes/tags that Fountain
+ *  doesn't, while Fountain has boneyards/synopses/sections that FDX
+ *  doesn't. The toast renderer treats the summary as a generic counts
+ *  bag and only shows non-zero entries. (#192) */
+export interface FdxImportSummary {
+  dual_dialogue_count: number;
+  script_notes_dropped: number;
+  revisions_dropped: number;
+  locked_scene_numbers_dropped: number;
+  tag_data_dropped: number;
+  unknown_types_folded_to_action: number;
+  warnings: string[];
+}
+
+/** Bundle returned by `import_fdx_as_film` / `import_fdx_as_episode`.
+ *  Matches `FdxImportResult` on the Rust side. */
+export interface FdxImportResult {
+  document: ScreenplayDocument;
+  summary: FdxImportSummary;
+}
+
+/** Discriminated-union summary the toast component consumes. The kind
+ *  field tells the renderer which set of count labels to surface. */
+export type AnyImportSummary =
+  | ({ kind: 'fountain' } & FountainImportSummary)
+  | ({ kind: 'fdx' } & FdxImportSummary);
+
 /** Convert a ProseMirror-ish content payload into canonical
  *  `{type:'doc', content:[...]}` shape. Accepts three inputs:
  *    - an already-canonical doc (returned unchanged),
@@ -682,6 +712,72 @@ class DocumentStore {
     } catch (error) {
       console.error('Failed to import Fountain as episode:', error);
       await message(`Could not import Fountain file: ${error}`, {
+        title: 'Import failed',
+        kind: 'error',
+      });
+      return null;
+    }
+  }
+
+  /** Parse a .fdx (Final Draft) file into a brand-new Film document.
+   *  Mirrors importFountainAsFilm — same dirty/path semantics. (#192) */
+  async importFdxAsFilm(path: string): Promise<FdxImportSummary | null> {
+    try {
+      const result = await invoke<FdxImportResult>('import_fdx_as_film', { path });
+      const doc = result.document;
+      doc.content = normalizeContentPayload(doc.content);
+      this.document = doc;
+      this.currentPath = null;
+      this.isDirty = true;
+      this.lastSavedAt = null;
+      this.activeEpisodeIndex = 0;
+      this.loadedContent = doc.content;
+      this.loadTrigger++;
+      this.#bumpContentVersion(true);
+      return result.summary;
+    } catch (error) {
+      console.error('Failed to import Final Draft file:', error);
+      await message(`Could not import Final Draft file: ${error}`, {
+        title: 'Import failed',
+        kind: 'error',
+      });
+      return null;
+    }
+  }
+
+  /** Parse a .fdx file as a single episode and append it to the active
+   *  Series. Mirrors importFountainAsEpisode. (#192) */
+  async importFdxAsEpisode(path: string): Promise<FdxImportSummary | null> {
+    if (!this.document || this.document.type !== 'series') {
+      await message(
+        'Open a Series project first — Final Draft files can only be imported as episodes into an existing series.',
+        { title: 'No series open', kind: 'info' },
+      );
+      return null;
+    }
+    try {
+      const result = await invoke<FdxImportResult>('import_fdx_as_episode', {
+        path,
+        currentDocument: this.document,
+      });
+      const doc = result.document;
+      if (doc.type === 'series' && doc.series) {
+        for (const ep of doc.series.episodes) {
+          ep.content = normalizeContentPayload(ep.content);
+        }
+      }
+      this.document = doc;
+      this.isDirty = true;
+      this.lastSavedAt = null;
+      const lastIdx = (doc.series?.episodes.length ?? 1) - 1;
+      this.activeEpisodeIndex = lastIdx;
+      this.loadedContent = doc.series?.episodes?.[lastIdx]?.content ?? doc.content;
+      this.loadTrigger++;
+      this.#bumpContentVersion(true);
+      return result.summary;
+    } catch (error) {
+      console.error('Failed to import Final Draft as episode:', error);
+      await message(`Could not import Final Draft file: ${error}`, {
         title: 'Import failed',
         kind: 'error',
       });

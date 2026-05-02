@@ -23,7 +23,7 @@
   import ImportSummaryToast from '$lib/components/ImportSummaryToast.svelte';
   import WelcomeScreen from '$lib/components/WelcomeScreen.svelte';
   import NewProjectDialog from '$lib/components/NewProjectDialog.svelte';
-  import { documentStore, type FountainImportSummary } from '$lib/stores/documentStore.svelte';
+  import { documentStore, type AnyImportSummary } from '$lib/stores/documentStore.svelte';
   import { editorStore } from '$lib/stores/editorStore.svelte';
   import { themeStore } from '$lib/stores/themeStore.svelte';
   import { updateStore } from '$lib/stores/updateStore.svelte';
@@ -84,10 +84,10 @@
   let showFilmDialog = $state(false);
   let showSeriesDialog = $state(false);
 
-  // Active Fountain-import summary, shown as a toast until the writer
-  // dismisses it. Holds both the summary itself and the source filename
-  // (used as the toast headline). (#187)
-  let importToast = $state<{ summary: FountainImportSummary; filename: string } | null>(null);
+  // Active import summary (Fountain or FDX), shown as a toast until the
+  // writer dismisses it. The summary's `kind` tag selects the count
+  // labels the toast renders. (#187 / #192)
+  let importToast = $state<{ summary: AnyImportSummary; filename: string } | null>(null);
   function dismissImportToast() {
     importToast = null;
   }
@@ -177,55 +177,70 @@
     if (!(await documentStore.confirmIfDirty())) return;
     const path = await open({
       multiple: false,
-      // The Open dialog accepts both formats. `.fountain` files route
-      // through the importer; `.screenplay` keeps the existing path.
-      // Single combined filter so the writer doesn't have to switch
-      // dropdowns on macOS to see their Fountain hand-offs. (#187)
+      // Open dialog accepts native + both import formats. Single
+      // combined top filter so writers don't have to switch dropdowns
+      // on macOS to see their hand-offs. (#187 / #192)
       filters: [
-        { name: 'Screenplay or Fountain', extensions: ['screenplay', 'fountain'] },
+        { name: 'Screenplay, Fountain, or Final Draft', extensions: ['screenplay', 'fountain', 'fdx'] },
         { name: 'Screenplay', extensions: ['screenplay'] },
         { name: 'Fountain', extensions: ['fountain'] },
+        { name: 'Final Draft', extensions: ['fdx'] },
       ],
     });
     if (typeof path !== 'string') return;
-    if (path.toLowerCase().endsWith('.fountain')) {
+    const lower = path.toLowerCase();
+    if (lower.endsWith('.fountain')) {
       const summary = await documentStore.importFountainAsFilm(path);
-      if (summary) importToast = { summary, filename: basename(path) };
+      if (summary) importToast = { summary: { kind: 'fountain', ...summary }, filename: basename(path) };
+    } else if (lower.endsWith('.fdx')) {
+      const summary = await documentStore.importFdxAsFilm(path);
+      if (summary) importToast = { summary: { kind: 'fdx', ...summary }, filename: basename(path) };
     } else {
       await documentStore.openDocument(path);
       if (documentStore.currentPath) pushRecentFile(documentStore.currentPath);
     }
   }
 
-  /** Open a Fountain-only file dialog and route through the requested
-   *  import method. Used for both `Import Fountain` (always Film) and
-   *  `Import Fountain as Episode` (appends to active Series). The
-   *  dirty-state guard runs ahead of the dialog so unsaved work isn't
-   *  clobbered. (#187) */
-  async function pickFountainAndImport(asEpisode: boolean) {
+  /** Format-agnostic import flow used by the four File-menu entries.
+   *  `format` selects the dialog filter and the documentStore method;
+   *  `asEpisode` selects film vs episode. Dirty-state guard runs ahead
+   *  of the dialog for the film case (which replaces the current doc).
+   *  (#187 / #192) */
+  async function pickAndImport(format: 'fountain' | 'fdx', asEpisode: boolean) {
     if (asEpisode) {
-      // Series-mode-only — bail early with a friendly nudge if the
-      // current document isn't a series, before we even open a dialog.
       if (!documentStore.document || documentStore.document.type !== 'series') {
+        const formatLabel = format === 'fdx' ? 'Final Draft' : 'Fountain';
         await message(
-          'Open a Series project first — Fountain files can only be imported as episodes into an existing series.',
+          `Open a Series project first — ${formatLabel} files can only be imported as episodes into an existing series.`,
           { title: 'No series open', kind: 'info' },
         );
         return;
       }
     } else {
-      // Importing as a fresh film replaces the current document, so
-      // confirm unsaved changes first.
       if (!(await documentStore.confirmIfDirty())) return;
     }
     const path = await open({
       multiple: false,
-      filters: [{ name: 'Fountain', extensions: ['fountain'] }],
+      filters: [
+        format === 'fdx'
+          ? { name: 'Final Draft', extensions: ['fdx'] }
+          : { name: 'Fountain', extensions: ['fountain'] },
+      ],
     });
     if (typeof path !== 'string') return;
-    const summary = asEpisode
-      ? await documentStore.importFountainAsEpisode(path)
-      : await documentStore.importFountainAsFilm(path);
+
+    let summary: AnyImportSummary | null = null;
+    if (format === 'fountain') {
+      const result = asEpisode
+        ? await documentStore.importFountainAsEpisode(path)
+        : await documentStore.importFountainAsFilm(path);
+      if (result) summary = { kind: 'fountain', ...result };
+    } else {
+      const result = asEpisode
+        ? await documentStore.importFdxAsEpisode(path)
+        : await documentStore.importFdxAsFilm(path);
+      if (result) summary = { kind: 'fdx', ...result };
+    }
     if (summary) importToast = { summary, filename: basename(path) };
   }
 
@@ -249,10 +264,16 @@
     { id: 'file.open', group: 'File', label: 'Open…', hint: '⌘O', action: openFileDialog },
     { id: 'file.import-fountain', group: 'File', label: 'Import Fountain…',
       keywords: 'import fountain spmd interop highland slugline',
-      action: () => pickFountainAndImport(false) },
+      action: () => pickAndImport('fountain', false) },
     { id: 'file.import-fountain-episode', group: 'File', label: 'Import Fountain as Episode…',
       keywords: 'import fountain episode series',
-      action: () => pickFountainAndImport(true) },
+      action: () => pickAndImport('fountain', true) },
+    { id: 'file.import-fdx', group: 'File', label: 'Import Final Draft…',
+      keywords: 'import fdx final draft xml',
+      action: () => pickAndImport('fdx', false) },
+    { id: 'file.import-fdx-episode', group: 'File', label: 'Import Final Draft as Episode…',
+      keywords: 'import fdx final draft episode series',
+      action: () => pickAndImport('fdx', true) },
     { id: 'file.save', group: 'File', label: 'Save', hint: '⌘S', action: () => documentStore.saveWithDialog() },
     { id: 'file.saveas', group: 'File', label: 'Save As…', hint: '⌘⇧S', action: () => documentStore.saveAsDialog() },
     { id: 'file.export', group: 'File', label: 'Export…', keywords: 'pdf fountain plain text hollywood indian', action: () => { showExport = true; } },
@@ -505,11 +526,19 @@
       }));
 
       track(await listen('menu-import-fountain', async () => {
-        await pickFountainAndImport(false);
+        await pickAndImport('fountain', false);
       }));
 
       track(await listen('menu-import-fountain-episode', async () => {
-        await pickFountainAndImport(true);
+        await pickAndImport('fountain', true);
+      }));
+
+      track(await listen('menu-import-fdx', async () => {
+        await pickAndImport('fdx', false);
+      }));
+
+      track(await listen('menu-import-fdx-episode', async () => {
+        await pickAndImport('fdx', true);
       }));
 
       track(await listen('menu-save', () => {

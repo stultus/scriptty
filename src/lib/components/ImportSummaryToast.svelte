@@ -1,18 +1,21 @@
 <script lang="ts">
-  // Bottom-left toast that surfaces what the Fountain importer transformed
-  // or dropped (#187). Shown once per import; the writer dismisses it
-  // explicitly — auto-dismissing would mean a writer who looked away can
-  // miss the Malayalam-warning that explains why all their character cues
-  // landed as action.
+  // Bottom-left toast that surfaces what an importer transformed or
+  // dropped. Shared by Fountain (#187) and Final Draft (#192) — the
+  // discriminated `kind` field selects which counts to surface.
+  //
+  // Shown once per import; the writer dismisses it explicitly — auto-
+  // dismissing would mean a writer who looked away can miss warnings
+  // (e.g. the Malayalam @-prefix warning that explains why all their
+  // character cues landed as action).
   //
   // Lives at the same screen z-index as UpdateToast but anchored bottom-
   // left to keep both visible if a release happens to drop while a writer
   // is importing a file.
 
-  import type { FountainImportSummary } from '$lib/stores/documentStore.svelte';
+  import type { AnyImportSummary } from '$lib/stores/documentStore.svelte';
 
   interface Props {
-    summary: FountainImportSummary | null;
+    summary: AnyImportSummary | null;
     filename: string;
     onDismiss: () => void;
   }
@@ -24,16 +27,33 @@
   const counts = $derived.by(() => {
     if (!summary) return [] as string[];
     const out: string[] = [];
-    if (summary.synopses_count > 0) out.push(plural(summary.synopses_count, 'synopsis', 'synopses'));
-    if (summary.sections_count > 0) out.push(plural(summary.sections_count, 'section'));
-    if (summary.notes_count > 0) out.push(plural(summary.notes_count, 'note'));
-    if (summary.dual_dialogue_count > 0)
-      out.push(`${summary.dual_dialogue_count} dual-dialogue cue${summary.dual_dialogue_count === 1 ? '' : 's'} (collapsed)`);
-    if (summary.boneyards_dropped > 0) out.push(`${summary.boneyards_dropped} boneyard${summary.boneyards_dropped === 1 ? '' : 's'} dropped`);
-    if (summary.scene_numbers_dropped > 0) out.push(`${summary.scene_numbers_dropped} scene number${summary.scene_numbers_dropped === 1 ? '' : 's'} dropped`);
-    if (summary.emphasis_stripped > 0) out.push(`${summary.emphasis_stripped} emphasis run${summary.emphasis_stripped === 1 ? '' : 's'} stripped`);
+    if (summary.kind === 'fountain') {
+      if (summary.synopses_count > 0) out.push(plural(summary.synopses_count, 'synopsis', 'synopses'));
+      if (summary.sections_count > 0) out.push(plural(summary.sections_count, 'section'));
+      if (summary.notes_count > 0) out.push(plural(summary.notes_count, 'note'));
+      if (summary.dual_dialogue_count > 0)
+        out.push(`${summary.dual_dialogue_count} dual-dialogue cue${summary.dual_dialogue_count === 1 ? '' : 's'} (collapsed)`);
+      if (summary.boneyards_dropped > 0) out.push(`${summary.boneyards_dropped} boneyard${summary.boneyards_dropped === 1 ? '' : 's'} dropped`);
+      if (summary.scene_numbers_dropped > 0) out.push(`${summary.scene_numbers_dropped} scene number${summary.scene_numbers_dropped === 1 ? '' : 's'} dropped`);
+      if (summary.emphasis_stripped > 0) out.push(`${summary.emphasis_stripped} emphasis run${summary.emphasis_stripped === 1 ? '' : 's'} stripped`);
+    } else {
+      // FDX summary
+      if (summary.dual_dialogue_count > 0)
+        out.push(`${summary.dual_dialogue_count} dual-dialogue block${summary.dual_dialogue_count === 1 ? '' : 's'} (collapsed)`);
+      if (summary.script_notes_dropped > 0) out.push(`${summary.script_notes_dropped} script note${summary.script_notes_dropped === 1 ? '' : 's'} dropped`);
+      if (summary.revisions_dropped > 0) out.push(`${summary.revisions_dropped} revision${summary.revisions_dropped === 1 ? '' : 's'} dropped`);
+      if (summary.locked_scene_numbers_dropped > 0)
+        out.push(`${summary.locked_scene_numbers_dropped} locked scene number${summary.locked_scene_numbers_dropped === 1 ? '' : 's'} dropped`);
+      if (summary.tag_data_dropped > 0) out.push(`${summary.tag_data_dropped} tag block${summary.tag_data_dropped === 1 ? '' : 's'} dropped`);
+      if (summary.unknown_types_folded_to_action > 0)
+        out.push(`${summary.unknown_types_folded_to_action} unknown paragraph type${summary.unknown_types_folded_to_action === 1 ? '' : 's'} folded to action`);
+    }
     return out;
   });
+
+  // Eyebrow label changes per format so the toast tells the writer
+  // which importer ran without them having to read the filename.
+  const eyebrowLabel = $derived(summary?.kind === 'fdx' ? 'Final Draft imported' : 'Fountain imported');
 
   function plural(n: number, singular: string, pluralForm: string = singular + 's'): string {
     return `${n} ${n === 1 ? singular : pluralForm}`;
@@ -44,7 +64,7 @@
   <div class="import-toast" role="status" aria-live="polite">
     <div class="mh-eyebrow is-centered" aria-hidden="true">
       <span class="mh-rule"></span>
-      <span>Fountain imported</span>
+      <span>{eyebrowLabel}</span>
       <span class="mh-rule"></span>
     </div>
 

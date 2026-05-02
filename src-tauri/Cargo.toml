@@ -31,3 +31,7 @@ comemo = "0.5"
 tauri-plugin-fs = "2"
 tauri-plugin-opener = "2.5.3"
 tauri-plugin-deep-link = "2.4.7"
+# Pure-Rust XML pull-parser (MIT). Used by the Final Draft (.fdx) importer
+# in `screenplay::fdx_import` — `quick-xml` handles BOM, entity decoding,
+# and whitespace per the XML 1.0 spec, which we don't want to re-implement.
+quick-xml = "0.36"

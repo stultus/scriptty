@@ -2,8 +2,20 @@ name: Update Download Links
 
 on:
   release:
-    types: [published, released]
+    # `published` fires for both new releases and the draft→release
+    # transition. `released` overlaps for non-prerelease publishes,
+    # which produced duplicate concurrent runs that raced on the
+    # `git push` (one would land, the other got `! [rejected]`).
+    # `published` alone covers both manual draft-publishing (our flow)
+    # and the auto-published case.
+    types: [published]
   workflow_dispatch:
+
+# Serialise runs so a future re-trigger or a tag-then-publish ordering
+# can't fork two simultaneous attempts to push docs/downloads.json.
+concurrency:
+  group: update-downloads
+  cancel-in-progress: false
 
 jobs:
   update-downloads:
@@ -75,4 +87,16 @@ jobs:
           git add docs/downloads.json
           git diff --staged --quiet && echo "No changes" && exit 0
           git commit -m "ci: update download links for ${{ github.event.release.tag_name }}"
-          git push
+          # Rebase-retry on push: if another commit raced in between
+          # (concurrent docs PR, etc.), pull --rebase and try again.
+          # Bounded to 3 attempts so a real auth / hook failure still
+          # surfaces instead of looping forever.
+          for attempt in 1 2 3; do
+            if git push; then
+              exit 0
+            fi
+            echo "Push failed (attempt ${attempt}); rebasing onto origin/main and retrying..."
+            git pull --rebase origin main
+          done
+          echo "Push still failing after 3 attempts." >&2
+          exit 1

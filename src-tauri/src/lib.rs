@@ -51,20 +51,8 @@ pub fn run() {
           &MenuItem::with_id(app, "new-series", "New Series", true, Some("CmdOrCtrl+Shift+N"))?,
           &MenuItem::with_id(app, "open", "Open...", true, Some("CmdOrCtrl+O"))?,
           &PredefinedMenuItem::separator(app)?,
-          // Fountain import (#184/#187). Two flavours — the standalone
-          // form always opens a fresh Film; the "as Episode" form is
-          // enabled at all times in the menu but the frontend ignores
-          // it (with a status message) when no Series is open. Done in
-          // the frontend rather than disabling the menu item here so
-          // we don't need to rebuild the menu on document-type change.
-          &MenuItem::with_id(app, "import-fountain", "Import Fountain...", true, None::<&str>)?,
-          &MenuItem::with_id(app, "import-fountain-episode", "Import Fountain as Episode...", true, None::<&str>)?,
-          // Final Draft (.fdx) import (#190/#192). Same two flavours as
-          // Fountain — episode form is enabled at all times here and the
-          // frontend nudges if no Series is open, matching the Fountain
-          // pattern (no menu rebuild on document-type change).
-          &MenuItem::with_id(app, "import-fdx", "Import Final Draft...", true, None::<&str>)?,
-          &MenuItem::with_id(app, "import-fdx-episode", "Import Final Draft as Episode...", true, None::<&str>)?,
+          // Opens the in-app import wizard (format + destination picker).
+          &MenuItem::with_id(app, "import-screenplay", "Import Screenplay...", true, None::<&str>)?,
           &PredefinedMenuItem::separator(app)?,
           &MenuItem::with_id(app, "save", "Save", true, Some("CmdOrCtrl+S"))?,
           &MenuItem::with_id(app, "save-as", "Save As...", true, Some("CmdOrCtrl+Shift+S"))?,
@@ -205,10 +193,7 @@ pub fn run() {
           "new-film" => { let _ = app.emit("menu-new-film", ()); }
           "new-series" => { let _ = app.emit("menu-new-series", ()); }
           "open" => { let _ = app.emit("menu-open", ()); }
-          "import-fountain" => { let _ = app.emit("menu-import-fountain", ()); }
-          "import-fountain-episode" => { let _ = app.emit("menu-import-fountain-episode", ()); }
-          "import-fdx" => { let _ = app.emit("menu-import-fdx", ()); }
-          "import-fdx-episode" => { let _ = app.emit("menu-import-fdx-episode", ()); }
+          "import-screenplay" => { let _ = app.emit("menu-import-screenplay", ()); }
           "save" => { let _ = app.emit("menu-save", ()); }
           "save-as" => { let _ = app.emit("menu-save-as", ()); }
           "about" => { let _ = app.emit("menu-about", ()); }

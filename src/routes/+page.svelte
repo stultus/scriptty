@@ -21,6 +21,7 @@
   import ExportModal from '$lib/components/ExportModal.svelte';
   import UpdateToast from '$lib/components/UpdateToast.svelte';
   import ImportSummaryToast from '$lib/components/ImportSummaryToast.svelte';
+  import ImportWizardModal from '$lib/components/ImportWizardModal.svelte';
   import WelcomeScreen from '$lib/components/WelcomeScreen.svelte';
   import NewProjectDialog from '$lib/components/NewProjectDialog.svelte';
   import { documentStore, type AnyImportSummary } from '$lib/stores/documentStore.svelte';
@@ -83,6 +84,7 @@
   let showCommandPalette = $state(false);
   let showFilmDialog = $state(false);
   let showSeriesDialog = $state(false);
+  let showImportWizard = $state(false);
 
   // Active import summary (Fountain or FDX), shown as a toast until the
   // writer dismisses it. The summary's `kind` tag selects the count
@@ -262,18 +264,9 @@
     { id: 'file.new-series', group: 'File', label: 'New Series…', hint: '⌘⇧N',
       action: () => { showSeriesDialog = true; } },
     { id: 'file.open', group: 'File', label: 'Open…', hint: '⌘O', action: openFileDialog },
-    { id: 'file.import-fountain', group: 'File', label: 'Import Fountain…',
-      keywords: 'import fountain spmd interop highland slugline',
-      action: () => pickAndImport('fountain', false) },
-    { id: 'file.import-fountain-episode', group: 'File', label: 'Import Fountain as Episode…',
-      keywords: 'import fountain episode series',
-      action: () => pickAndImport('fountain', true) },
-    { id: 'file.import-fdx', group: 'File', label: 'Import Final Draft…',
-      keywords: 'import fdx final draft xml',
-      action: () => pickAndImport('fdx', false) },
-    { id: 'file.import-fdx-episode', group: 'File', label: 'Import Final Draft as Episode…',
-      keywords: 'import fdx final draft episode series',
-      action: () => pickAndImport('fdx', true) },
+    { id: 'file.import', group: 'File', label: 'Import Screenplay…',
+      keywords: 'import fountain fdx final draft highland slugline writerduet beat episode series',
+      action: () => { showImportWizard = true; } },
     { id: 'file.save', group: 'File', label: 'Save', hint: '⌘S', action: () => documentStore.saveWithDialog() },
     { id: 'file.saveas', group: 'File', label: 'Save As…', hint: '⌘⇧S', action: () => documentStore.saveAsDialog() },
     { id: 'file.export', group: 'File', label: 'Export…', keywords: 'pdf fountain plain text hollywood indian', action: () => { showExport = true; } },
@@ -525,20 +518,8 @@
         await openFileDialog();
       }));
 
-      track(await listen('menu-import-fountain', async () => {
-        await pickAndImport('fountain', false);
-      }));
-
-      track(await listen('menu-import-fountain-episode', async () => {
-        await pickAndImport('fountain', true);
-      }));
-
-      track(await listen('menu-import-fdx', async () => {
-        await pickAndImport('fdx', false);
-      }));
-
-      track(await listen('menu-import-fdx-episode', async () => {
-        await pickAndImport('fdx', true);
+      track(await listen('menu-import-screenplay', () => {
+        showImportWizard = true;
       }));
 
       track(await listen('menu-save', () => {
@@ -807,6 +788,10 @@
 />
 <NewProjectDialog bind:open={showFilmDialog} kind="film" onConfirm={handleCreateFilmFromDialog} />
 <NewProjectDialog bind:open={showSeriesDialog} kind="series" onConfirm={handleCreateSeriesFromDialog} />
+<ImportWizardModal
+  bind:open={showImportWizard}
+  onStart={(fmt, asEpisode) => pickAndImport(fmt, asEpisode)}
+/>
 
 <style>
   main {

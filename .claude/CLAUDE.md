@@ -87,6 +87,8 @@ scriptty/
 │   │       ├── StatisticsModal.svelte  # Page/scene/word/dialogue statistics
 │   │       ├── HelpModal.svelte        # User guide with keyboard shortcuts
 │   │       ├── AboutModal.svelte       # App info, credits, version
+│   │       ├── ImportWizardModal.svelte # Format + destination picker for .fountain / .fdx import
+│   │       ├── ImportSummaryToast.svelte # Bottom-left toast — counts of transformed / dropped elements
 │   │       └── UpdateToast.svelte      # Non-intrusive new-version toast
 │   └── routes/                   # SvelteKit pages
 │       ├── +layout.svelte        # Global reset, CSS variables, theme system
@@ -98,12 +100,15 @@ scriptty/
 │   │   ├── commands/             # Tauri commands (called from frontend)
 │   │   │   ├── mod.rs
 │   │   │   ├── file.rs               # save/open/new .screenplay files
-│   │   │   └── export.rs             # PDF, Fountain, plain text export
+│   │   │   ├── export.rs             # PDF, Fountain, plain text export
+│   │   │   └── import.rs             # Fountain + Final Draft import commands
 │   │   ├── screenplay/           # Document model and business logic
 │   │   │   ├── mod.rs
 │   │   │   ├── document.rs           # .screenplay JSON schema (incl. series)
 │   │   │   ├── pdf.rs                # Typst PDF generation
-│   │   │   ├── fountain.rs           # Fountain export
+│   │   │   ├── fountain.rs           # Fountain export (with forcing rules + round-trip emission)
+│   │   │   ├── fountain_import.rs    # Fountain (.fountain) parser → ScreenplayDocument
+│   │   │   ├── fdx_import.rs         # Final Draft (.fdx) XML parser → ScreenplayDocument
 │   │   │   └── plaintext.rs          # Plain text export
 │   │   └── fonts/                # Font loading for Typst
 │   ├── fonts/                    # Fonts embedded in PDFs (Noto Sans Malayalam, Manjari)
@@ -296,6 +301,54 @@ Full format spec: see `SCREENPLAY_FORMAT.md` at project root.
 - Scene Cards PDF: project title, credit lines, table/card layout per scene
 - Smart credit formatting: "Written and Directed by" when same person, separate credits otherwise
 - Conditional pagebreaks — no blank leading page when title page is excluded
+- **Per-episode Fountain export** for Series projects — toggle in Export modal, prompts for a directory, writes `NN-slug.fountain` per episode
+
+### Import System
+
+- Single `File → Import Screenplay…` entry (and command-palette equivalent) opens
+  the `ImportWizardModal` — pick format (Fountain / Final Draft) and destination
+  (new film / episode of active Series). Episode card disables with an
+  explanatory sub-line when no Series is open.
+- The standard `Cmd+O` Open dialog also accepts `.fountain` and `.fdx` and
+  auto-routes through the importer based on extension.
+- Imports always land as fresh, unsaved documents — `Cmd+S` prompts for a
+  `.screenplay` location instead of overwriting the source file.
+- **Fountain parser** (`fountain_import.rs`) — hand-rolled, follows the canonical
+  reference parser's precedence: boneyard pre-pass (the only Fountain syntax
+  allowed to cross double-line-breaks), inline-note extraction, title-page
+  parsing gated on known keys, line-by-line body state machine. Synopses →
+  `scene_cards[].description`; sections → next scene's `shoot_notes` with
+  `[[#section depth=N]]` marker; inline `[[ ]]` notes → containing scene's
+  `shoot_notes`. Boneyard / dual dialogue / emphasis / custom scene numbers
+  drop with summary counts. Caseless scripts (Malayalam etc.) need the `@`
+  forced-character prefix or they fall through to action — the importer
+  surfaces a warning when a file looks Malayalam-heavy without `@` cues.
+- **Fountain export** (`fountain.rs`) — applies forcing rules so the next
+  reader's parser doesn't misclassify stored elements: `@` for non-all-caps-
+  Latin character cues (Malayalam, mixed-case English), `.` for non-slug scene
+  headings, `>` for non-`TO:` transitions, `!` for action that would auto-detect
+  as Character / Transition / Scene Heading. Round-trips synopses (as `=`),
+  sections (as `#`/`##`/...), inline notes (as `[[ ]]`), and `meta.extra`
+  (as title-page keys, sorted alphabetically via BTreeMap iteration).
+- **FDX parser** (`fdx_import.rs`) — uses `quick-xml` (MIT, pure-Rust) as a
+  pull-parser. Six native paragraph types map directly; `Shot` → scene_heading;
+  `General` / `Lyrics` / `Outline N` → action; unknown types fold to action
+  with a count. Inline `<Text Style="Bold+Italic+Underline">` runs map to
+  ProseMirror marks. `<DualDialogue>` collapses to sequential pairs (counted).
+  `<ScriptNote>`, `<TagData>`, revisions, locked scene numbers, headers/footers,
+  page layout drop with counts. Title-page: full text always lands in
+  `meta.extra["fdx_title_page"]`; a Beat-style heuristic best-effort fills
+  `meta.title` / `.author` / `.draft_date` / `.contact` when the layout is
+  recognisable. The FDX `Version` attribute lands in
+  `meta.extra["fdx_source_version"]` as a debug aid. `.fdr` (legacy binary)
+  is **not** supported.
+- **FDX export** is **not** implemented — Fountain is the canonical co-writing
+  handoff format. Listed under deferred remaining work in PROGRESS.md.
+- **`ImportSummaryToast`** is a single component that consumes a discriminated-
+  union summary (`{ kind: 'fountain' | 'fdx' } & summary`). Renders the
+  applicable counts plus parser warnings verbatim, dismissed manually so
+  warnings (especially the Malayalam @-prefix one) aren't auto-dismissed
+  before the writer reads them.
 
 ### Title Page
 

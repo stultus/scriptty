@@ -447,6 +447,9 @@
 	}
 
 	let groupedSchedule = $derived.by<ScheduleGroup[]>(() => {
+		// Transient grouping map — built fresh per derive, never escapes.
+		// Not reactive state; SvelteMap would be perf overhead for nothing.
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const groups = new Map<string, ScheduleEntry[]>();
 		for (const row of stats.schedule) {
 			const key = row.scheduledDate || '';
@@ -643,7 +646,10 @@
 		let dayCount = 0;
 		let nightCount = 0;
 
-		// Per-character tracking
+		// Per-character tracking. Transient compute maps — see top of
+		// `groupedSchedule` for the rationale; the same applies to every
+		// Map / Set in this $derived.by block.
+		/* eslint-disable svelte/prefer-svelte-reactivity */
 		const charDialogueCount = new Map<string, number>();
 		const charScenes = new Map<string, Set<number>>();
 		let currentScene = 0;
@@ -824,11 +830,11 @@
 			locations,
 			schedule
 		};
+		/* eslint-enable svelte/prefer-svelte-reactivity */
 	}
 </script>
 
 {#if open}
-	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		class="modal-backdrop"
 		onclick={handleBackdropClick}
@@ -1046,6 +1052,10 @@
 							<span class="mh-rule"></span>
 							<span>{activeTabLabel.eyebrow}</span>
 						</div>
+						<!-- {@html} OK — `title` is a hand-authored literal at the
+						 top of this file (see activeTabLabel $derived); never
+						 fed user input. -->
+						<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 						<h3 class="mh-title pane-title">{@html activeTabLabel.title}</h3>
 					</div>
 					<div class="pane-actions">
@@ -1236,7 +1246,7 @@
 										</tr>
 									</thead>
 									<tbody>
-										{#each sortedCharacters as char, i}
+										{#each sortedCharacters as char, i (char.name)}
 											<tr>
 												<td class="col-name"><span class="rank">{i + 1}</span>{char.name}</td>
 												<td class="col-num">{char.scenes}</td>
@@ -1310,7 +1320,7 @@
 										</tr>
 									</thead>
 									<tbody>
-										{#each sortedLocations as loc, i}
+										{#each sortedLocations as loc, i (loc.name)}
 											<tr>
 												<td class="col-name"><span class="rank">{i + 1}</span>{loc.name}</td>
 												<td class="col-num">{loc.scenes}</td>
@@ -1467,7 +1477,7 @@
 														</span>
 													</td>
 												</tr>
-												{#each group.rows as row}
+												{#each group.rows as row (row.sceneNumber)}
 													<tr>
 														<td class="col-snum">{row.sceneNumber}</td>
 														<td class="col-meta">{row.setting || '—'}</td>
@@ -1482,7 +1492,7 @@
 										{/each}
 									{:else}
 										<tbody>
-											{#each sortedSchedule as row}
+											{#each sortedSchedule as row (row.sceneNumber)}
 												<tr>
 													<td class="col-snum">{row.sceneNumber}</td>
 													<td class="col-meta">{row.setting || '—'}</td>

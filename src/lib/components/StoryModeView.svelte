@@ -10,11 +10,6 @@
 	// Get the shared input manager singleton
 	const inputManager = InputModeManager.getInstance();
 
-	// Input mode UI state — synced with the singleton
-	let currentMode = $state<'ENGLISH' | 'MALAYALAM'>(
-		inputManager.isMalayalam ? 'MALAYALAM' : 'ENGLISH'
-	);
-
 	// Track which textarea is currently focused for Malayalam input
 	let activeTextarea = $state<HTMLTextAreaElement | null>(null);
 
@@ -121,8 +116,7 @@
 		// Ctrl+Space — toggle English/Malayalam
 		if (event.ctrlKey && event.code === 'Space') {
 			event.preventDefault();
-			const isNowMalayalam = inputManager.toggle();
-			currentMode = isNowMalayalam ? 'MALAYALAM' : 'ENGLISH';
+			inputManager.toggle();
 			return;
 		}
 
@@ -193,7 +187,7 @@
 					</h1>
 				</header>
 				<div class="tab-bar" role="tablist" aria-label="Story sections">
-					{#each tabs as tab}
+					{#each tabs as tab (tab.id)}
 						<button
 							type="button"
 							role="tab"

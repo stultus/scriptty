@@ -139,7 +139,6 @@
 </script>
 
 {#if open}
-	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		class="modal-backdrop"
 		onclick={handleBackdropClick}
@@ -370,7 +369,7 @@
 							{#if creditLines.length > 0}
 								<div class="preview-asterism" aria-hidden="true">· · ·</div>
 								<div class="preview-credits">
-									{#each creditLines as line}
+									{#each creditLines as line (line.label)}
 										<div class="preview-credit">
 											<span class="preview-credit-label">{line.label}</span>
 											<span class="preview-credit-name">{line.name}</span>

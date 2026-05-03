@@ -468,10 +468,15 @@
 	 *  survive intact and get saved as ".സ്ക്രിപ്റ്റ്.pdf" if the writer
 	 *  named the doc that way. */
 	function sanitizeForFilename(s: string): string {
-		return s
-			.replace(/[\\/:*?"<>|\x00-\x1f]/g, '')
-			.replace(/\s+/g, ' ')
-			.trim();
+		// Control chars (0x00–0x1F) are deliberately stripped — they're
+		// invalid in filenames on every platform we ship to.
+		return (
+			s
+				// eslint-disable-next-line no-control-regex
+				.replace(/[\\/:*?"<>|\x00-\x1f]/g, '')
+				.replace(/\s+/g, ' ')
+				.trim()
+		);
 	}
 
 	/** Derive a contextual default filename (without extension) for a
@@ -821,7 +826,6 @@
 </script>
 
 {#if open}
-	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		class="modal-backdrop"
 		onclick={handleBackdropClick}

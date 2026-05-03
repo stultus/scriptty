@@ -96,7 +96,7 @@ export const findReplacePlugin = new Plugin<FindReplaceState>({
 	key: findReplaceKey,
 
 	state: {
-		init(_, state) {
+		init() {
 			return emptyState();
 		},
 

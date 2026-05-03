@@ -156,7 +156,7 @@
 	// last edit, which is invisible to the user but skips ~90% of the
 	// recompute storm during active typing on a long screenplay.
 	let scenes = $derived.by(() => {
-		documentStore.contentVersionDebounced;
+		const _v = documentStore.contentVersionDebounced;
 		return untrack(() => computeScenes());
 	});
 

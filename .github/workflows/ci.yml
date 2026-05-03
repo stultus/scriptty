@@ -82,15 +82,14 @@ jobs:
       - name: svelte-check (via npm run check)
         run: npm run check -- --fail-on-warnings
 
-      # Split out from `npm run lint` so prettier gates while eslint stays
-      # visible-but-non-blocking until existing lint debt is paid down.
-      # See repo issues for the eslint cleanup tracker.
+      # Both prettier and eslint gate the build. The earlier eslint
+      # debt was cleared in the sweep that flipped this step from
+      # non-blocking to blocking — keep the bar there.
       - name: Prettier — check formatting
         run: npx prettier --check .
 
-      - name: ESLint (non-blocking until debt is cleared)
+      - name: ESLint
         run: npx eslint .
-        continue-on-error: true
 
   build:
     name: Build — full Tauri app (Linux, debug)

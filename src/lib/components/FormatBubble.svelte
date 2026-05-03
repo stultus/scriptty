@@ -174,17 +174,6 @@
 	// Bubble element ref, used by the outside-click handler.
 	let bubbleEl = $state<HTMLDivElement | null>(null);
 
-	// Track pointer over the bubble so we don't dismiss it while the user
-	// is moving toward a button. Kept for hover hysteresis even though
-	// dismiss is now driven by pointerdown / outside-click.
-	let isPointerOverBubble = false;
-	function handlePointerEnter() {
-		isPointerOverBubble = true;
-	}
-	function handlePointerLeave() {
-		isPointerOverBubble = false;
-	}
-
 	// Using mousedown + preventDefault keeps focus inside the editor so
 	// toggleMark operates on the current selection.
 	function handleMouseDown(event: MouseEvent, mark: 'bold' | 'italic' | 'underline') {
@@ -198,8 +187,6 @@
 		bind:this={bubbleEl}
 		class="format-bubble"
 		style="left: {x}px; top: {y}px;"
-		onpointerenter={handlePointerEnter}
-		onpointerleave={handlePointerLeave}
 		role="toolbar"
 		tabindex="-1"
 		aria-label="Text formatting"

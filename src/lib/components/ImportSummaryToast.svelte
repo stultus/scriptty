@@ -109,7 +109,7 @@
 
 		{#if summary.warnings.length > 0}
 			<ul class="import-warnings">
-				{#each summary.warnings as warning}
+				{#each summary.warnings as warning (warning)}
 					<li>{warning}</li>
 				{/each}
 			</ul>

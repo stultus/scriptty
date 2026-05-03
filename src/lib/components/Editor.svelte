@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 	import { EditorState, Plugin, PluginKey } from 'prosemirror-state';
 	import { EditorView, Decoration, DecorationSet } from 'prosemirror-view';
 	import { history } from 'prosemirror-history';
@@ -189,9 +190,6 @@
 		documentStore.currentFont === 'manjari' ? 'Manjari' : 'Noto Sans Malayalam'
 	);
 
-	// Svelte 5 runes for reactive state
-	let isMalayalam = $state(inputManager.isMalayalam);
-
 	// Scene index being actively edited via shortcut — forces the annotation
 	// fields to show even when empty, so the user can type into them.
 	let editingSceneIndex = $state<number>(-1);
@@ -268,14 +266,13 @@
 	// Track which scenes have had their annotation explicitly collapsed.
 	// Expanded is the default; users opt into the compact two-line view.
 	// Collapsed slots limit description/notes to ~2 visible lines; expanded
-	// shows the full text.
-	let collapsedSlots = $state(new Set<number>());
+	// shows the full text. SvelteSet is mutation-reactive so direct
+	// `.add`/`.delete` triggers updates without the new-Set dance.
+	const collapsedSlots = new SvelteSet<number>();
 
 	function toggleSlotExpanded(sceneOrder: number) {
-		const next = new Set(collapsedSlots);
-		if (next.has(sceneOrder)) next.delete(sceneOrder);
-		else next.add(sceneOrder);
-		collapsedSlots = next;
+		if (collapsedSlots.has(sceneOrder)) collapsedSlots.delete(sceneOrder);
+		else collapsedSlots.add(sceneOrder);
 		// Svelte flushes the state change in the same microtask; a single RAF
 		// is enough to let layout settle before we measure.
 		scheduleSpacerRecalc();
@@ -555,10 +552,10 @@
 		});
 		view.updateState(newState);
 		updateCurrentElement(newState);
-		// Fresh document → every annotation starts expanded. Dropping the set
+		// Fresh document → every annotation starts expanded. Clearing the set
 		// also prevents stale scene indices from the previous document from
 		// collapsing unrelated slots after an Open.
-		collapsedSlots = new Set();
+		collapsedSlots.clear();
 		scheduleAnnotationUpdate();
 	});
 
@@ -658,8 +655,6 @@
 				event.preventDefault();
 				event.stopPropagation();
 				inputManager.toggle();
-				// Sync the reactive state so the status bar updates
-				isMalayalam = inputManager.isMalayalam;
 				return;
 			}
 

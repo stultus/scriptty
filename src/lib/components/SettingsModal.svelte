@@ -54,7 +54,6 @@
 </script>
 
 {#if open}
-	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		class="modal-backdrop"
 		onclick={handleBackdropClick}
@@ -126,7 +125,6 @@
 							</button>
 
 							{#if schemeDropdownOpen}
-								<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 								<div
 									class="dropdown-backdrop"
 									role="presentation"

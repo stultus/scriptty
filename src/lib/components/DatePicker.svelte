@@ -174,23 +174,17 @@
 
 	function shiftFocusBy(deltaDays: number) {
 		const base = focusedDate ?? new Date();
-		const next = new Date(base);
-		next.setDate(next.getDate() + deltaDays);
-		focusedDate = next;
+		focusedDate = new Date(base.getFullYear(), base.getMonth(), base.getDate() + deltaDays);
 	}
 
 	function shiftFocusMonth(deltaMonths: number) {
 		const base = focusedDate ?? new Date();
-		const next = new Date(base);
-		next.setMonth(next.getMonth() + deltaMonths);
-		focusedDate = next;
+		focusedDate = new Date(base.getFullYear(), base.getMonth() + deltaMonths, base.getDate());
 	}
 
 	function shiftFocusYear(deltaYears: number) {
 		const base = focusedDate ?? new Date();
-		const next = new Date(base);
-		next.setFullYear(next.getFullYear() + deltaYears);
-		focusedDate = next;
+		focusedDate = new Date(base.getFullYear() + deltaYears, base.getMonth(), base.getDate());
 	}
 
 	function handleGridKey(event: KeyboardEvent) {
@@ -447,13 +441,13 @@
 			</div>
 
 			<div class="dp-weekdays" aria-hidden="true">
-				{#each weekdays as wd}
+				{#each weekdays as wd (wd)}
 					<span class="dp-wd">{wd}</span>
 				{/each}
 			</div>
 
 			<div class="dp-grid" role="grid" tabindex="-1" onkeydown={handleGridKey}>
-				{#each grid as cell}
+				{#each grid as cell (toISO(cell.date))}
 					{@const isToday = isSameDay(cell.date, today)}
 					{@const isSelected = valueDate ? isSameDay(cell.date, valueDate) : false}
 					{@const isFocused = focusedDate ? isSameDay(cell.date, focusedDate) : false}

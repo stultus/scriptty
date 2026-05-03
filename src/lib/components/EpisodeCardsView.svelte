@@ -235,7 +235,6 @@
 			{@const peekHeadings = sceneHeadingsFor(ep, 3)}
 			{@const hiddenCount = sceneCount - peekHeadings.length}
 			<!-- svelte-ignore a11y_click_events_have_key_events -->
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 			<article
 				class="ep-card"
@@ -350,7 +349,7 @@
 							<p class="ep-peek-empty">No scenes yet — drill in to start outlining.</p>
 						{:else}
 							<ol class="ep-peek-list">
-								{#each peekHeadings as heading, i}
+								{#each peekHeadings as heading, i (i)}
 									<li class="ep-peek-row">
 										<span class="ep-peek-num">{String(i + 1).padStart(2, '0')}</span>
 										<span class="ep-peek-heading">{heading.toUpperCase()}</span>

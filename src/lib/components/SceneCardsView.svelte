@@ -9,7 +9,6 @@
 
 	import { screenplaySchema } from '$lib/editor/schema';
 	import { InputModeManager } from '$lib/editor/input/InputModeManager';
-	import StatusBar from '$lib/components/StatusBar.svelte';
 	import EpisodeCardsView from '$lib/components/EpisodeCardsView.svelte';
 	import DatePicker from '$lib/components/DatePicker.svelte';
 
@@ -70,8 +69,10 @@
 	 *  changes on those flows, so re-seeding from localStorage gives the
 	 *  newly-loaded project its own remembered drill state. */
 	$effect(() => {
-		documentStore.currentPath; // dependency
-		documentStore.isSeries; // dependency
+		// Reactive deps — read so $effect re-runs when either changes.
+		// Leading-underscore name signals "value intentionally unread".
+		const _path = documentStore.currentPath;
+		const _isSeries = documentStore.isSeries;
 		cardLevel = initialLevel();
 	});
 
@@ -104,7 +105,7 @@
 	 *  length. */
 	let seriesTotals = $derived.by<{ scenes: number; pages: string } | null>(() => {
 		if (!documentStore.isSeries) return null;
-		documentStore.contentVersionDebounced; // re-derive on edits
+		const _v = documentStore.contentVersionDebounced; // re-derive on edits
 		const eps = documentStore.document?.series?.episodes ?? [];
 		let scenes = 0;
 		let chars = 0;
@@ -268,7 +269,7 @@
 	 *  .activeSceneCards` for the gutter), so a real derive is still right —
 	 *  just one that doesn't churn. */
 	let cards = $derived.by((): SceneCardData[] => {
-		documentStore.contentVersionDebounced;
+		const _v = documentStore.contentVersionDebounced;
 		return untrack(() => computeCards());
 	});
 
@@ -303,14 +304,14 @@
 
 		// Track occurrence counter per heading so duplicate headings still get
 		// unique, position-independent keys (e.g. "INT. KITCHEN#0", "INT. KITCHEN#1").
-		const headingCounts = new Map<string, number>();
+		const headingCounts: Record<string, number> = {};
 
 		function pushCurrentScene() {
 			if (sceneNumber < startNum) return;
 			const storedCard = sceneCards.find((c) => c.scene_index === sceneOrder);
 			const pages = Math.max(0.1, currentCharCount / 3000);
-			const occurrence = headingCounts.get(currentHeading) ?? 0;
-			headingCounts.set(currentHeading, occurrence + 1);
+			const occurrence = headingCounts[currentHeading] ?? 0;
+			headingCounts[currentHeading] = occurrence + 1;
 			result.push({
 				sceneNumber,
 				sceneOrder,
@@ -501,8 +502,10 @@
 		dragFromScene = null;
 		dropTargetScene = null;
 
-		// Tear down the ghost
+		// Tear down the ghost. Direct DOM manipulation is intentional —
+		// the ghost is a drag-preview overlay that owns its own subtree.
 		ghostVisible = false;
+		// eslint-disable-next-line svelte/no-dom-manipulating
 		if (ghostEl) ghostEl.replaceChildren();
 
 		// Remove listeners
@@ -538,6 +541,8 @@
 			clone.style.width = '100%';
 			clone.style.height = '100%';
 			clone.style.margin = '0';
+			// Direct insertion is intentional — see top-of-file note.
+			// eslint-disable-next-line svelte/no-dom-manipulating
 			ghostEl.replaceChildren(clone);
 			ghostVisible = true;
 		}
@@ -657,7 +662,6 @@
 
 		const childStart = bounds[idx].childIndex;
 		const childEnd = idx + 1 < bounds.length ? bounds[idx + 1].childIndex : doc.childCount;
-		const startPos = bounds[idx].offset;
 		const endPos = idx + 1 < bounds.length ? bounds[idx + 1].offset : doc.content.size;
 
 		// Collect and copy the source scene's nodes. PMNode.copy() preserves

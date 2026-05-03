@@ -78,7 +78,6 @@
 </script>
 
 {#if open}
-	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		class="modal-backdrop"
 		onclick={handleBackdropClick}
@@ -97,6 +96,10 @@
 					<span>{copy.eyebrow}</span>
 					<span class="mh-rule"></span>
 				</div>
+				<!-- {@html} OK here — `copy.headlineHtml` is a hand-authored
+					 literal in this same file (e.g. "Title <em>your</em>
+					 film"); never fed user input. -->
+				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 				<h2 id="new-project-heading" class="series-display">{@html copy.headlineHtml}</h2>
 				<button class="btn-close" onclick={handleCancel} aria-label="Close">&times;</button>
 			</header>

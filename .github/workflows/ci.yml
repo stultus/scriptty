@@ -95,7 +95,7 @@ jobs:
   build:
     name: Build — full Tauri app (Linux, debug)
     runs-on: ubuntu-22.04
-    timeout-minutes: 45
+    timeout-minutes: 25
     needs: [rust, frontend]
     steps:
       - uses: actions/checkout@v5
@@ -126,5 +126,8 @@ jobs:
       # End-to-end build verification: frontend → cargo → tauri-cli bundling.
       # Catches platform-specific build breakage at PR time instead of at tag time.
       # `--debug` skips heavy LTO/strip but exercises the full pipeline.
-      - name: cargo tauri build --debug
-        run: npm run tauri -- build --debug
+      # `--bundles deb,appimage` matches the Linux targets we actually ship in
+      # release.yml. RPM bundling hangs indefinitely on the GitHub runner
+      # (rpmbuild network/entropy issue) and we don't ship .rpm, so skip it.
+      - name: tauri build --debug (deb + appimage only)
+        run: npm run tauri -- build --debug --bundles deb,appimage

@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { documentStore } from '$lib/stores/documentStore.svelte';
-	import { open } from '@tauri-apps/plugin-dialog';
 	import NewProjectDialog from './NewProjectDialog.svelte';
 	import PasteScriptDialog from './PasteScriptDialog.svelte';
 

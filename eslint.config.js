@@ -12,6 +12,11 @@ const gitignorePath = path.resolve(import.meta.dirname, '.gitignore');
 
 export default defineConfig(
 	includeIgnoreFile(gitignorePath),
+	// `includeIgnoreFile` only reads the root .gitignore — it doesn't pick up
+	// nested gitignores. Cargo writes its build artifacts and Tauri's
+	// generated capability/permission schemas under src-tauri/, both of
+	// which carry `.js` / `.json` files eslint can't (and shouldn't) parse.
+	{ ignores: ['src-tauri/target/**', 'src-tauri/gen/**'] },
 	js.configs.recommended,
 	...ts.configs.recommended,
 	...svelte.configs.recommended,

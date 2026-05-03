@@ -21,7 +21,7 @@ export const autoUppercasePlugin = new Plugin({
 		// Only process if any transaction changed the document
 		if (!transactions.some((tr) => tr.docChanged)) return null;
 
-		const { doc, selection } = newState;
+		const { selection } = newState;
 		const $from = selection.$from;
 
 		// Check if the cursor is inside an auto-uppercase node type

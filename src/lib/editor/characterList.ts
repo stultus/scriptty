@@ -124,7 +124,7 @@ function buildDecorations(
 export const characterListPlugin = new Plugin<CharacterListState>({
 	key: characterListKey,
 	state: {
-		init(_, state): CharacterListState {
+		init(): CharacterListState {
 			return { enabled: false, extras: {}, decorations: DecorationSet.empty };
 		},
 		apply(tr, value, _oldState, newState): CharacterListState {

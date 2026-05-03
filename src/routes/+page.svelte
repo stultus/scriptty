@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { invoke } from '@tauri-apps/api/core';
 	import { listen } from '@tauri-apps/api/event';
 	import { getCurrentWindow } from '@tauri-apps/api/window';
 	import { open, message } from '@tauri-apps/plugin-dialog';
@@ -1025,7 +1024,6 @@
          is position:absolute and anchors to .workspace's relative box. -->
 			<LeftPanel isOpen={panelOpen} />
 			{#if activeView === 'cards'}
-				<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 				<div
 					class="view-host"
 					onclickcapture={(e) => {

@@ -50,7 +50,7 @@ export const smartQuotesPlugin = new Plugin({
 		// We only need to consider positions whose character is a straight
 		// quote AND whose predecessor isn't already curly (so we don't loop).
 		for (const transaction of transactions) {
-			transaction.steps.forEach((step, idx) => {
+			transaction.steps.forEach((step) => {
 				const map = step.getMap();
 				map.forEach((_oldStart, _oldEnd, newStart, newEnd) => {
 					// Walk every position in the inserted range.

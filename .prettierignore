@@ -7,3 +7,15 @@ bun.lockb
 
 # Miscellaneous
 /static/
+
+# Rust / Tauri build artifacts. Cargo writes generated JS + JSON under
+# `src-tauri/target/.../build/.../out/` that Prettier walks into and
+# fails to parse. CI passes without this only because CI starts with
+# an empty target dir.
+src-tauri/target/
+# Tauri-generated capability + permission schemas — rewritten by
+# `tauri build` / `tauri dev`, not hand-authored.
+src-tauri/gen/
+
+# Local-only Claude Code state — never tracked, per-developer.
+.claude/settings.local.json

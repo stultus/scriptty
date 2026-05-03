@@ -81,7 +81,7 @@ function buildDecorations(
 }
 
 /** Empty plugin state */
-function emptyState(doc: ProseMirrorNode): FindReplaceState {
+function emptyState(): FindReplaceState {
 	return {
 		query: '',
 		caseSensitive: false,
@@ -97,7 +97,7 @@ export const findReplacePlugin = new Plugin<FindReplaceState>({
 
 	state: {
 		init(_, state) {
-			return emptyState(state.doc);
+			return emptyState();
 		},
 
 		apply(
@@ -152,7 +152,7 @@ export const findReplacePlugin = new Plugin<FindReplaceState>({
 					}
 
 					case 'clear': {
-						return emptyState(newState.doc);
+						return emptyState();
 					}
 				}
 			}

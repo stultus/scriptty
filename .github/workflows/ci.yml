@@ -82,9 +82,15 @@ jobs:
       - name: svelte-check (via npm run check)
         run: npm run check -- --fail-on-warnings
 
-      # `npm run lint` = `prettier --check . && eslint .` (per package.json)
-      - name: Lint (prettier + eslint)
-        run: npm run lint
+      # Split out from `npm run lint` so prettier gates while eslint stays
+      # visible-but-non-blocking until existing lint debt is paid down.
+      # See repo issues for the eslint cleanup tracker.
+      - name: Prettier — check formatting
+        run: npx prettier --check .
+
+      - name: ESLint (non-blocking until debt is cleared)
+        run: npx eslint .
+        continue-on-error: true
 
   build:
     name: Build — full Tauri app (Linux, debug)

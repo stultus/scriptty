@@ -431,8 +431,8 @@ Highlights from v0.8.0 (still relevant):
 ### 32. CI hardening
 
 - [x] New `.github/workflows/ci.yml` — gates `cargo clippy --lib --tests
-    -- -D warnings`, `cargo test --lib`, `npm run check --
-    --fail-on-warnings` on push/PR to main (#189)
+-- -D warnings`, `cargo test --lib`, `npm run check --
+--fail-on-warnings` on push/PR to main (#189)
 - [x] Repaired 32 pre-existing stale tests in `pdf.rs` (struct refactors
       from #103 had drifted past the test code)
 - [x] `update-downloads.yml` race fix — `release` event was firing the

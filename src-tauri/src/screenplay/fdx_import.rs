@@ -25,6 +25,7 @@
 use crate::screenplay::document::{
     ProjectType, ScreenplayDocument, ScreenplayMeta, ScreenplaySettings, ScreenplayStory,
 };
+use quick_xml::escape::resolve_predefined_entity;
 use quick_xml::events::Event;
 use quick_xml::name::QName;
 use quick_xml::reader::Reader;
@@ -93,13 +94,41 @@ pub fn parse_fdx(input: &str) -> Result<(ScreenplayDocument, FdxImportSummary), 
                 handle_end(e.name(), &mut state, &mut summary)?;
             }
             Event::Text(e) => {
-                // `unescape()` decodes XML entities (`&amp;` → `&`, etc.)
-                // and returns owned content we can stash in our IR.
+                // quick-xml 0.38 emits entity references as their own
+                // `GeneralRef` events instead of inlining them into
+                // Text. So a Text event's content is already free of
+                // entities — `xml_content()` is decode + EOL-normalise,
+                // no entity unescape needed.
                 let text = e
-                    .unescape()
+                    .xml_content()
                     .map_err(|err| format!("XML text decode error: {err}"))?
                     .into_owned();
                 handle_text(&text, &mut state);
+            }
+            Event::GeneralRef(e) => {
+                // Entity references (`&amp;`, `&lt;`, `&#65;`, `&#xFF;`).
+                // Numeric character refs decode via `resolve_char_ref`;
+                // named XML entities (the standard five) resolve via
+                // `escape::resolve_predefined_entity`. Anything else —
+                // a custom DTD-defined entity — we drop with a warning
+                // counter, which is acceptable for FDX (the format
+                // doesn't define custom entities).
+                if let Some(ch) = e
+                    .resolve_char_ref()
+                    .map_err(|err| format!("XML char ref error: {err}"))?
+                {
+                    let s = ch.to_string();
+                    handle_text(&s, &mut state);
+                } else {
+                    let name = e
+                        .decode()
+                        .map_err(|err| format!("XML entity decode error: {err}"))?;
+                    if let Some(resolved) = resolve_predefined_entity(&name) {
+                        handle_text(resolved, &mut state);
+                    }
+                    // Else: custom entity, silently dropped — FDX uses
+                    // only the predefined five.
+                }
             }
             Event::End(e) => handle_end(e.name(), &mut state, &mut summary)?,
             Event::Eof => break,

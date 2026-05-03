@@ -34,4 +34,4 @@ tauri-plugin-deep-link = "2.4.9"
 # Pure-Rust XML pull-parser (MIT). Used by the Final Draft (.fdx) importer
 # in `screenplay::fdx_import` — `quick-xml` handles BOM, entity decoding,
 # and whitespace per the XML 1.0 spec, which we don't want to re-implement.
-quick-xml = "0.36"
+quick-xml = "0.38"

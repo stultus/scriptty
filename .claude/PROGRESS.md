@@ -1,15 +1,22 @@
 # Scriptty — Development Progress
 
-## Status: v0.8.0 shipped — Production planning, editorial-grade PDFs, autosave, paste-to-script
+## Status: v0.10.0 shipped — Fountain & Final Draft interop, consolidated import wizard
 
-Highlights since v0.7.0:
+Highlights since v0.8.0:
+
+- **Final Draft (`.fdx`) import** (v0.10.0). Hand-rolled XML parser using `quick-xml`. The six native paragraph types map directly; `Shot` folds to scene heading, `General` / `Lyrics` / `Outline N` fold to action. Inline `<Text Style="Bold+Italic+Underline">` runs become ProseMirror marks. `<DualDialogue>` collapses to sequential pairs. `<ScriptNote>`, `<TagData>`, revisions, locked numbers, headers/footers, page layout drop with summary counts. Title-page text always lands in `meta.extra["fdx_title_page"]`; a Beat-style heuristic best-effort fills the standard meta fields. The FDX `Version` attribute lands in `meta.extra["fdx_source_version"]`.
+- **Round-trip-safe Fountain import + export** (v0.9.0 + v0.10.0). Full Fountain spec parser. Synopses absorb into scene-card descriptions; sections attach to the next scene's `shoot_notes` with a `[[#section depth=N]]` marker; inline `[[ ]]` notes attach to the containing scene. The export side applies forcing rules (`@` for non-all-caps-Latin character cues, `.` for non-slug scene headings, `>` for non-`TO:` transitions, `!` for action that would auto-detect as anything else) so a co-writer can edit a Scriptty-touched file and round-trip it back without silent corruption. Non-standard title-page keys round-trip via the new `meta.extra: BTreeMap<String, String>` schema field.
+- **Single Import Screenplay wizard** (v0.10.0). One File-menu entry replaces four format-and-destination items. Centered-card modal with editorial-vocabulary header, format radio cards (Fountain / Final Draft) and destination radio cards (new film / episode of active series — disabled with explanatory sub-line when no series open). The standard `Cmd+O` Open dialog also accepts `.fountain` and `.fdx` directly.
+- **Per-episode Fountain export** for Series projects (v0.9.0). Toggle in the Export modal; pick a folder, get `01-pilot.fountain`, `02-the-return.fountain`, …
+- **CI gating** (v0.9.0). New `.github/workflows/ci.yml` runs `cargo clippy --lib --tests -- -D warnings`, `cargo test --lib`, and `npm run check -- --fail-on-warnings` on push/PR to main. Caught and repaired 32 pre-existing stale tests in `pdf.rs` from earlier struct refactors. Update-Download-Links workflow hardened against the duplicate-trigger race that surfaced spurious failures on every release (concurrency group + rebase-retry).
+
+Highlights from v0.8.0 (still relevant):
 
 - **Production planning end-to-end.** Scene cards carry a location group, shoot date, and extras list. Daily Shoot List PDF groups scenes by day → location with industry-standard page-eighths totals. Statistics panel gains Schedule and Episodes views, sortable columns, and CSV export across Characters / Locations / Schedule.
-- **Editorial-grade PDF redesign.** Title page, prose covers, scene-card cover, and shoot-list cover share one masthead vocabulary (small tracked-caps eyebrow with flanking rules, dominant film title, asterism divider, Courier credits). Per-section page numbering. Transition widow control. Full-width single-column scene cards with date + location-group surfaced. Compact card-view export toggle. Courier Prime now bundled into PDFs alongside the body font for accent typography.
-- **Episode Breakout view.** Series projects get a top-level card per episode with a scene preview list; click an episode to drill into its scenes. IDE-style episode explorer in the sidebar with per-episode status (Outline / Draft / Revision / Final).
+- **Editorial-grade PDF redesign.** Title page, prose covers, scene-card cover, and shoot-list cover share one masthead vocabulary. Per-section page numbering. Transition widow control. Courier Prime now bundled into PDFs alongside the body font for accent typography.
+- **Episode Breakout view.** Series projects get a top-level card per episode with a scene preview list. IDE-style episode explorer in the sidebar with per-episode status (Outline / Draft / Revision / Final).
 - **Editor.** Smart curly quotes. Adjustable editor font size. Autosave + crash recovery — a hidden recovery file survives power loss. Paste-to-script — convert plain text into a screenplay (Hollywood-style detection plus a Malayalam-aware character-cue path).
 - **Title bar.** Colophon-style "Scriptty" wordmark with press-mark + hairline rule. Centred title gets flanking middle-dot ornaments. Episode badge becomes a click-to-switch popover. Metadata icon button. View-switcher tabs gain leading element-type glyphs.
-- **A11y + security + perf.** Keyboard navigation through scene list and calendar grid. Strict CSP. Escaped Typst delimiters. Direct GitHub Releases API for update checks. Debounced contentVersion + memoized SceneCardsView / SceneNavigator / Stats / OutlinePeek for snappier large-script editing.
 
 ---
 
@@ -366,6 +373,73 @@ Highlights since v0.7.0:
 - [x] `update-downloads.yml` workflow auto-refreshes `docs/downloads.json` on release
 - [x] `cargo clippy` + `npx svelte-check` at zero warnings (gate)
 
+### 30. Fountain import + round-trip (v0.9.0, #184)
+
+- [x] `meta.extra: BTreeMap<String, String>` schema field for non-standard
+      title-page keys (#185)
+- [x] Hand-rolled Fountain parser in `src-tauri/src/screenplay/fountain_import.rs`
+      following the canonical reference parser's precedence (boneyard pre-pass,
+      note extraction, title page, body state machine) (#186)
+- [x] Synopses → `scene_cards[].description`; sections → `shoot_notes` with
+      `[[#section depth=N]]` marker; inline `[[ ]]` notes → `shoot_notes`
+- [x] Boneyard / dual dialogue / emphasis dropped with summary counts; warning
+      surfaced when a file looks Malayalam-heavy without `@`-prefixed cues
+- [x] Round-trip-safe export with forcing rules: `@` for caseless / mixed-case
+      character cues, `.` for non-slug scene headings, `>` for non-`TO:`
+      transitions, `!` for action that would auto-detect as anything else (#188)
+- [x] `meta.extra` keys emit alphabetically (BTreeMap ordering) for diff-stable
+      output; `meta.registration_number` ↔ `Copyright:`; `meta.footnote` ↔
+      `Notes:`
+- [x] Tauri commands `import_fountain_as_film` / `import_fountain_as_episode`
+      returning `{ document, summary }`; `ImportSummaryToast` renders the
+      summary (#187)
+- [x] Per-episode Fountain export for Series projects (one `.fountain` per
+      episode in a chosen directory)
+- [x] 65 unit tests across `fountain_import` (36) and `fountain` (29) including
+      round-trip fixed-point tests
+
+### 31. Final Draft (FDX) import + import wizard (v0.10.0, #190)
+
+- [x] `quick-xml` (MIT, pure-Rust) added as a dependency; FDX parser in
+      `src-tauri/src/screenplay/fdx_import.rs` (#191)
+- [x] Six native paragraph types map directly; `Shot` folds to scene heading;
+      `General` / `Lyrics` / `Outline N` fold to action; unknown types fold
+      to action with a count
+- [x] Inline `<Text Style="Bold+Italic+Underline">` runs map to ProseMirror
+      bold / italic / underline marks; Strikeout / AllCaps / Highlight drop
+- [x] `<DualDialogue>` collapses to sequential pairs (counted)
+- [x] `<ScriptNote>` / `<TagData>` / locked scene `Number=` / revisions /
+      headers-footers / page-layout drop with counts surfaced in the toast
+- [x] Title-page heuristic: full text → `meta.extra["fdx_title_page"]`,
+      Beat-style guess fills `meta.title` / `.author` / `.draft_date` /
+      `.contact` when the layout is recognisable; FDX `Version` →
+      `meta.extra["fdx_source_version"]`
+- [x] Tauri commands `import_fdx_as_film` / `import_fdx_as_episode` (#192);
+      `ImportSummaryToast` generalised over a discriminated-union summary
+      so one component renders both Fountain and FDX counts
+- [x] Single `Import Screenplay…` File-menu entry + command-palette entry
+      replace the four format/destination items (#192 follow-up)
+- [x] `ImportWizardModal.svelte` — centered-card wizard picking format
+      (Fountain / Final Draft) and destination (new film / episode of active
+      series); disabled state for the episode card when no series is open
+- [x] Open dialog accepts `.fountain` and `.fdx` alongside `.screenplay` and
+      auto-routes by extension
+- [x] 22 FDX unit tests covering native types, inline marks, dual-dialogue
+      collapse, type folding, drops, title-page heuristic, XML entity decoding,
+      UTF-8 BOM stripping, Malayalam pass-through
+
+### 32. CI hardening
+
+- [x] New `.github/workflows/ci.yml` — gates `cargo clippy --lib --tests
+    -- -D warnings`, `cargo test --lib`, `npm run check --
+    --fail-on-warnings` on push/PR to main (#189)
+- [x] Repaired 32 pre-existing stale tests in `pdf.rs` (struct refactors
+      from #103 had drifted past the test code)
+- [x] `update-downloads.yml` race fix — `release` event was firing the
+      workflow on both `published` and `released` types, both runs racing
+      on `git push`. Trigger narrowed to `published`, concurrency group
+      added, push step does up to 3 rebase-retries.
+
 ---
 
 ## Remaining Work
@@ -374,14 +448,18 @@ Highlights since v0.7.0:
 
 - [ ] Revision mode — track changes per draft, asterisk marks in margin, Hollywood color cycle
 - [ ] Draft history — save snapshots on each save, restore from history, max 50 per file
+- [ ] FDX (Final Draft XML) **export** — currently we import FDX but don't export
+      it. Lower-priority than import: Fountain is the canonical co-writing
+      handoff, and FDX export would mean choosing a Final Draft template
+      version to target.
 
 ---
 
 ## Deferred (Do Not Implement Yet)
 
-- FDX (Final Draft XML) export
 - Rachana font / traditional Malayalam orthography
-- Import from Final Draft / Fountain
 - Real-time collaboration
 - Cloud sync
 - Mobile support
+- `.fdr` (legacy Final Draft binary) import — FD 1–7 era, stopped being
+  written in 2009. `.fdx` import covers any modern Final Draft user.

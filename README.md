@@ -18,7 +18,14 @@ Built with Tauri 2, SvelteKit, TypeScript, ProseMirror, and Typst.
   screenplay or an entire series with multiple episodes
 - Hollywood single-column and Indian two-column PDF export with auto-generated
   title pages (smart "Written and Directed by" credits)
-- Fountain and plain-text export for interoperability
+- Fountain and plain-text export for interoperability — round-trip-aware
+  Fountain export preserves synopses, sections, inline notes, and any
+  non-standard title-page keys
+- **Fountain (`.fountain`) and Final Draft (`.fdx`) import** through one
+  `File → Import Screenplay…` wizard — pick the format and whether the
+  file lands as a new film or a new episode of an open series
+- Per-episode Fountain export for series projects (one `.fountain` per
+  episode in a single folder)
 - Malayalam input — Mozhi, Inscript 1, and Inscript 2 schemes; `Ctrl+Space`
   toggles English/Malayalam mid-line
 - Mixed-script writing — Malayalam and English in the same document

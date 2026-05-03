@@ -9,21 +9,21 @@ input methods requiring no external tools.
 
 **Product name:** Scriptty  
 **Site URL:** stultus.in/scriptty (GitHub Pages, subdirectory of the lead developer's personal site)  
-**File extension:** .screenplay  
+**File extension:** .screenplay
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Desktop framework | Tauri 2 |
-| Frontend | Svelte 5 + TypeScript + Vite |
-| Editor | ProseMirror |
-| PDF generation | Typst (Rust crate) |
-| Mozhi engine | Custom (greedy transliteration from SMC Mozhi spec) |
-| Backend language | Rust 1.93+ |
-| Node.js | v22 / npm |
+| Layer             | Technology                                          |
+| ----------------- | --------------------------------------------------- |
+| Desktop framework | Tauri 2                                             |
+| Frontend          | Svelte 5 + TypeScript + Vite                        |
+| Editor            | ProseMirror                                         |
+| PDF generation    | Typst (Rust crate)                                  |
+| Mozhi engine      | Custom (greedy transliteration from SMC Mozhi spec) |
+| Backend language  | Rust 1.93+                                          |
+| Node.js           | v22 / npm                                           |
 
 ---
 
@@ -144,22 +144,22 @@ These are final. Do not suggest alternatives unless explicitly asked.
 
 ### Element Navigation (Tab/Enter/Shortcut behavior)
 
-| Current element | Key | Next element |
-|---|---|---|
-| SceneHeading | Enter | Action |
-| Action | Enter | Action (new paragraph) |
-| Action | Tab | Character |
-| Character | Enter | Dialogue |
-| Dialogue | Enter | Character |
-| Dialogue | Tab | Parenthetical |
-| Parenthetical | Enter | Dialogue |
-| Parenthetical | Tab | Character |
-| Transition | Enter | Action (Shift+Enter for a new scene — mid-scene transitions / montage) |
-| Any element | Shift+Enter | SceneHeading (new scene) |
-| Any element | Cmd+Shift+T | Transition |
-| Character/Dialogue | Shift+Tab | Action |
-| Parenthetical | Shift+Tab | Dialogue |
-| Action (cursor at pos 0) | Shift+Tab | SceneHeading |
+| Current element          | Key         | Next element                                                           |
+| ------------------------ | ----------- | ---------------------------------------------------------------------- |
+| SceneHeading             | Enter       | Action                                                                 |
+| Action                   | Enter       | Action (new paragraph)                                                 |
+| Action                   | Tab         | Character                                                              |
+| Character                | Enter       | Dialogue                                                               |
+| Dialogue                 | Enter       | Character                                                              |
+| Dialogue                 | Tab         | Parenthetical                                                          |
+| Parenthetical            | Enter       | Dialogue                                                               |
+| Parenthetical            | Tab         | Character                                                              |
+| Transition               | Enter       | Action (Shift+Enter for a new scene — mid-scene transitions / montage) |
+| Any element              | Shift+Enter | SceneHeading (new scene)                                               |
+| Any element              | Cmd+Shift+T | Transition                                                             |
+| Character/Dialogue       | Shift+Tab   | Action                                                                 |
+| Parenthetical            | Shift+Tab   | Dialogue                                                               |
+| Action (cursor at pos 0) | Shift+Tab   | SceneHeading                                                           |
 
 ### Malayalam Language Support
 
@@ -212,35 +212,35 @@ top-level fields are placeholders.
 
 ```json
 {
-  "type": "film",
-  "content": {},
-  "meta": {
-    "title": "",
-    "author": "",
-    "director": "",
-    "tagline": "",
-    "registration_number": "",
-    "footnote": "",
-    "contact": "",
-    "draft_number": 1,
-    "draft_date": "",
-    "created_at": "",
-    "updated_at": ""
-  },
-  "settings": {
-    "font": "manjari",
-    "default_language": "malayalam",
-    "input_scheme": "mozhi",
-    "scene_number_start": 1,
-    "show_characters_below_header": false
-  },
-  "story": {
-    "idea": "",
-    "synopsis": "",
-    "treatment": "",
-    "narrative": ""
-  },
-  "scene_cards": []
+	"type": "film",
+	"content": {},
+	"meta": {
+		"title": "",
+		"author": "",
+		"director": "",
+		"tagline": "",
+		"registration_number": "",
+		"footnote": "",
+		"contact": "",
+		"draft_number": 1,
+		"draft_date": "",
+		"created_at": "",
+		"updated_at": ""
+	},
+	"settings": {
+		"font": "manjari",
+		"default_language": "malayalam",
+		"input_scheme": "mozhi",
+		"scene_number_start": 1,
+		"show_characters_below_header": false
+	},
+	"story": {
+		"idea": "",
+		"synopsis": "",
+		"treatment": "",
+		"narrative": ""
+	},
+	"scene_cards": []
 }
 ```
 
@@ -268,6 +268,7 @@ Series file shape:
 ```
 
 Notes:
+
 - `type` defaults to `"film"` when missing — every legacy file loads unchanged.
 - Every meta/settings field is `#[serde(default)]`, so slim or hand-authored
   files (and series episodes that omit timestamps) deserialize without error.
@@ -376,7 +377,7 @@ Full format spec: see `SCREENPLAY_FORMAT.md` at project root.
   Welcome screen / File menu)
 - Series have a top-level title plus an ordered list of episodes; each
   episode is a complete screenplay (own meta/settings/story/content/scene_cards)
-- `documentStore` exposes active-* accessors (`activeContent`, `activeMeta`,
+- `documentStore` exposes active-\* accessors (`activeContent`, `activeMeta`,
   `activeSettings`, `activeStory`, `activeSceneCards`, `activeEpisode`,
   `activeEpisodeIndex`) that multiplex film vs. series data — UI components
   read these instead of branching on project type
@@ -465,10 +466,10 @@ Full format spec: see `SCREENPLAY_FORMAT.md` at project root.
 
 Two distinct modal idioms — pick the one that matches the surface:
 
-| Idiom | Examples | When to use |
-|---|---|---|
-| **Centered card** | Metadata, Export, Statistics, About, Help, SeriesTitleDialog | Forms, references, anything with multiple inputs or its own focus context. Backdrop dims the page. |
-| **Popover** | Settings (anchored to status-bar gear), Command Palette dropdown | UI anchored to a trigger; settings or quick lookups that should not block the page. Invisible click-catcher backdrop. |
+| Idiom             | Examples                                                         | When to use                                                                                                           |
+| ----------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| **Centered card** | Metadata, Export, Statistics, About, Help, SeriesTitleDialog     | Forms, references, anything with multiple inputs or its own focus context. Backdrop dims the page.                    |
+| **Popover**       | Settings (anchored to status-bar gear), Command Palette dropdown | UI anchored to a trigger; settings or quick lookups that should not block the page. Invisible click-catcher backdrop. |
 
 All centered modals share tokens defined in `src/routes/+layout.svelte`:
 
@@ -559,6 +560,7 @@ compiled Rust binary. The two communicate via **commands** — the frontend call
 function using `invoke()`, Rust executes it and returns a result.
 
 This means:
+
 - UI logic, editor, input methods → Svelte/TypeScript
 - File I/O, PDF generation, OS integration → Rust
 - No server, no network, fully offline
@@ -576,6 +578,7 @@ This means:
 ## Remaining Work
 
 ### Medium Term
+
 - **Revision mode** — track changes per draft, asterisk marks in margin, Hollywood color cycle
 - **Draft history** — save snapshots on each save, restore from history, max 50 per file
 

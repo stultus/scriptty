@@ -76,8 +76,12 @@ export const updateStore = new UpdateStore();
  */
 function compareVersions(a: string, b: string): number {
 	const strip = (v: string) => v.replace(/^v/, '').split(/[-+]/)[0];
-	const pa = strip(a).split('.').map((n) => Number(n) || 0);
-	const pb = strip(b).split('.').map((n) => Number(n) || 0);
+	const pa = strip(a)
+		.split('.')
+		.map((n) => Number(n) || 0);
+	const pb = strip(b)
+		.split('.')
+		.map((n) => Number(n) || 0);
 	const len = Math.max(pa.length, pb.length);
 	for (let i = 0; i < len; i++) {
 		const x = pa[i] ?? 0;

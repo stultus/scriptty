@@ -1,4 +1,5 @@
 # Scriptty — Product Requirements Document
+
 **Version:** 1.0
 **Date:** March 2026
 **Author:** Hrishikesh Bhaskaran
@@ -62,6 +63,7 @@ A prose summary of the full story from beginning to end. Typically 300–800 wor
 A detailed narrative prose version of the story, written scene by scene. This is a personal creative document for the writer's own clarity. No length limit.
 
 **Behavior:**
+
 - All three sections are plain text fields. No screenplay formatting.
 - Malayalam input (Ctrl+Space toggle) must work in all three sections.
 - Content is saved as part of the `.screenplay` file.
@@ -78,6 +80,7 @@ A detailed narrative prose version of the story, written scene by scene. This is
 **Each scene card displays:**
 
 Auto-populated from the screenplay (derived, not manually entered):
+
 - Scene number
 - Full scene heading text
 - Location (parsed from scene heading)
@@ -86,10 +89,12 @@ Auto-populated from the screenplay (derived, not manually entered):
 - Approximate page count for the scene
 
 Manually entered by the writer:
+
 - Scene description — 2 to 5 sentences about what happens in the scene
 - Shoot notes — special requirements, stunts, VFX flags, location notes, equipment needs
 
 **Behavior:**
+
 - Scene Cards view is a separate full-panel mode, replacing the editor while active.
 - Accessible from the View menu or a keyboard shortcut.
 - A clearly visible button returns the writer to the screenplay editor.
@@ -111,6 +116,7 @@ Manually entered by the writer:
 Triggered from a single Export button in the title bar, or from File > Export in the menu.
 
 The modal presents checkboxes for each section to include in the export:
+
 - Title Page (uses existing title page generation)
 - Synopsis (from Story Panel)
 - Treatment (from Story Panel)
@@ -118,10 +124,12 @@ The modal presents checkboxes for each section to include in the export:
 - Scene Cards
 
 For the Screenplay section, the writer selects the format:
+
 - Hollywood (single column)
 - Indian (two column)
 
 Any combination of sections can be selected. Examples:
+
 - Synopsis only → exports a standalone synopsis PDF
 - Synopsis + Screenplay → exports synopsis followed by screenplay in one PDF
 - Screenplay + Scene Cards → exports script followed by scene breakdown
@@ -129,11 +137,11 @@ Any combination of sections can be selected. Examples:
 
 **PDF layout for each section:**
 
-*Synopsis section:* Heading "SYNOPSIS" centered and bold at top. Author name below. Body text in readable prose layout.
+_Synopsis section:_ Heading "SYNOPSIS" centered and bold at top. Author name below. Body text in readable prose layout.
 
-*Treatment section:* Heading "TREATMENT" centered and bold at top. Body text in readable prose layout.
+_Treatment section:_ Heading "TREATMENT" centered and bold at top. Body text in readable prose layout.
 
-*Scene Cards section:* Heading "SCENE BREAKDOWN" centered and bold at top. Each scene printed with its number, heading, location, time, characters, description, and shoot notes. Formatted to be printable and usable on set.
+_Scene Cards section:_ Heading "SCENE BREAKDOWN" centered and bold at top. Each scene printed with its number, heading, location, time, characters, description, and shoot notes. Formatted to be printable and usable on set.
 
 **Menu:**
 File menu gains an Export option that opens this modal. The current Hollywood and Indian buttons in the title bar are replaced by a single Export button that also opens the modal.
@@ -145,6 +153,7 @@ File menu gains an Export option that opens this modal. The current Hollywood an
 **Purpose:** Speed up character name entry by suggesting previously used character names.
 
 **Behavior:**
+
 - When the cursor is on a Character element and the writer has typed two or more characters, a suggestion dropdown appears showing matching character names from the current screenplay.
 - Names are collected from all existing Character elements in the document.
 - Pressing Tab or Enter selects the highlighted suggestion and moves to the next element (Dialogue).
@@ -159,6 +168,7 @@ File menu gains an Export option that opens this modal. The current Hollywood an
 **Purpose:** Allow writers to share scripts in the open Fountain plain-text format, compatible with Highland, Fade In, and other screenwriting apps.
 
 **Behavior:**
+
 - Exports the current screenplay as a `.fountain` file.
 - The Fountain file follows the Fountain specification (fountain.io).
 - Scene headings, action, character, dialogue, parenthetical, and transition elements all map to their correct Fountain equivalents.
@@ -173,8 +183,9 @@ File menu gains an Export option that opens this modal. The current Hollywood an
 **Purpose:** Track changes between drafts using the standard Hollywood revision system.
 
 **Behavior:**
+
 - Revision mode is toggled on and off from the Edit menu or a keyboard shortcut.
-- When revision mode is on, any line that has been added or changed since the mode was activated displays a revision mark — an asterisk (*) in the right margin of that line.
+- When revision mode is on, any line that has been added or changed since the mode was activated displays a revision mark — an asterisk (\*) in the right margin of that line.
 - Deleted content is not shown inline; the asterisk marks the surrounding lines.
 - Revision marks are visible in the editor and in exported PDFs.
 - Revision color sets follow Hollywood conventions:
@@ -199,6 +210,7 @@ File menu gains an Export option that opens this modal. The current Hollywood an
 **Purpose:** Allow writers to access and restore previous versions of their script.
 
 **Behavior:**
+
 - Every time the writer saves the document, a snapshot of the screenplay content is stored internally within the `.screenplay` file.
 - The writer can access draft history from the File menu.
 - The history panel shows a list of saves: date, time, and draft number.
@@ -214,6 +226,7 @@ File menu gains an Export option that opens this modal. The current Hollywood an
 **Purpose:** Give writers useful metrics about their screenplay.
 
 **Statistics to display:**
+
 - Total page count
 - Total scene count
 - Total word count
@@ -224,6 +237,7 @@ File menu gains an Export option that opens this modal. The current Hollywood an
 - Estimated screen time (based on page count, 1 page ≈ 1 minute)
 
 **Behavior:**
+
 - Accessible from a Statistics option in the View menu.
 - Displayed in a panel or modal — not replacing the editor.
 - Updates in real time as the writer types, or on demand with a Refresh button.
@@ -236,6 +250,7 @@ File menu gains an Export option that opens this modal. The current Hollywood an
 **Purpose:** Standard text search and replace within the screenplay.
 
 **Behavior:**
+
 - Accessible via Cmd+F (find) and Cmd+H (find and replace).
 - Opens a toolbar or panel at the bottom or top of the editor.
 - Find highlights all matching occurrences in the document.
@@ -251,6 +266,7 @@ File menu gains an Export option that opens this modal. The current Hollywood an
 **Purpose:** Standard macOS Help menu with application information and credits.
 
 **Help Menu items:**
+
 - About Scriptty — opens the About dialog
 - Report an Issue — opens the GitHub issues page in the default browser
 - View on GitHub — opens the GitHub repository in the default browser
@@ -258,6 +274,7 @@ File menu gains an Export option that opens this modal. The current Hollywood an
 **About Dialog:**
 
 A modal dialog with the following content:
+
 - Scriptty app icon at approximately 80px
 - App name: Scriptty
 - Version number (current build version)
@@ -280,18 +297,21 @@ Styling matches the application's dark theme.
 ## 4. Feature Priority
 
 ### Immediate (next release)
+
 1. Help and About menu
 2. Story Panel
 3. Export modal
 4. Character autocomplete
 
 ### Short term
+
 5. Scene Cards
 6. Find and Replace
 7. Fountain export
 8. Script statistics
 
 ### Medium term
+
 9. Revision mode
 10. Draft history
 

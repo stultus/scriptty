@@ -25,8 +25,7 @@
 //   - boneyard preservation (silently dropped, counted)
 
 use crate::screenplay::document::{
-    ProjectType, ScreenplayDocument, ScreenplayMeta, ScreenplaySettings, ScreenplayStory,
-    SceneCard,
+    ProjectType, SceneCard, ScreenplayDocument, ScreenplayMeta, ScreenplaySettings, ScreenplayStory,
 };
 use serde_json::{json, Value};
 
@@ -85,7 +84,9 @@ pub fn parse_fountain(input: &str) -> Result<(ScreenplayDocument, ImportSummary)
     // Malayalam without @-forced cues is a recoverable but noisy case —
     // surface a warning so the writer sees why their characters all
     // imported as action.
-    if has_substantial_malayalam(body_text) && !body_text.contains("\n@") && !body_text.starts_with('@')
+    if has_substantial_malayalam(body_text)
+        && !body_text.contains("\n@")
+        && !body_text.starts_with('@')
     {
         summary.warnings.push(
             "Fountain file appears to contain Malayalam but no @-prefixed character cues — \
@@ -455,7 +456,10 @@ enum Token {
     Dialogue(String),
     Transition(String),
     Synopsis(String),
-    Section { depth: u32, text: String },
+    Section {
+        depth: u32,
+        text: String,
+    },
     /// References a `Note` by index. Inserted at the position the original
     /// `[[ ... ]]` appeared (between body lines) so the folder can attach
     /// it to the right scene.
@@ -515,15 +519,14 @@ fn tokenize_body(input: &str, summary: &mut ImportSummary) -> Vec<Token> {
         // ─── 1. Forced prefixes (Win over auto-detection). ─────────────
         // `..` is NOT a forced scene heading per spec — must be a single
         // dot not followed by another dot.
-        if trimmed.starts_with('.')
-            && !trimmed.starts_with("..")
-            && trimmed.len() > 1
-        {
+        if trimmed.starts_with('.') && !trimmed.starts_with("..") && trimmed.len() > 1 {
             let heading = drop_scene_number(trimmed[1..].trim());
             if heading.1 {
                 summary.scene_numbers_dropped += 1;
             }
-            tokens.push(Token::SceneHeading(strip_emphasis_count(heading.0, summary)));
+            tokens.push(Token::SceneHeading(strip_emphasis_count(
+                heading.0, summary,
+            )));
             prev = PrevKind::Other;
             at_top_of_body = false;
             i += 1;
@@ -600,10 +603,7 @@ fn tokenize_body(input: &str, summary: &mut ImportSummary) -> Vec<Token> {
         }
         // Centred text → action for v1 (no centred node in our schema).
         if trimmed.starts_with('>') && trimmed.ends_with('<') {
-            let inner = trimmed
-                .trim_start_matches('>')
-                .trim_end_matches('<')
-                .trim();
+            let inner = trimmed.trim_start_matches('>').trim_end_matches('<').trim();
             tokens.push(Token::Action(strip_emphasis_count(inner, summary)));
             prev = PrevKind::Other;
             at_top_of_body = false;
@@ -643,10 +643,7 @@ fn tokenize_body(input: &str, summary: &mut ImportSummary) -> Vec<Token> {
         }
 
         // ─── 4. Transition auto-detect (incl. `FADE IN:` at top). ──────
-        if prev_blank
-            && next_blank
-            && is_uppercase_latin_line(trimmed)
-            && trimmed.ends_with("TO:")
+        if prev_blank && next_blank && is_uppercase_latin_line(trimmed) && trimmed.ends_with("TO:")
         {
             tokens.push(Token::Transition(strip_emphasis_count(trimmed, summary)));
             prev = PrevKind::Other;
@@ -689,7 +686,10 @@ fn tokenize_body(input: &str, summary: &mut ImportSummary) -> Vec<Token> {
         }
 
         // ─── 7. Dialogue continuation. ─────────────────────────────────
-        if matches!(prev, PrevKind::Character | PrevKind::Parenthetical | PrevKind::Dialogue) {
+        if matches!(
+            prev,
+            PrevKind::Character | PrevKind::Parenthetical | PrevKind::Dialogue
+        ) {
             // Collect this line plus any consecutive lines that are still
             // dialogue (the two-space-trailing convention keeps blank-
             // looking lines alive).
@@ -789,9 +789,19 @@ fn is_scene_heading_prefix(line: &str) -> bool {
     // Order longest-first so `INT./EXT.` beats `INT.` for a line that
     // genuinely starts with the dual-prefix form.
     const PREFIXES: &[&str] = &[
-        "INT./EXT.", "INT./EXT ", "INT/EXT.", "INT/EXT ", "INT/EXT",
-        "I/E.", "I/E ",
-        "INT.", "INT ", "EXT.", "EXT ", "EST.", "EST ",
+        "INT./EXT.",
+        "INT./EXT ",
+        "INT/EXT.",
+        "INT/EXT ",
+        "INT/EXT",
+        "I/E.",
+        "I/E ",
+        "INT.",
+        "INT ",
+        "EXT.",
+        "EXT ",
+        "EST.",
+        "EST ",
     ];
     PREFIXES.iter().any(|p| upper.starts_with(p))
 }
@@ -926,7 +936,11 @@ fn strip_emphasis(text: &str) -> String {
             }
         }
         if c == '*' || c == '_' {
-            let prev_ws = if i == 0 { true } else { chars[i - 1].is_whitespace() };
+            let prev_ws = if i == 0 {
+                true
+            } else {
+                chars[i - 1].is_whitespace()
+            };
             let next_ws = if i + 1 >= chars.len() {
                 true
             } else {
@@ -1258,10 +1272,7 @@ mod tests {
                      \n\
                      INT. HOUSE - DAY\n";
         let (doc, _) = parse_fountain(input).unwrap();
-        assert_eq!(
-            doc.meta.contact,
-            "hello@example.com\n555-1234\nPO Box 99"
-        );
+        assert_eq!(doc.meta.contact, "hello@example.com\n555-1234\nPO Box 99");
     }
 
     #[test]
@@ -1451,7 +1462,10 @@ mod tests {
     fn nested_sections_preserve_depth() {
         let input = "## Sequence A\n\nINT. HOUSE - DAY\n\nAction.\n";
         let (doc, _) = parse_fountain(input).unwrap();
-        assert_eq!(doc.scene_cards[0].shoot_notes, "[[#section depth=2]] Sequence A");
+        assert_eq!(
+            doc.scene_cards[0].shoot_notes,
+            "[[#section depth=2]] Sequence A"
+        );
     }
 
     #[test]

@@ -1,26 +1,26 @@
 {
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if echo '$CLAUDE_TOOL_INPUT' | jq -e '.path // .file_path' | grep -q 'src-tauri.*\\.rs$'; then cd src-tauri && cargo check 2>&1 | head -50; fi"
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if echo '$CLAUDE_TOOL_INPUT' | jq -e '.path // .file_path' | grep -q '\\.ts$\\|\\.svelte$'; then npx tsc --noEmit 2>&1 | head -30; fi"
-          }
-        ]
-      }
-    ]
-  }
+	"hooks": {
+		"PostToolUse": [
+			{
+				"matcher": "Write|Edit|MultiEdit",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "if echo '$CLAUDE_TOOL_INPUT' | jq -e '.path // .file_path' | grep -q 'src-tauri.*\\.rs$'; then cd src-tauri && cargo check 2>&1 | head -50; fi"
+					}
+				]
+			}
+		],
+		"PreToolUse": [
+			{
+				"matcher": "Write|Edit|MultiEdit",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "if echo '$CLAUDE_TOOL_INPUT' | jq -e '.path // .file_path' | grep -q '\\.ts$\\|\\.svelte$'; then npx tsc --noEmit 2>&1 | head -30; fi"
+					}
+				]
+			}
+		]
+	}
 }

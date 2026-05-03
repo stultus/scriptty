@@ -16,8 +16,8 @@
 use crate::fonts;
 use crate::screenplay::document::ScreenplayDocument;
 use crate::screenplay::fountain;
-use crate::screenplay::plaintext;
 use crate::screenplay::pdf;
+use crate::screenplay::plaintext;
 use serde::Deserialize;
 // `Emitter` is a Tauri trait that adds the `.emit(event, payload)` method
 // onto AppHandle — it lets Rust push a named event to the frontend webview
@@ -100,7 +100,16 @@ pub fn export_typst_markup(
     // We don't need to take ownership — we just need to read the JSON.
     // `&document.meta` passes a reference to the metadata so the markup generator
     // can include a title page if the screenplay has a title set.
-    Ok(pdf::generate_typst_markup(&document.content, font_name, &document.meta, false, document.settings.scene_number_start, false, &document.scene_cards, false))
+    Ok(pdf::generate_typst_markup(
+        &document.content,
+        font_name,
+        &document.meta,
+        false,
+        document.settings.scene_number_start,
+        false,
+        &document.scene_cards,
+        false,
+    ))
 }
 
 /// Exports a screenplay document as PDF bytes.
@@ -118,10 +127,7 @@ pub fn export_typst_markup(
 /// * `Ok(Vec<u8>)` — The raw PDF file bytes ready to write to disk.
 /// * `Err(String)` — An error message if PDF generation fails.
 #[tauri::command]
-pub fn export_pdf(
-    document: ScreenplayDocument,
-    app: tauri::AppHandle,
-) -> Result<Vec<u8>, String> {
+pub fn export_pdf(document: ScreenplayDocument, app: tauri::AppHandle) -> Result<Vec<u8>, String> {
     // `bundled_fonts()` returns a Vec<BundledFont> — all fonts compiled into the binary.
     let bundled = fonts::bundled_fonts();
 
@@ -312,9 +318,27 @@ pub fn export_combined_pdf(
         };
 
         markup = if options.format == "indian" {
-            pdf::generate_indian_markup(&document.content, font_name, &meta_for_export, options.page_break_after_scene, document.settings.scene_number_start, options.characters_below_heading, &document.scene_cards, options.include_page_numbers)
+            pdf::generate_indian_markup(
+                &document.content,
+                font_name,
+                &meta_for_export,
+                options.page_break_after_scene,
+                document.settings.scene_number_start,
+                options.characters_below_heading,
+                &document.scene_cards,
+                options.include_page_numbers,
+            )
         } else {
-            pdf::generate_typst_markup(&document.content, font_name, &meta_for_export, options.page_break_after_scene, document.settings.scene_number_start, options.characters_below_heading, &document.scene_cards, options.include_page_numbers)
+            pdf::generate_typst_markup(
+                &document.content,
+                font_name,
+                &meta_for_export,
+                options.page_break_after_scene,
+                document.settings.scene_number_start,
+                options.characters_below_heading,
+                &document.scene_cards,
+                options.include_page_numbers,
+            )
         };
         has_content = true;
     } else {
@@ -337,7 +361,10 @@ pub fn export_combined_pdf(
 
         // If title page is requested without screenplay, generate a standalone title page
         if options.include_title_page && !document.meta.title.is_empty() {
-            markup.push_str(&pdf::generate_title_page_markup(&document.meta, options.include_page_numbers));
+            markup.push_str(&pdf::generate_title_page_markup(
+                &document.meta,
+                options.include_page_numbers,
+            ));
             has_content = true;
         }
     }
@@ -426,7 +453,10 @@ pub fn export_combined_pdf(
 /// * `Err(String)` — An error message if conversion fails.
 #[tauri::command]
 pub fn export_plaintext(document: ScreenplayDocument) -> Result<String, String> {
-    Ok(plaintext::generate_plaintext(&document.content, &document.meta))
+    Ok(plaintext::generate_plaintext(
+        &document.content,
+        &document.meta,
+    ))
 }
 
 /// Exports a screenplay document as a Fountain plain-text string.

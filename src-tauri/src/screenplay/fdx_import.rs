@@ -81,10 +81,13 @@ pub fn parse_fdx(input: &str) -> Result<(ScreenplayDocument, FdxImportSummary), 
     let mut buf: Vec<u8> = Vec::new();
 
     loop {
-        match reader
-            .read_event_into(&mut buf)
-            .map_err(|e| format!("XML parse error at byte {}: {}", reader.buffer_position(), e))?
-        {
+        match reader.read_event_into(&mut buf).map_err(|e| {
+            format!(
+                "XML parse error at byte {}: {}",
+                reader.buffer_position(),
+                e
+            )
+        })? {
             Event::Start(e) => handle_start(&e, &mut state, &reader)?,
             Event::Empty(e) => {
                 // Self-closing: handle as Start+End back-to-back. Empty
@@ -574,10 +577,7 @@ fn map_type(fdx_type: &str, summary: &mut FdxImportSummary) -> &'static str {
 /// produced if the user typed them locally.
 fn build_inline_children(runs: &[TextRun], node_kind: &str) -> Vec<Value> {
     let mut out: Vec<Value> = Vec::new();
-    let upper_kind = matches!(
-        node_kind,
-        "scene_heading" | "character" | "transition"
-    );
+    let upper_kind = matches!(node_kind, "scene_heading" | "character" | "transition");
     for run in runs {
         if run.text.is_empty() {
             continue;
@@ -634,8 +634,7 @@ fn build_meta(
         .collect::<Vec<_>>()
         .join("\n");
     if !full_text.trim().is_empty() {
-        meta.extra
-            .insert("fdx_title_page".into(), full_text);
+        meta.extra.insert("fdx_title_page".into(), full_text);
     }
 
     // Beat-style heuristic for the standard fields. This is a best-
@@ -670,7 +669,8 @@ fn build_meta(
 /// `meta.extra["fdx_title_page"]` always carries the full text either
 /// way.
 fn apply_title_page_heuristic(lines: &[TitlePageLine], meta: &mut ScreenplayMeta) {
-    let non_empty: Vec<&TitlePageLine> = lines.iter().filter(|l| !l.text.trim().is_empty()).collect();
+    let non_empty: Vec<&TitlePageLine> =
+        lines.iter().filter(|l| !l.text.trim().is_empty()).collect();
     if non_empty.is_empty() {
         return;
     }
@@ -969,7 +969,10 @@ mod tests {
 </Content></FinalDraft>"#;
         let (doc, _) = parse_fdx(input).unwrap();
         assert_eq!(node_text(&doc.content, 0), "Plain bold italic all three.");
-        assert!(node_marks(&doc.content, 0, 0).is_empty(), "plain run no marks");
+        assert!(
+            node_marks(&doc.content, 0, 0).is_empty(),
+            "plain run no marks"
+        );
         assert_eq!(node_marks(&doc.content, 0, 1), vec!["bold"]);
         assert_eq!(node_marks(&doc.content, 0, 3), vec!["italic"]);
         let combined = node_marks(&doc.content, 0, 5);
@@ -1116,7 +1119,12 @@ mod tests {
 </Content>
 </FinalDraft>"#;
         let (doc, _) = parse_fdx(input).unwrap();
-        let dump = doc.meta.extra.get("fdx_title_page").cloned().unwrap_or_default();
+        let dump = doc
+            .meta
+            .extra
+            .get("fdx_title_page")
+            .cloned()
+            .unwrap_or_default();
         assert!(dump.contains("THE GREAT SCRIPT"));
         assert!(dump.contains("Hrishikesh"));
     }

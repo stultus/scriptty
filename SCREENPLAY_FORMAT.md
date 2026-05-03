@@ -13,11 +13,11 @@ A `.screenplay` file is a UTF-8 encoded JSON object with five top-level keys:
 
 ```json
 {
-  "content": { },
-  "meta": { },
-  "settings": { },
-  "story": { },
-  "scene_cards": [ ]
+	"content": {},
+	"meta": {},
+	"settings": {},
+	"story": {},
+	"scene_cards": []
 }
 ```
 
@@ -27,17 +27,17 @@ All five keys should be present. Missing keys will be filled with defaults, but 
 
 ## 1. `meta` — Project Metadata
 
-| Field | Type | Required | Default | Description |
-|---|---|---|---|---|
-| `title` | string | yes | `""` | Screenplay title. Appears on the title page and section headers in PDF exports. |
-| `author` | string | yes | `""` | Writer name(s). For multiple writers, use `" & "` for writing teams (e.g. `"Joel & Ethan Coen"`) or `" and "` for sequential writers (e.g. `"Scott Frank and Jon Cohen"`). |
-| `director` | string | no | `""` | Director name. If same as author (case-insensitive), the app renders "Written and Directed by". |
-| `contact` | string | yes | `""` | Contact info (email, phone, agent). May contain newlines (`\n`). |
-| `draft_number` | integer | yes | `1` | Draft revision number, starting at 1. |
-| `draft_date` | string | yes | `""` | Human-readable date, e.g. `"2026-03-14"` or `"March 14, 2026"`. |
-| `created_at` | string | yes | `""` | ISO 8601 timestamp of document creation, e.g. `"2026-01-15T09:30:00Z"`. |
-| `updated_at` | string | yes | `""` | ISO 8601 timestamp of most recent save. |
-| `extra` | object | no | `{}` | Non-standard title-page metadata preserved for Fountain round-trip — string-to-string map. Holds Fountain title-page keys that don't map to a first-class meta field (e.g. `Source`, `Copyright`, custom keys). Original key spelling preserved. Omitted from the JSON when empty so legacy files stay byte-clean on resave. |
+| Field          | Type    | Required | Default | Description                                                                                                                                                                                                                                                                                                                  |
+| -------------- | ------- | -------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `title`        | string  | yes      | `""`    | Screenplay title. Appears on the title page and section headers in PDF exports.                                                                                                                                                                                                                                              |
+| `author`       | string  | yes      | `""`    | Writer name(s). For multiple writers, use `" & "` for writing teams (e.g. `"Joel & Ethan Coen"`) or `" and "` for sequential writers (e.g. `"Scott Frank and Jon Cohen"`).                                                                                                                                                   |
+| `director`     | string  | no       | `""`    | Director name. If same as author (case-insensitive), the app renders "Written and Directed by".                                                                                                                                                                                                                              |
+| `contact`      | string  | yes      | `""`    | Contact info (email, phone, agent). May contain newlines (`\n`).                                                                                                                                                                                                                                                             |
+| `draft_number` | integer | yes      | `1`     | Draft revision number, starting at 1.                                                                                                                                                                                                                                                                                        |
+| `draft_date`   | string  | yes      | `""`    | Human-readable date, e.g. `"2026-03-14"` or `"March 14, 2026"`.                                                                                                                                                                                                                                                              |
+| `created_at`   | string  | yes      | `""`    | ISO 8601 timestamp of document creation, e.g. `"2026-01-15T09:30:00Z"`.                                                                                                                                                                                                                                                      |
+| `updated_at`   | string  | yes      | `""`    | ISO 8601 timestamp of most recent save.                                                                                                                                                                                                                                                                                      |
+| `extra`        | object  | no       | `{}`    | Non-standard title-page metadata preserved for Fountain round-trip — string-to-string map. Holds Fountain title-page keys that don't map to a first-class meta field (e.g. `Source`, `Copyright`, custom keys). Original key spelling preserved. Omitted from the JSON when empty so legacy files stay byte-clean on resave. |
 
 **Example:**
 
@@ -58,11 +58,11 @@ All five keys should be present. Missing keys will be filled with defaults, but 
 
 ## 2. `settings` — Editor Preferences
 
-| Field | Type | Required | Default | Allowed Values |
-|---|---|---|---|---|
-| `font` | string | yes | `"manjari"` | `"noto-sans-malayalam"`, `"manjari"` |
-| `default_language` | string | yes | `"malayalam"` | `"malayalam"`, `"english"` |
-| `input_scheme` | string | yes | `"mozhi"` | `"mozhi"`, `"inscript1"`, `"inscript2"` |
+| Field              | Type   | Required | Default       | Allowed Values                          |
+| ------------------ | ------ | -------- | ------------- | --------------------------------------- |
+| `font`             | string | yes      | `"manjari"`   | `"noto-sans-malayalam"`, `"manjari"`    |
+| `default_language` | string | yes      | `"malayalam"` | `"malayalam"`, `"english"`              |
+| `input_scheme`     | string | yes      | `"mozhi"`     | `"mozhi"`, `"inscript1"`, `"inscript2"` |
 
 These control editor display and input behavior. For LLM-generated files, use the defaults or set `default_language` to match the screenplay's primary language.
 
@@ -82,12 +82,12 @@ These control editor display and input behavior. For LLM-generated files, use th
 
 Pre-writing material stored alongside the screenplay. All fields are plain text (no markup).
 
-| Field | Type | Required | Default | Description |
-|---|---|---|---|---|
-| `idea` | string | yes | `""` | Logline or core premise. Typically 1–3 sentences. |
-| `synopsis` | string | yes | `""` | Full story arc in prose. Typically 300–800 words. |
-| `treatment` | string | yes | `""` | Scene-by-scene narrative breakdown. Can be thousands of words. |
-| `narrative` | string | no | `""` | Long-form prose version of the story. Free-form, no length limit. |
+| Field       | Type   | Required | Default | Description                                                       |
+| ----------- | ------ | -------- | ------- | ----------------------------------------------------------------- |
+| `idea`      | string | yes      | `""`    | Logline or core premise. Typically 1–3 sentences.                 |
+| `synopsis`  | string | yes      | `""`    | Full story arc in prose. Typically 300–800 words.                 |
+| `treatment` | string | yes      | `""`    | Scene-by-scene narrative breakdown. Can be thousands of words.    |
+| `narrative` | string | no       | `""`    | Long-form prose version of the story. Free-form, no length limit. |
 
 These fields are optional in practice — empty strings are valid. They can be included in PDF exports.
 
@@ -108,11 +108,11 @@ These fields are optional in practice — empty strings are valid. They can be i
 
 An array of scene card objects. Each card stores user-written notes for a specific scene. If no cards have been created, use an empty array `[]`.
 
-| Field | Type | Description |
-|---|---|---|
-| `scene_index` | integer | Zero-based index matching the scene's position in the screenplay. The first scene heading is index 0, the second is index 1, etc. |
-| `description` | string | What happens in the scene (2–4 lines typical). Fountain synopses (`= ...`) imported into Scriptty land here — and they're emitted back as `=` lines on Fountain export, so this field is semi-public. |
-| `shoot_notes` | string | Production notes: equipment, VFX, stunts, location details. Also the storage site for Fountain inline notes (`[[ ... ]]`) and section headers attached during import — see the section-marker convention below. |
+| Field         | Type    | Description                                                                                                                                                                                                     |
+| ------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scene_index` | integer | Zero-based index matching the scene's position in the screenplay. The first scene heading is index 0, the second is index 1, etc.                                                                               |
+| `description` | string  | What happens in the scene (2–4 lines typical). Fountain synopses (`= ...`) imported into Scriptty land here — and they're emitted back as `=` lines on Fountain export, so this field is semi-public.           |
+| `shoot_notes` | string  | Production notes: equipment, VFX, stunts, location details. Also the storage site for Fountain inline notes (`[[ ... ]]`) and section headers attached during import — see the section-marker convention below. |
 
 Scene metadata like location, time of day, characters, and page count are computed automatically from the screenplay content — they are **not** stored in scene cards.
 
@@ -153,10 +153,10 @@ This is the screenplay itself, stored as a ProseMirror document tree in JSON for
 
 ```json
 {
-  "type": "doc",
-  "content": [
-    // Array of screenplay element nodes
-  ]
+	"type": "doc",
+	"content": [
+		// Array of screenplay element nodes
+	]
 }
 ```
 
@@ -164,10 +164,8 @@ The `content` array must contain **one or more** block-level element nodes. An e
 
 ```json
 {
-  "type": "doc",
-  "content": [
-    { "type": "scene_heading" }
-  ]
+	"type": "doc",
+	"content": [{ "type": "scene_heading" }]
 }
 ```
 
@@ -177,10 +175,8 @@ Every screenplay element is a JSON object with this structure:
 
 ```json
 {
-  "type": "<element_type>",
-  "content": [
-    { "type": "text", "text": "The actual text content" }
-  ]
+	"type": "<element_type>",
+	"content": [{ "type": "text", "text": "The actual text content" }]
 }
 ```
 
@@ -212,7 +208,12 @@ The app auto-uppercases text typed into scene headings. When generating files, a
 Scene description, stage direction, or narrative prose. Written in normal sentence case.
 
 ```json
-{ "type": "action", "content": [{ "type": "text", "text": "Ramesh walks through the crowded market, scanning faces." }] }
+{
+	"type": "action",
+	"content": [
+		{ "type": "text", "text": "Ramesh walks through the crowded market, scanning faces." }
+	]
+}
 ```
 
 For multiple paragraphs of action, use separate `action` nodes — one per paragraph.
@@ -241,7 +242,10 @@ The spoken words of the character named in the preceding `character` element. Wr
 Dialogue can be in any language, including Malayalam Unicode text:
 
 ```json
-{ "type": "dialogue", "content": [{ "type": "text", "text": "ഞാൻ നിന്നെ കാത്തിരിക്കുകയായിരുന്നു." }] }
+{
+	"type": "dialogue",
+	"content": [{ "type": "text", "text": "ഞാൻ നിന്നെ കാത്തിരിക്കുകയായിരുന്നു." }]
+}
 ```
 
 Mixed-language dialogue is fully supported:
@@ -310,117 +314,136 @@ A short bilingual screenplay demonstrating all element types:
 
 ```json
 {
-  "content": {
-    "type": "doc",
-    "content": [
-      {
-        "type": "scene_heading",
-        "content": [{ "type": "text", "text": "INT. RAMESH'S APARTMENT - NIGHT" }]
-      },
-      {
-        "type": "action",
-        "content": [{ "type": "text", "text": "A small, dimly lit apartment. Books and newspapers are stacked on every surface. RAMESH (50s), unshaven, sits at a desk reading a handwritten letter. His hands tremble." }]
-      },
-      {
-        "type": "character",
-        "content": [{ "type": "text", "text": "RAMESH" }]
-      },
-      {
-        "type": "parenthetical",
-        "content": [{ "type": "text", "text": "reading aloud" }]
-      },
-      {
-        "type": "dialogue",
-        "content": [{ "type": "text", "text": "\"നിങ്ങൾ ഇത് വായിക്കുമ്പോൾ ഞാൻ ജീവിച്ചിരിക്കില്ല...\"" }]
-      },
-      {
-        "type": "action",
-        "content": [{ "type": "text", "text": "He sets the letter down. Stares at the postmark date." }]
-      },
-      {
-        "type": "character",
-        "content": [{ "type": "text", "text": "RAMESH" }]
-      },
-      {
-        "type": "parenthetical",
-        "content": [{ "type": "text", "text": "to himself" }]
-      },
-      {
-        "type": "dialogue",
-        "content": [{ "type": "text", "text": "ഇത് ഇന്നലെ post ചെയ്തതാണ്." }]
-      },
-      {
-        "type": "action",
-        "content": [{ "type": "text", "text": "His phone RINGS. He picks it up." }]
-      },
-      {
-        "type": "character",
-        "content": [{ "type": "text", "text": "MEERA (V.O.)" }]
-      },
-      {
-        "type": "dialogue",
-        "content": [{ "type": "text", "text": "Ramesh, have you seen the news?" }]
-      },
-      {
-        "type": "character",
-        "content": [{ "type": "text", "text": "RAMESH" }]
-      },
-      {
-        "type": "dialogue",
-        "content": [{ "type": "text", "text": "What news?" }]
-      },
-      {
-        "type": "character",
-        "content": [{ "type": "text", "text": "MEERA (V.O.)" }]
-      },
-      {
-        "type": "parenthetical",
-        "content": [{ "type": "text", "text": "beat" }]
-      },
-      {
-        "type": "dialogue",
-        "content": [{ "type": "text", "text": "Suresh is dead." }]
-      },
-      {
-        "type": "action",
-        "content": [{ "type": "text", "text": "Ramesh looks at the letter. Then at the phone. His expression hardens." }]
-      },
-      {
-        "type": "transition",
-        "content": [{ "type": "text", "text": "SMASH CUT TO:" }]
-      },
-      {
-        "type": "scene_heading",
-        "content": [{ "type": "text", "text": "EXT. POLICE STATION - DAY" }]
-      },
-      {
-        "type": "action",
-        "content": [{ "type": "text", "text": "Ramesh walks up the steps of the station he was forced to leave six months ago. He pauses at the entrance, then pushes through the doors." }]
-      }
-    ]
-  },
-  "meta": {
-    "title": "The Last Letter",
-    "author": "Arun Kumar",
-    "director": "Arun Kumar",
-    "contact": "arun@example.com\n+91 98765 43210",
-    "draft_number": 1,
-    "draft_date": "2026-03-14",
-    "created_at": "2026-03-14T10:00:00Z",
-    "updated_at": "2026-03-14T10:00:00Z"
-  },
-  "settings": {
-    "font": "noto-sans-malayalam",
-    "default_language": "malayalam",
-    "input_scheme": "mozhi"
-  },
-  "story": {
-    "idea": "A retired detective receives a letter from a murder victim — posted the day before the killing.",
-    "synopsis": "",
-    "treatment": "",
-    "narrative": ""
-  },
-  "scene_cards": []
+	"content": {
+		"type": "doc",
+		"content": [
+			{
+				"type": "scene_heading",
+				"content": [{ "type": "text", "text": "INT. RAMESH'S APARTMENT - NIGHT" }]
+			},
+			{
+				"type": "action",
+				"content": [
+					{
+						"type": "text",
+						"text": "A small, dimly lit apartment. Books and newspapers are stacked on every surface. RAMESH (50s), unshaven, sits at a desk reading a handwritten letter. His hands tremble."
+					}
+				]
+			},
+			{
+				"type": "character",
+				"content": [{ "type": "text", "text": "RAMESH" }]
+			},
+			{
+				"type": "parenthetical",
+				"content": [{ "type": "text", "text": "reading aloud" }]
+			},
+			{
+				"type": "dialogue",
+				"content": [
+					{ "type": "text", "text": "\"നിങ്ങൾ ഇത് വായിക്കുമ്പോൾ ഞാൻ ജീവിച്ചിരിക്കില്ല...\"" }
+				]
+			},
+			{
+				"type": "action",
+				"content": [
+					{ "type": "text", "text": "He sets the letter down. Stares at the postmark date." }
+				]
+			},
+			{
+				"type": "character",
+				"content": [{ "type": "text", "text": "RAMESH" }]
+			},
+			{
+				"type": "parenthetical",
+				"content": [{ "type": "text", "text": "to himself" }]
+			},
+			{
+				"type": "dialogue",
+				"content": [{ "type": "text", "text": "ഇത് ഇന്നലെ post ചെയ്തതാണ്." }]
+			},
+			{
+				"type": "action",
+				"content": [{ "type": "text", "text": "His phone RINGS. He picks it up." }]
+			},
+			{
+				"type": "character",
+				"content": [{ "type": "text", "text": "MEERA (V.O.)" }]
+			},
+			{
+				"type": "dialogue",
+				"content": [{ "type": "text", "text": "Ramesh, have you seen the news?" }]
+			},
+			{
+				"type": "character",
+				"content": [{ "type": "text", "text": "RAMESH" }]
+			},
+			{
+				"type": "dialogue",
+				"content": [{ "type": "text", "text": "What news?" }]
+			},
+			{
+				"type": "character",
+				"content": [{ "type": "text", "text": "MEERA (V.O.)" }]
+			},
+			{
+				"type": "parenthetical",
+				"content": [{ "type": "text", "text": "beat" }]
+			},
+			{
+				"type": "dialogue",
+				"content": [{ "type": "text", "text": "Suresh is dead." }]
+			},
+			{
+				"type": "action",
+				"content": [
+					{
+						"type": "text",
+						"text": "Ramesh looks at the letter. Then at the phone. His expression hardens."
+					}
+				]
+			},
+			{
+				"type": "transition",
+				"content": [{ "type": "text", "text": "SMASH CUT TO:" }]
+			},
+			{
+				"type": "scene_heading",
+				"content": [{ "type": "text", "text": "EXT. POLICE STATION - DAY" }]
+			},
+			{
+				"type": "action",
+				"content": [
+					{
+						"type": "text",
+						"text": "Ramesh walks up the steps of the station he was forced to leave six months ago. He pauses at the entrance, then pushes through the doors."
+					}
+				]
+			}
+		]
+	},
+	"meta": {
+		"title": "The Last Letter",
+		"author": "Arun Kumar",
+		"director": "Arun Kumar",
+		"contact": "arun@example.com\n+91 98765 43210",
+		"draft_number": 1,
+		"draft_date": "2026-03-14",
+		"created_at": "2026-03-14T10:00:00Z",
+		"updated_at": "2026-03-14T10:00:00Z"
+	},
+	"settings": {
+		"font": "noto-sans-malayalam",
+		"default_language": "malayalam",
+		"input_scheme": "mozhi"
+	},
+	"story": {
+		"idea": "A retired detective receives a letter from a murder victim — posted the day before the killing.",
+		"synopsis": "",
+		"treatment": "",
+		"narrative": ""
+	},
+	"scene_cards": []
 }
 ```
 

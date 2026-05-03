@@ -60,6 +60,7 @@ npx tauri dev
 ```
 
 ## Build
+
 ```bash
 npx tauri build
 ```

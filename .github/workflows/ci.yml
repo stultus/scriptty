@@ -12,29 +12,44 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Least-privilege: nothing in this workflow needs more than read access.
+permissions:
+  contents: read
+
 jobs:
   rust:
-    name: Rust — clippy & tests
-    runs-on: ubuntu-22.04
+    name: Rust — fmt, clippy & tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v5
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy
+          components: clippy, rustfmt
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
+          key: ${{ matrix.os }}
 
-      # Tauri lib pulls webkit at build time even for `cargo check` / `cargo test`,
+      # Tauri pulls webkit at build time even for `cargo check` / `cargo test`,
       # so we install the same Linux deps the release job uses.
       - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: cargo fmt --check
+        working-directory: src-tauri
+        run: cargo fmt --all -- --check
 
       - name: cargo clippy (lib + tests, deny warnings)
         working-directory: src-tauri
@@ -45,8 +60,9 @@ jobs:
         run: cargo test --lib
 
   frontend:
-    name: Frontend — svelte-check
+    name: Frontend — svelte-check & lint
     runs-on: ubuntu-22.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
 
@@ -65,3 +81,44 @@ jobs:
       # ("zero warnings on cargo clippy and svelte-check").
       - name: svelte-check (via npm run check)
         run: npm run check -- --fail-on-warnings
+
+      # `npm run lint` = `prettier --check . && eslint .` (per package.json)
+      - name: Lint (prettier + eslint)
+        run: npm run lint
+
+  build:
+    name: Build — full Tauri app (Linux, debug)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    needs: [rust, frontend]
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: build-linux-debug
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      # End-to-end build verification: frontend → cargo → tauri-cli bundling.
+      # Catches platform-specific build breakage at PR time instead of at tag time.
+      # `--debug` skips heavy LTO/strip but exercises the full pipeline.
+      - name: cargo tauri build --debug
+        run: npm run tauri -- build --debug

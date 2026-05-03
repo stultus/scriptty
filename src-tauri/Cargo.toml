@@ -21,7 +21,7 @@ tauri-build = { version = "2.5.6", features = [] }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
-tauri = { version = "2.10.3", features = [] }
+tauri = { version = "2.11.0", features = [] }
 tauri-plugin-log = "2"
 tauri-plugin-dialog = "2"
 typst = "0.14"
@@ -29,8 +29,8 @@ typst-pdf = "0.14"
 chrono = "0.4"
 comemo = "0.5"
 tauri-plugin-fs = "2"
-tauri-plugin-opener = "2.5.3"
-tauri-plugin-deep-link = "2.4.7"
+tauri-plugin-opener = "2.5.4"
+tauri-plugin-deep-link = "2.4.9"
 # Pure-Rust XML pull-parser (MIT). Used by the Final Draft (.fdx) importer
 # in `screenplay::fdx_import` — `quick-xml` handles BOM, entity decoding,
 # and whitespace per the XML 1.0 spec, which we don't want to re-implement.

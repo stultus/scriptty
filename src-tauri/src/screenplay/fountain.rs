@@ -121,10 +121,7 @@ fn emit_title_page(output: &mut String, meta: &ScreenplayMeta) {
         // round-trip is symmetric. Writers who set this manually for
         // WGA/registration purposes get it labelled as Copyright in the
         // Fountain output, which is the closest standard key.
-        output.push_str(&format!(
-            "Copyright: {}\n",
-            meta.registration_number
-        ));
+        output.push_str(&format!("Copyright: {}\n", meta.registration_number));
     }
     if !meta.footnote.is_empty() {
         // `meta.footnote` is the cover-bottom dedication / confidentiality
@@ -343,11 +340,7 @@ fn emit_body(output: &mut String, nodes: &[Value], buckets: &HashMap<usize, Scen
 /// Each note gets its own paragraph (preceded by a blank line) so the
 /// next reader's parser sees them as standalone notes rather than a
 /// trailing annotation on whatever element ended the scene.
-fn flush_scene_notes(
-    output: &mut String,
-    buckets: &HashMap<usize, SceneBucket>,
-    scene_idx: usize,
-) {
+fn flush_scene_notes(output: &mut String, buckets: &HashMap<usize, SceneBucket>, scene_idx: usize) {
     if let Some(bucket) = buckets.get(&scene_idx) {
         for note in &bucket.notes {
             output.push_str(&format!("\n[[{}]]\n", note));
@@ -552,7 +545,8 @@ mod tests {
             ..Default::default()
         };
         meta.extra.insert("Zeta".into(), "z".into());
-        meta.extra.insert("Source".into(), "Based on a true story".into());
+        meta.extra
+            .insert("Source".into(), "Based on a true story".into());
         meta.extra.insert("Beta".into(), "b".into());
         let result = generate_fountain(&content, &meta, &[]);
         let beta = result.find("Beta:").expect("Beta present");
@@ -630,7 +624,10 @@ mod tests {
             ],
         });
         let result = generate_fountain(&content, &ScreenplayMeta::default(), &[]);
-        assert!(result.contains("!BANG!"), "expected forced action, got: {result}");
+        assert!(
+            result.contains("!BANG!"),
+            "expected forced action, got: {result}"
+        );
     }
 
     #[test]
@@ -890,7 +887,8 @@ mod tests {
             ..Default::default()
         };
         meta.extra.insert("Source".into(), "An old letter".into());
-        meta.extra.insert("Custom Key".into(), "carries over".into());
+        meta.extra
+            .insert("Custom Key".into(), "carries over".into());
 
         let content = scene("INT. HOUSE - DAY");
         let exported = generate_fountain(&content, &meta, &[]);

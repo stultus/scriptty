@@ -127,7 +127,10 @@ pub struct ScreenplaySettings {
     /// A custom `deserialize_with` clamps the stored value to 1..=9999 so a
     /// hand-edited 0, negative cast, or absurdly large value can't make the
     /// PDF pipeline's `saturating_sub` silently drop scene character lists.
-    #[serde(default = "default_scene_number_start", deserialize_with = "deserialize_scene_number_start")]
+    #[serde(
+        default = "default_scene_number_start",
+        deserialize_with = "deserialize_scene_number_start"
+    )]
     pub scene_number_start: u32,
     /// When true, the editor shows an auto-generated "characters: …" line
     /// below each scene heading listing every character who speaks in that
@@ -141,7 +144,10 @@ pub struct ScreenplaySettings {
     /// (oversize text would push the gutter / annotations off-screen).
     /// Defaults to 14 — the historical baseline before this setting
     /// existed (#123).
-    #[serde(default = "default_editor_font_size", deserialize_with = "deserialize_editor_font_size")]
+    #[serde(
+        default = "default_editor_font_size",
+        deserialize_with = "deserialize_editor_font_size"
+    )]
     pub editor_font_size: u32,
 }
 

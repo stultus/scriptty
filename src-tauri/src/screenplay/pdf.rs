@@ -6,8 +6,8 @@
 
 use crate::screenplay::document::{SceneCard, ScreenplayMeta};
 use chrono::Datelike;
-use std::collections::HashMap;
 use serde_json::Value;
+use std::collections::HashMap;
 use typst::diag::FileResult;
 use typst::foundations::{Bytes, Datetime};
 use typst::layout::PagedDocument;
@@ -91,7 +91,10 @@ enum ScreenplayGroup {
 ///
 /// Uses a manual index loop so we can "consume" (skip) elements that get absorbed
 /// into a group, preventing them from being processed twice.
-fn group_elements(mut elements: Vec<ScreenplayElement>, scene_number_start: u32) -> Vec<ScreenplayGroup> {
+fn group_elements(
+    mut elements: Vec<ScreenplayElement>,
+    scene_number_start: u32,
+) -> Vec<ScreenplayGroup> {
     let mut groups: Vec<ScreenplayGroup> = Vec::new();
     // Manual index so we can skip elements that get consumed into groups.
     // A for-each loop wouldn't let us advance past consumed elements.
@@ -123,14 +126,13 @@ fn group_elements(mut elements: Vec<ScreenplayElement>, scene_number_start: u32)
 
                 // Peek at the next element — if it's an action, consume it
                 // into the SceneBlock so they stay on the same page.
-                let first_action_typst = if i + 1 < elements.len()
-                    && elements[i + 1].element_type == "action"
-                {
-                    i += 1; // Skip the next element since we're consuming it
-                    Some(std::mem::take(&mut elements[i].typst_inline))
-                } else {
-                    None
-                };
+                let first_action_typst =
+                    if i + 1 < elements.len() && elements[i + 1].element_type == "action" {
+                        i += 1; // Skip the next element since we're consuming it
+                        Some(std::mem::take(&mut elements[i].typst_inline))
+                    } else {
+                        None
+                    };
 
                 groups.push(ScreenplayGroup::SceneBlock {
                     heading_text,
@@ -348,7 +350,11 @@ fn extract_elements(content: &Value) -> Vec<ScreenplayElement> {
         // and dialogue where inline bold formatting should appear in the PDF.
         let typst_inline = extract_inline_typst(node);
 
-        elements.push(ScreenplayElement { element_type, text, typst_inline });
+        elements.push(ScreenplayElement {
+            element_type,
+            text,
+            typst_inline,
+        });
     }
 
     elements
@@ -413,11 +419,17 @@ fn dialogue_quote_wrap(text: &str) -> (&'static str, &'static str) {
 
     // Check for any opening quote at the start
     let first = trimmed.chars().next().unwrap();
-    let has_open = matches!(first, '"' | '\u{201C}' | '\u{201D}' | '\'' | '\u{2018}' | '\u{2019}');
+    let has_open = matches!(
+        first,
+        '"' | '\u{201C}' | '\u{201D}' | '\'' | '\u{2018}' | '\u{2019}'
+    );
 
     // Check for any closing quote at the end
     let last = trimmed.chars().last().unwrap();
-    let has_close = matches!(last, '"' | '\u{201C}' | '\u{201D}' | '\'' | '\u{2018}' | '\u{2019}');
+    let has_close = matches!(
+        last,
+        '"' | '\u{201C}' | '\u{201D}' | '\'' | '\u{2018}' | '\u{2019}'
+    );
 
     let prefix = if has_open { "" } else { "\u{201C}" };
     let suffix = if has_close { "" } else { "\u{201D}" };
@@ -453,7 +465,11 @@ fn normalize_quotes(text: &str) -> String {
         // — apostrophes inside words like "don't" should stay as apostrophe)
         else if c == '\u{2018}' || c == '\u{2019}' {
             let prev = if i > 0 { Some(chars[i - 1]) } else { None };
-            let next = if i + 1 < chars.len() { Some(chars[i + 1]) } else { None };
+            let next = if i + 1 < chars.len() {
+                Some(chars[i + 1])
+            } else {
+                None
+            };
             let is_opening = match prev {
                 None => true,
                 Some(p) if p.is_whitespace() => true,
@@ -609,7 +625,9 @@ pub fn generate_title_page_markup(meta: &ScreenplayMeta, page_numbers: bool) -> 
     // When the body has numbering on, explicitly override with `numbering: none`
     // so the title page prints without a page number (Hollywood convention).
     if page_numbers {
-        page.push_str("#page(margin: (top: 3cm, bottom: 3cm, left: 3cm, right: 2.5cm), numbering: none)[\n");
+        page.push_str(
+            "#page(margin: (top: 3cm, bottom: 3cm, left: 3cm, right: 2.5cm), numbering: none)[\n",
+        );
     } else {
         page.push_str("#page(margin: (top: 3cm, bottom: 3cm, left: 3cm, right: 2.5cm))[\n");
     }
@@ -730,19 +748,13 @@ pub fn generate_title_page_markup(meta: &ScreenplayMeta, page_numbers: bool) -> 
         // it reads as a deliberate footer rather than text floating
         // disconnected at the bottom-left. 35% width keeps it short
         // and discreet, matching the eyebrow rule weight (0.5pt).
-        page.push_str(
-            "    #line(length: 35%, stroke: 0.5pt + luma(180))\n    #v(0.35cm)\n",
-        );
+        page.push_str("    #line(length: 35%, stroke: 0.5pt + luma(180))\n    #v(0.35cm)\n");
 
         if has_contact {
             // Split multi-line contact info by newlines and join with Typst line breaks.
             // `\` at the end of a line in Typst creates a line break (like <br> in HTML).
-            let contact_lines: Vec<String> = meta
-                .contact
-                .trim()
-                .lines()
-                .map(escape_typst)
-                .collect();
+            let contact_lines: Vec<String> =
+                meta.contact.trim().lines().map(escape_typst).collect();
             page.push_str(&format!(
                 "    #text(size: 10pt)[{}]\n",
                 contact_lines.join("\\\n")
@@ -997,10 +1009,7 @@ pub fn generate_typst_markup(
                             };
                             // Parenthetical: centered on the text-area
                             // centerline, italic.
-                            block.push_str(&format!(
-                                "  #align(center)[#emph[{}]]\n",
-                                display
-                            ));
+                            block.push_str(&format!("  #align(center)[#emph[{}]]\n", display));
                         }
                         DialogueLine::Dialogue(text, typst_inline) => {
                             // Auto-wrap dialogue in quotes if missing
@@ -1034,10 +1043,7 @@ pub fn generate_typst_markup(
                         // on the same page — prevents an orphaned
                         // "CUT TO:" cue at the top of the next page.
                         if next_is_transition {
-                            format!(
-                                "#block(sticky: true)[#par[{}]]\n\n",
-                                element.typst_inline
-                            )
+                            format!("#block(sticky: true)[#par[{}]]\n\n", element.typst_inline)
                         } else {
                             format!("#par[{}]\n\n", element.typst_inline)
                         }
@@ -1045,10 +1051,7 @@ pub fn generate_typst_markup(
                     "transition" => {
                         // Transitions: right-aligned, uppercase (e.g., "CUT TO:")
                         // Bold is not meaningful here since transitions are always uppercase styled
-                        format!(
-                            "#v(1em)\n#align(right)[{}]\n",
-                            escaped.to_uppercase()
-                        )
+                        format!("#v(1em)\n#align(right)[{}]\n", escaped.to_uppercase())
                     }
                     "episode_boundary" => {
                         // Series export: weak pagebreak (no-op if already on a
@@ -1287,7 +1290,11 @@ impl World for ScreenplayWorld {
 
         // `Datetime::from_ymd` creates a Typst date from year, month, day.
         // `Datelike` trait (imported from chrono) provides `.year()`, `.month()`, `.day()`.
-        Datetime::from_ymd(now.year(), now.month().try_into().ok()?, now.day().try_into().ok()?)
+        Datetime::from_ymd(
+            now.year(),
+            now.month().try_into().ok()?,
+            now.day().try_into().ok()?,
+        )
     }
 }
 
@@ -1646,10 +1653,7 @@ pub fn generate_indian_markup(
 
                     // Transition: right-aligned, full width (e.g., "CUT TO:")
                     let escaped = escape_typst(&element.text);
-                    markup.push_str(&format!(
-                        "#align(right)[{}]\n\n",
-                        escaped.to_uppercase()
-                    ));
+                    markup.push_str(&format!("#align(right)[{}]\n\n", escaped.to_uppercase()));
                 }
                 "episode_boundary" => {
                     // Series export boundary: flush any in-flight character
@@ -1750,21 +1754,15 @@ pub fn generate_pdf_indian(
     let document = typst::compile::<PagedDocument>(&world)
         .output
         .map_err(|diagnostics| {
-            let messages: Vec<String> = diagnostics
-                .iter()
-                .map(|d| format!("{:?}", d))
-                .collect();
+            let messages: Vec<String> = diagnostics.iter().map(|d| format!("{:?}", d)).collect();
             format!("Typst compilation errors: {}", messages.join("; "))
         })?;
 
     // Render the compiled document to PDF bytes in memory.
     // No temp files are written — everything stays in memory.
-    let pdf_bytes = typst_pdf::pdf(&document, &typst_pdf::PdfOptions::default())
-        .map_err(|diagnostics| {
-            let messages: Vec<String> = diagnostics
-                .iter()
-                .map(|d| format!("{:?}", d))
-                .collect();
+    let pdf_bytes =
+        typst_pdf::pdf(&document, &typst_pdf::PdfOptions::default()).map_err(|diagnostics| {
+            let messages: Vec<String> = diagnostics.iter().map(|d| format!("{:?}", d)).collect();
             format!("PDF rendering errors: {}", messages.join("; "))
         })?;
 
@@ -1826,22 +1824,16 @@ pub fn generate_pdf(
         .output
         .map_err(|diagnostics| {
             // `diagnostics` is a Vec of errors — format them all into one string
-            let messages: Vec<String> = diagnostics
-                .iter()
-                .map(|d| format!("{:?}", d))
-                .collect();
+            let messages: Vec<String> = diagnostics.iter().map(|d| format!("{:?}", d)).collect();
             format!("Typst compilation errors: {}", messages.join("; "))
         })?;
 
     // Render the compiled document to PDF bytes in memory.
     // `PdfOptions::default()` uses standard PDF settings.
     // No temp files are written — everything stays in memory.
-    let pdf_bytes = typst_pdf::pdf(&document, &typst_pdf::PdfOptions::default())
-        .map_err(|diagnostics| {
-            let messages: Vec<String> = diagnostics
-                .iter()
-                .map(|d| format!("{:?}", d))
-                .collect();
+    let pdf_bytes =
+        typst_pdf::pdf(&document, &typst_pdf::PdfOptions::default()).map_err(|diagnostics| {
+            let messages: Vec<String> = diagnostics.iter().map(|d| format!("{:?}", d)).collect();
             format!("PDF rendering errors: {}", messages.join("; "))
         })?;
 
@@ -1865,7 +1857,14 @@ pub fn generate_pdf(
 /// * `director` — Director name
 /// * `needs_pagebreak` — whether to emit a `#pagebreak()` before the section
 #[allow(clippy::too_many_arguments)]
-pub fn generate_prose_section_markup(section_name: &str, body: &str, font_name: &str, meta: &ScreenplayMeta, needs_pagebreak: bool, page_numbers: bool) -> String {
+pub fn generate_prose_section_markup(
+    section_name: &str,
+    body: &str,
+    font_name: &str,
+    meta: &ScreenplayMeta,
+    needs_pagebreak: bool,
+    page_numbers: bool,
+) -> String {
     let escaped_section = escape_typst(section_name);
     let escaped_body = escape_typst(body);
     let escaped_title = escape_typst(&meta.title);
@@ -2050,7 +2049,14 @@ pub fn generate_prose_section_markup(section_name: &str, body: &str, font_name: 
 ///   location group, or empty-state). Used by the export's "Compact
 ///   card view" toggle.
 #[allow(clippy::too_many_arguments)]
-pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &ScreenplayMeta, needs_pagebreak: bool, page_numbers: bool, compact: bool) -> String {
+pub fn generate_scene_cards_markup(
+    cards_data: &Value,
+    font_name: &str,
+    meta: &ScreenplayMeta,
+    needs_pagebreak: bool,
+    page_numbers: bool,
+    compact: bool,
+) -> String {
     let mut markup = String::new();
 
     // Only emit a page break if there's preceding content. When page
@@ -2204,13 +2210,33 @@ pub fn generate_scene_cards_markup(cards_data: &Value, font_name: &str, meta: &S
 /// The caller controls inter-card spacing; this function emits
 /// only the card itself.
 fn emit_scene_card(markup: &mut String, card: &Value, compact: bool) {
-    let scene_num = card.get("scene_number").and_then(|v| v.as_u64()).unwrap_or(0);
+    let scene_num = card
+        .get("scene_number")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0);
     let heading = card.get("heading").and_then(|v| v.as_str()).unwrap_or("");
-    let characters = card.get("characters").and_then(|v| v.as_str()).unwrap_or("");
-    let description = card.get("description").and_then(|v| v.as_str()).unwrap_or("");
-    let shoot_notes = card.get("shoot_notes").and_then(|v| v.as_str()).unwrap_or("");
-    let scheduled_date = card.get("scheduled_date").and_then(|v| v.as_str()).unwrap_or("").trim();
-    let location_group = card.get("location_group").and_then(|v| v.as_str()).unwrap_or("").trim();
+    let characters = card
+        .get("characters")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let description = card
+        .get("description")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let shoot_notes = card
+        .get("shoot_notes")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let scheduled_date = card
+        .get("scheduled_date")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim();
+    let location_group = card
+        .get("location_group")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim();
 
     // Parse setting + time from the heading so the eyebrow renders
     // "INTERIOR · DAY" / "EXTERIOR · NIGHT" the same way the
@@ -2313,9 +2339,7 @@ fn emit_scene_card(markup: &mut String, card: &Value, compact: bool) {
         // either body field, drop a muted em-dash so the card
         // reads as "intentionally pending" rather than a layout gap.
         if description.is_empty() && shoot_notes.is_empty() {
-            markup.push_str(
-                "        #v(6pt)\n        #text(size: 9.5pt, fill: luma(180))[—]\n",
-            );
+            markup.push_str("        #v(6pt)\n        #text(size: 9.5pt, fill: luma(180))[—]\n");
         }
     }
 
@@ -2521,7 +2545,9 @@ pub fn generate_shoot_list_markup(
     let mut day_first_emit = true;
 
     let flush_day_total = |markup: &mut String, total: u64, first: bool| {
-        if first || total == 0 { return; }
+        if first || total == 0 {
+            return;
+        }
         let pages = (total as f64) / 8.0;
         markup.push_str(&format!(
             "#v(6pt)\n#align(right)[#text(size: 10pt, fill: luma(110))[Day total: {} eighths (~{:.1} pages)]]\n\n",
@@ -2530,13 +2556,27 @@ pub fn generate_shoot_list_markup(
     };
 
     for row in arr {
-        let date = row.get("scheduled_date").and_then(|v| v.as_str()).unwrap_or("").to_string();
-        let group = row.get("location_group").and_then(|v| v.as_str()).unwrap_or("").to_string();
-        let scene_num = row.get("scene_number").and_then(|v| v.as_u64()).unwrap_or(0);
+        let date = row
+            .get("scheduled_date")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+        let group = row
+            .get("location_group")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+        let scene_num = row
+            .get("scene_number")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0);
         let heading = row.get("heading").and_then(|v| v.as_str()).unwrap_or("");
         let location = row.get("location").and_then(|v| v.as_str()).unwrap_or("");
         let time = row.get("time").and_then(|v| v.as_str()).unwrap_or("");
-        let char_count = row.get("character_count").and_then(|v| v.as_u64()).unwrap_or(0);
+        let char_count = row
+            .get("character_count")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0);
         let eighths = row.get("eighths").and_then(|v| v.as_u64()).unwrap_or(1);
 
         // Day boundary — flush prior day's total + pagebreak before the next.
@@ -2549,7 +2589,11 @@ pub fn generate_shoot_list_markup(
             day_first_emit = false;
 
             // Day header — date prominent, day-of-week-style block.
-            let date_label = if date.is_empty() { "Unscheduled".to_string() } else { date.clone() };
+            let date_label = if date.is_empty() {
+                "Unscheduled".to_string()
+            } else {
+                date.clone()
+            };
             markup.push_str(&format!(
                 "#text(size: 14pt, weight: \"bold\")[{}]\n#v(2pt)\n#line(length: 100%, stroke: 0.5pt + luma(180))\n#v(8pt)\n\n",
                 escape_typst(&date_label)
@@ -2560,7 +2604,11 @@ pub fn generate_shoot_list_markup(
 
         // Group boundary within a day.
         if Some(&group) != current_group.as_ref() {
-            let group_label = if group.is_empty() { "(no group)".to_string() } else { group.clone() };
+            let group_label = if group.is_empty() {
+                "(no group)".to_string()
+            } else {
+                group.clone()
+            };
             markup.push_str(&format!(
                 "#v(4pt)\n#text(size: 11pt, weight: \"semibold\", fill: luma(80))[{}]\n#v(4pt)\n\n",
                 escape_typst(&group_label)
@@ -2618,19 +2666,13 @@ pub fn compile_markup_to_pdf(markup: &str, font_data: &FontData) -> Result<Vec<u
     let document = typst::compile::<PagedDocument>(&world)
         .output
         .map_err(|diagnostics| {
-            let messages: Vec<String> = diagnostics
-                .iter()
-                .map(|d| format!("{:?}", d))
-                .collect();
+            let messages: Vec<String> = diagnostics.iter().map(|d| format!("{:?}", d)).collect();
             format!("Typst compilation errors: {}", messages.join("; "))
         })?;
 
-    let pdf_bytes = typst_pdf::pdf(&document, &typst_pdf::PdfOptions::default())
-        .map_err(|diagnostics| {
-            let messages: Vec<String> = diagnostics
-                .iter()
-                .map(|d| format!("{:?}", d))
-                .collect();
+    let pdf_bytes =
+        typst_pdf::pdf(&document, &typst_pdf::PdfOptions::default()).map_err(|diagnostics| {
+            let messages: Vec<String> = diagnostics.iter().map(|d| format!("{:?}", d)).collect();
             format!("PDF rendering errors: {}", messages.join("; "))
         })?;
 
@@ -2748,7 +2790,16 @@ mod tests {
             ]
         });
 
-        let markup = generate_typst_markup(&doc, "Noto Sans Malayalam", &empty_meta(), false, 1, false, &[], false);
+        let markup = generate_typst_markup(
+            &doc,
+            "Noto Sans Malayalam",
+            &empty_meta(),
+            false,
+            1,
+            false,
+            &[],
+            false,
+        );
         // Should contain the font setting
         assert!(markup.contains("Noto Sans Malayalam"));
         // Scene heading text should be uppercased
@@ -2786,7 +2837,8 @@ mod tests {
             ]
         });
 
-        let markup = generate_typst_markup(&doc, "Manjari", &empty_meta(), false, 1, false, &[], false);
+        let markup =
+            generate_typst_markup(&doc, "Manjari", &empty_meta(), false, 1, false, &[], false);
         // Character cue is uppercased and centred (the renderer switched
         // from `pad(left: 5.19cm)` to `#align(center)` when character +
         // parenthetical + dialogue were unified onto a shared centerline).
@@ -2813,7 +2865,16 @@ mod tests {
             ]
         });
 
-        let markup = generate_typst_markup(&doc, "Noto Sans Malayalam", &empty_meta(), false, 1, false, &[], false);
+        let markup = generate_typst_markup(
+            &doc,
+            "Noto Sans Malayalam",
+            &empty_meta(),
+            false,
+            1,
+            false,
+            &[],
+            false,
+        );
         // Malayalam text should pass through unmodified (no special chars to escape)
         assert!(markup.contains("രമേഷ് Flat ലേക്ക് നടന്നു"));
     }
@@ -3057,7 +3118,16 @@ mod tests {
             ]
         });
 
-        let markup = generate_typst_markup(&doc, "Noto Sans Malayalam", &empty_meta(), false, 1, false, &[], false);
+        let markup = generate_typst_markup(
+            &doc,
+            "Noto Sans Malayalam",
+            &empty_meta(),
+            false,
+            1,
+            false,
+            &[],
+            false,
+        );
         // The scene heading and first action should be inside a single
         // unbreakable block. (Block takes additional args, so match prefix.)
         assert!(markup.contains("block(breakable: false,"));
@@ -3093,7 +3163,9 @@ mod tests {
         assert_eq!(groups.len(), 2);
 
         match &groups[0] {
-            ScreenplayGroup::SceneBlock { first_action_typst, .. } => {
+            ScreenplayGroup::SceneBlock {
+                first_action_typst, ..
+            } => {
                 // typst markup; equality holds because "First action." has
                 // no characters that `escape_typst` modifies.
                 assert_eq!(first_action_typst.as_deref(), Some("First action."));

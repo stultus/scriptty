@@ -24,10 +24,10 @@ pub fn new_screenplay() -> ScreenplayDocument {
                 { "type": "scene_heading" }
             ]
         }),
-        meta: Default::default(),       // Uses the Default impl we defined
+        meta: Default::default(), // Uses the Default impl we defined
         settings: Default::default(),
-        story: Default::default(),      // Empty story sections
-        scene_cards: Vec::new(),        // No scene cards initially
+        story: Default::default(), // Empty story sections
+        scene_cards: Vec::new(),   // No scene cards initially
     }
 }
 
@@ -45,8 +45,7 @@ pub fn save_screenplay(path: String, document: ScreenplayDocument) -> Result<(),
     let json = serde_json::to_string_pretty(&document)
         .map_err(|e| format!("Failed to serialize document: {}", e))?;
 
-    std::fs::write(&path, json)
-        .map_err(|e| format!("Failed to write file '{}': {}", path, e))?;
+    std::fs::write(&path, json).map_err(|e| format!("Failed to write file '{}': {}", path, e))?;
 
     Ok(())
 }
@@ -166,8 +165,8 @@ pub fn load_autosave(path: String) -> Result<Option<AutosaveInfo>, String> {
     // If the original is newer (or equal), the autosave is stale — discard
     // it and report "nothing to recover" so the user isn't prompted to
     // restore something older than the file they just opened.
-    let original_meta = std::fs::metadata(&path)
-        .map_err(|e| format!("Failed to stat '{}': {}", path, e))?;
+    let original_meta =
+        std::fs::metadata(&path).map_err(|e| format!("Failed to stat '{}': {}", path, e))?;
 
     let autosave_time = autosave_meta
         .modified()

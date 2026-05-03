@@ -8,6 +8,7 @@ description: UI/UX design skill for Scriptty — offline Malayalam/English scree
 ## App Identity
 
 Scriptty is an offline desktop screenwriting app for Malayalam and English writers. The identity is:
+
 - **Literary, not corporate** — this is a writer's tool, not a productivity SaaS
 - **Kerala-rooted** — the primary user is a Malayalam filmmaker or writer; the aesthetic can draw from Kerala's visual culture: deep greens, warm terracotta, ink blacks, aged paper whites
 - **Distraction-free, text-first** — the screenplay on screen is the hero; chrome exists only to serve it
@@ -20,12 +21,14 @@ The app icon is ഋ inside a clapperboard, teal and dark. All UI decisions shoul
 ## Design Philosophy
 
 ### Core Principles (in priority order)
+
 1. **The screenplay is the UI** — the page/document area must always feel like the primary element. Everything else is peripheral.
 2. **Reduce cognitive load** — writers shouldn't think about the interface while writing. Hide complexity; surface only what's needed.
 3. **Every pixel earns its place** — no decorative elements. If a button exists, it must be obviously useful. If a label exists, it must say something.
 4. **Dark and light modes are both first-class** — not a palette swap. Each mode has its own character.
 
 ### Anti-patterns to avoid (learned from research)
+
 - Final Draft: dated icons, unpleasant colors, cluttered toolbar, too many visible options at once
 - Generic SaaS dark mode: purple gradients, neon accents, glassy cards — wrong context entirely
 - Pure black (#000000) backgrounds — causes glare and haloing on most screens
@@ -37,62 +40,64 @@ The app icon is ഋ inside a clapperboard, teal and dark. All UI decisions shoul
 ## Color System
 
 ### Dark Mode (default)
+
 ```css
 /* Surfaces — layered, never flat black */
---surface-base: #1a1a1a;        /* Main window background */
---surface-elevated: #222222;    /* TitleBar, panels */
---surface-float: #2a2a2a;       /* Modals, dropdowns */
---surface-hover: #303030;       /* Button hover states */
---surface-active: #383838;      /* Button pressed */
+--surface-base: #1a1a1a; /* Main window background */
+--surface-elevated: #222222; /* TitleBar, panels */
+--surface-float: #2a2a2a; /* Modals, dropdowns */
+--surface-hover: #303030; /* Button hover states */
+--surface-active: #383838; /* Button pressed */
 
 /* The screenplay page — warm, paper-like, not pure white */
---page-bg: #f5f0e8;             /* Warm cream — like aged paper */
---page-shadow: rgba(0,0,0,0.5); /* Drop shadow under page */
+--page-bg: #f5f0e8; /* Warm cream — like aged paper */
+--page-shadow: rgba(0, 0, 0, 0.5); /* Drop shadow under page */
 
 /* Text — off-white hierarchy, never pure white */
---text-primary: #e8e6e1;        /* Main UI text — warm off-white */
---text-secondary: #9e9a94;      /* Labels, secondary info */
---text-muted: #5e5a55;          /* Disabled, placeholder */
---text-on-page: #1a1a1a;        /* Text inside the screenplay page */
+--text-primary: #e8e6e1; /* Main UI text — warm off-white */
+--text-secondary: #9e9a94; /* Labels, secondary info */
+--text-muted: #5e5a55; /* Disabled, placeholder */
+--text-on-page: #1a1a1a; /* Text inside the screenplay page */
 
 /* Accent — teal, consistent with app icon */
---accent: #2d9b8a;              /* Primary accent — teal */
---accent-hover: #35b5a2;        /* Teal hover */
---accent-muted: rgba(45,155,138,0.15); /* Teal background wash */
+--accent: #2d9b8a; /* Primary accent — teal */
+--accent-hover: #35b5a2; /* Teal hover */
+--accent-muted: rgba(45, 155, 138, 0.15); /* Teal background wash */
 
 /* State colors */
---dirty: #e8a04a;               /* Unsaved changes indicator — warm amber */
---error: #c0574a;               /* Error state */
---success: #4a9e6e;             /* Success */
+--dirty: #e8a04a; /* Unsaved changes indicator — warm amber */
+--error: #c0574a; /* Error state */
+--success: #4a9e6e; /* Success */
 
 /* Borders */
---border-subtle: rgba(255,255,255,0.07);
---border-medium: rgba(255,255,255,0.12);
+--border-subtle: rgba(255, 255, 255, 0.07);
+--border-medium: rgba(255, 255, 255, 0.12);
 ```
 
 ### Light Mode
+
 ```css
 /* Surfaces */
---surface-base: #f0ede8;        /* Warm off-white base — not clinical white */
---surface-elevated: #e8e4de;    /* TitleBar, panels — slightly darker */
---surface-float: #faf8f5;       /* Modals — lightest surface */
---surface-hover: #dedad4;       /* Hover */
---surface-active: #d2cdc7;      /* Pressed */
+--surface-base: #f0ede8; /* Warm off-white base — not clinical white */
+--surface-elevated: #e8e4de; /* TitleBar, panels — slightly darker */
+--surface-float: #faf8f5; /* Modals — lightest surface */
+--surface-hover: #dedad4; /* Hover */
+--surface-active: #d2cdc7; /* Pressed */
 
 /* The screenplay page in light mode */
---page-bg: #ffffff;             /* Pure white page in light mode */
---page-shadow: rgba(0,0,0,0.12);
+--page-bg: #ffffff; /* Pure white page in light mode */
+--page-shadow: rgba(0, 0, 0, 0.12);
 
 /* Text */
---text-primary: #1a1916;        /* Near-black, warm undertone */
---text-secondary: #5c5852;      /* Secondary */
---text-muted: #9c9891;          /* Disabled */
+--text-primary: #1a1916; /* Near-black, warm undertone */
+--text-secondary: #5c5852; /* Secondary */
+--text-muted: #9c9891; /* Disabled */
 --text-on-page: #1a1a1a;
 
 /* Accent — same teal, slightly darker for light bg contrast */
 --accent: #1e8070;
 --accent-hover: #237a6a;
---accent-muted: rgba(30,128,112,0.1);
+--accent-muted: rgba(30, 128, 112, 0.1);
 
 /* State */
 --dirty: #c47f28;
@@ -100,11 +105,12 @@ The app icon is ഋ inside a clapperboard, teal and dark. All UI decisions shoul
 --success: #2e7d52;
 
 /* Borders */
---border-subtle: rgba(0,0,0,0.08);
---border-medium: rgba(0,0,0,0.14);
+--border-subtle: rgba(0, 0, 0, 0.08);
+--border-medium: rgba(0, 0, 0, 0.14);
 ```
 
 ### Theme Toggle Implementation
+
 - Store in `documentStore` or a separate `themeStore` using `$state`
 - Apply as a `data-theme="dark"` or `data-theme="light"` attribute on `<html>` or `<body>`
 - CSS variables scoped via `[data-theme="dark"]` and `[data-theme="light"]`
@@ -117,6 +123,7 @@ The app icon is ഋ inside a clapperboard, teal and dark. All UI decisions shoul
 ## Typography
 
 ### UI Typography (TitleBar, status bar, panels)
+
 - **Font**: `system-ui, -apple-system` — native macOS San Francisco for all UI chrome
 - Never use web fonts for UI labels — they slow rendering and look wrong on macOS
 - Size scale:
@@ -126,12 +133,14 @@ The app icon is ഋ inside a clapperboard, teal and dark. All UI decisions shoul
   - `15px` — modal headings, section titles
 
 ### Screenplay Page Typography
+
 - Malayalam content: Noto Sans Malayalam or Manjari (user-selectable, already implemented)
 - English content in screenplay: `'Courier Prime', 'Courier New', monospace` — standard screenplay font
 - Page text sizes follow Hollywood spec (12pt Courier = ~16px at 96dpi)
 - Line height on page: `1.6` minimum — critical for Malayalam rendering
 
 ### Typography Rules for Dark Mode
+
 - Body text: `--text-primary` (#e8e6e1) — warm off-white, NOT pure white
 - Secondary text: `--text-secondary` — use for labels, not body
 - Avoid italic emphasis in dark UI — use `font-weight: 500` instead
@@ -162,6 +171,7 @@ The app icon is ഋ inside a clapperboard, teal and dark. All UI decisions shoul
 ```
 
 ### TitleBar
+
 - Height: `40px`
 - Background: `--surface-elevated`
 - Bottom border: `1px solid --border-subtle`
@@ -173,6 +183,7 @@ The app icon is ഋ inside a clapperboard, teal and dark. All UI decisions shoul
 - Separator between button groups: `1px solid --border-subtle`, `16px` vertical margin
 
 ### Scene Navigator
+
 - Width: `220px`, fixed
 - Background: `--surface-base` in dark, slightly lighter than main in light
 - Right border: `1px solid --border-subtle`
@@ -182,6 +193,7 @@ The app icon is ഋ inside a clapperboard, teal and dark. All UI decisions shoul
 - Scene text: `--text-secondary`, `12px`, truncated with ellipsis
 
 ### Editor Area
+
 - Background: `--surface-base`
 - Page centered, max-width `680px`, margin `auto`
 - Page padding: `60px 72px` (standard screenplay margins)
@@ -191,6 +203,7 @@ The app icon is ഋ inside a clapperboard, teal and dark. All UI decisions shoul
 - Scroll behavior: smooth, scrollbar styled (thin, muted color)
 
 ### Status Bar
+
 - Height: `28px`
 - Background: `--surface-elevated`
 - Top border: `1px solid --border-subtle`
@@ -206,77 +219,86 @@ The app icon is ഋ inside a clapperboard, teal and dark. All UI decisions shoul
 ### Buttons
 
 #### Ghost Button (default for most toolbar actions)
+
 ```css
 .btn-ghost {
-  height: 28px;
-  padding: 0 10px;
-  border-radius: 6px;
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: 12px;
-  cursor: pointer;
-  transition: background 120ms ease, color 120ms ease;
+	height: 28px;
+	padding: 0 10px;
+	border-radius: 6px;
+	border: none;
+	background: transparent;
+	color: var(--text-secondary);
+	font-size: 12px;
+	cursor: pointer;
+	transition:
+		background 120ms ease,
+		color 120ms ease;
 }
 .btn-ghost:hover {
-  background: var(--surface-hover);
-  color: var(--text-primary);
+	background: var(--surface-hover);
+	color: var(--text-primary);
 }
 .btn-ghost:active {
-  background: var(--surface-active);
+	background: var(--surface-active);
 }
 ```
 
 #### Primary Button (Save)
+
 ```css
 .btn-primary {
-  background: var(--accent);
-  color: white;
-  /* same sizing as ghost */
+	background: var(--accent);
+	color: white;
+	/* same sizing as ghost */
 }
 .btn-primary:hover {
-  background: var(--accent-hover);
+	background: var(--accent-hover);
 }
 ```
 
 #### Icon Button (for theme toggle, collapse panel)
+
 ```css
 .btn-icon {
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  /* same hover/active as ghost */
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 6px;
+	/* same hover/active as ghost */
 }
 ```
 
 #### Segmented Control (font selector, scheme selector)
+
 ```css
 .segmented {
-  display: flex;
-  background: var(--surface-base);
-  border-radius: 6px;
-  padding: 2px;
-  gap: 1px;
+	display: flex;
+	background: var(--surface-base);
+	border-radius: 6px;
+	padding: 2px;
+	gap: 1px;
 }
 .segmented-item {
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: background 100ms, color 100ms;
+	padding: 3px 8px;
+	border-radius: 4px;
+	font-size: 11px;
+	color: var(--text-muted);
+	cursor: pointer;
+	transition:
+		background 100ms,
+		color 100ms;
 }
 .segmented-item.active {
-  background: var(--surface-elevated);
-  color: var(--text-primary);
+	background: var(--surface-elevated);
+	color: var(--text-primary);
 }
 ```
 
 ### Modal
+
 - Backdrop: `rgba(0,0,0,0.6)` with `backdrop-filter: blur(4px)`
 - Modal card: `--surface-float`, `12px` border-radius, `1px solid --border-medium`
 - Width: `480px`, never full-screen on desktop
@@ -288,6 +310,7 @@ The app icon is ഋ inside a clapperboard, teal and dark. All UI decisions shoul
 - Transition: fade + scale(0.97 → 1.0), 150ms ease-out
 
 ### Dirty Indicator
+
 - Small dot `6px` diameter in the title zone
 - Color: `--dirty` (#e8a04a) when unsaved
 - Transparent when saved
@@ -298,22 +321,26 @@ The app icon is ഋ inside a clapperboard, teal and dark. All UI decisions shoul
 ## Interaction Patterns
 
 ### Theme Toggle
+
 - Place in TitleBar right group, leftmost icon before font selector
 - Sun icon (☀) in dark mode, moon icon (🌙) in light mode — or use text "Light"/"Dark"
 - Instant CSS variable swap, no flash — use `transition: background 200ms, color 200ms` on `body`
 - Do NOT animate the screenplay page background color — it causes jarring page flicker
 
 ### Navigator Collapse
+
 - Ctrl+B (already implemented) — keep shortcut
 - Collapse button (‹/›) at top of navigator
 - Collapsed state: navigator is `0px` width with `overflow: hidden`, editor expands to full width
 - Transition: `width 200ms cubic-bezier(0.4, 0, 0.2, 1)`
 
 ### Focus Mode (optional, Phase 2)
+
 - Hide TitleBar and status bar, expand editor full window
 - Triggered by Cmd+Shift+F or a button in TitleBar
 
 ### Hover States
+
 - All interactive elements must have visible hover state
 - Transition duration: `120ms` — fast enough to feel snappy, not jarring
 - Never use opacity-only hover — change background instead
@@ -323,85 +350,93 @@ The app icon is ഋ inside a clapperboard, teal and dark. All UI decisions shoul
 ## Svelte Implementation Notes
 
 ### Theme Store Pattern
+
 ```typescript
 // src/lib/stores/themeStore.svelte.ts
-const STORAGE_KEY = 'scriptty-theme'
-type Theme = 'dark' | 'light'
+const STORAGE_KEY = 'scriptty-theme';
+type Theme = 'dark' | 'light';
 
 function getInitialTheme(): Theme {
-  const stored = localStorage.getItem(STORAGE_KEY)
-  if (stored === 'dark' || stored === 'light') return stored
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+	const stored = localStorage.getItem(STORAGE_KEY);
+	if (stored === 'dark' || stored === 'light') return stored;
+	return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
 class ThemeStore {
-  current = $state<Theme>('dark')
-  
-  init() {
-    this.current = getInitialTheme()
-    this.apply()
-  }
-  
-  toggle() {
-    this.current = this.current === 'dark' ? 'light' : 'dark'
-    localStorage.setItem(STORAGE_KEY, this.current)
-    this.apply()
-  }
-  
-  apply() {
-    document.documentElement.setAttribute('data-theme', this.current)
-  }
+	current = $state<Theme>('dark');
+
+	init() {
+		this.current = getInitialTheme();
+		this.apply();
+	}
+
+	toggle() {
+		this.current = this.current === 'dark' ? 'light' : 'dark';
+		localStorage.setItem(STORAGE_KEY, this.current);
+		this.apply();
+	}
+
+	apply() {
+		document.documentElement.setAttribute('data-theme', this.current);
+	}
 }
 
-export const themeStore = new ThemeStore()
+export const themeStore = new ThemeStore();
 ```
 
 ### CSS Variable Scoping
+
 ```css
 /* In app.css or +layout.svelte <style> */
-[data-theme="dark"] {
-  --surface-base: #1a1a1a;
-  --text-primary: #e8e6e1;
-  /* ... all dark tokens */
+[data-theme='dark'] {
+	--surface-base: #1a1a1a;
+	--text-primary: #e8e6e1;
+	/* ... all dark tokens */
 }
 
-[data-theme="light"] {
-  --surface-base: #f0ede8;
-  --text-primary: #1a1916;
-  /* ... all light tokens */
+[data-theme='light'] {
+	--surface-base: #f0ede8;
+	--text-primary: #1a1916;
+	/* ... all light tokens */
 }
 
 /* Default to dark if no attribute set */
 :root {
-  --surface-base: #1a1a1a;
-  /* ... dark as default */
+	--surface-base: #1a1a1a;
+	/* ... dark as default */
 }
 ```
 
 ### ProseMirror Styling
+
 All screenplay page styles MUST use `:global()` because ProseMirror generates its own DOM:
+
 ```css
 :global(.ProseMirror) {
-  color: var(--text-on-page);
-  font-family: 'Courier Prime', 'Courier New', monospace;
-  line-height: 1.6;
+	color: var(--text-on-page);
+	font-family: 'Courier Prime', 'Courier New', monospace;
+	line-height: 1.6;
 }
 :global(.ProseMirror .scene-heading) {
-  font-weight: bold;
-  text-transform: uppercase;
-  /* etc */
+	font-weight: bold;
+	text-transform: uppercase;
+	/* etc */
 }
 ```
 
 ### Transitions
+
 Body-level theme transition (prevents flash on toggle):
+
 ```css
 body {
-  transition: background-color 200ms ease, color 200ms ease;
+	transition:
+		background-color 200ms ease,
+		color 200ms ease;
 }
 /* Exclude page content from transition to prevent flicker */
 .screenplay-page {
-  transition: none !important;
+	transition: none !important;
 }
 ```
 
@@ -424,16 +459,19 @@ body {
 ## Reference: What the Best Apps Do
 
 **Highland 2 strengths** (emulate these):
+
 - Nothing cluttered — every element has a reason to be there
 - Light, modern, text-first
 - The navigator is clean and doesn't compete with the document
 
 **Arc Studio Pro strengths** (emulate these):
+
 - Clean visual design removes distractions
 - Night mode feels purposefully designed, not just dark
 - Element type indicators are subtle and don't interrupt writing flow
 
 **What to avoid** (from Final Draft criticism):
+
 - Dated icons
 - Unpleasant color palette
 - Too many options visible simultaneously

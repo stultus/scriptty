@@ -1,175 +1,177 @@
 <script lang="ts">
-  import type { Snippet } from 'svelte';
+	import type { Snippet } from 'svelte';
 
-  let { children }: { children: Snippet } = $props();
+	let { children }: { children: Snippet } = $props();
 </script>
 
 {@render children()}
 
 <style>
-  :global(*, *::before, *::after) {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
+	:global(*, *::before, *::after) {
+		margin: 0;
+		padding: 0;
+		box-sizing: border-box;
+	}
 
-  :global(html, body) {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: var(--surface-base);
-    color: var(--text-primary);
-    font-family: var(--ui-font, system-ui, -apple-system, sans-serif);
-  }
+	:global(html, body) {
+		width: 100%;
+		height: 100%;
+		overflow: hidden;
+		background: var(--surface-base);
+		color: var(--text-primary);
+		font-family: var(--ui-font, system-ui, -apple-system, sans-serif);
+	}
 
-  /* Body-level theme transition — prevents flash on toggle */
-  :global(body) {
-    transition: background-color 200ms ease, color 200ms ease;
-  }
+	/* Body-level theme transition — prevents flash on toggle */
+	:global(body) {
+		transition:
+			background-color 200ms ease,
+			color 200ms ease;
+	}
 
-  /* ─── Dark mode (default) ─── */
-  :global(:root),
-  :global([data-theme="dark"]) {
-    /* Surfaces — layered, never flat black */
-    --surface-base: #1a1a1a;
-    --surface-elevated: #222222;
-    --surface-float: #2a2a2a;
-    --surface-hover: #303030;
-    --surface-active: #383838;
+	/* ─── Dark mode (default) ─── */
+	:global(:root),
+	:global([data-theme='dark']) {
+		/* Surfaces — layered, never flat black */
+		--surface-base: #1a1a1a;
+		--surface-elevated: #222222;
+		--surface-float: #2a2a2a;
+		--surface-hover: #303030;
+		--surface-active: #383838;
 
-    /* The screenplay page — warm, paper-like */
-    --page-bg: #f5f0e8;
-    --page-shadow: rgba(0, 0, 0, 0.5);
-    --page-shadow-close: rgba(0, 0, 0, 0.22);
-    --page-edge-highlight: rgba(255, 255, 255, 0.04);
-    /* Subtle paper grain — SVG fractal noise inlined as a data URL.
+		/* The screenplay page — warm, paper-like */
+		--page-bg: #f5f0e8;
+		--page-shadow: rgba(0, 0, 0, 0.5);
+		--page-shadow-close: rgba(0, 0, 0, 0.22);
+		--page-edge-highlight: rgba(255, 255, 255, 0.04);
+		/* Subtle paper grain — SVG fractal noise inlined as a data URL.
        Very low opacity so it reads as texture not pattern. Dark mode
        keeps it quiet to avoid muddying the cream page under app chrome. */
-    --page-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.035 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+		--page-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.035 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
 
-    /* Text — off-white hierarchy */
-    --text-primary: #e8e6e1;
-    --text-secondary: #9e9a94;
-    --text-muted: #5e5a55;
-    --text-caption: #9e9a94;
-    --text-on-page: #1a1a1a;
+		/* Text — off-white hierarchy */
+		--text-primary: #e8e6e1;
+		--text-secondary: #9e9a94;
+		--text-muted: #5e5a55;
+		--text-caption: #9e9a94;
+		--text-on-page: #1a1a1a;
 
-    /* Accent — teal, consistent with app icon */
-    --accent: #2d9b8a;
-    --accent-hover: #35b5a2;
-    --accent-muted: rgba(45, 155, 138, 0.15);
+		/* Accent — teal, consistent with app icon */
+		--accent: #2d9b8a;
+		--accent-hover: #35b5a2;
+		--accent-muted: rgba(45, 155, 138, 0.15);
 
-    /* Warm companion — amber, evokes Kerala lamp-light. Used for
+		/* Warm companion — amber, evokes Kerala lamp-light. Used for
        badges, save-success, subtle highlights. Same hue family as
        --dirty, so dirty indicator stays coherent. */
-    --accent-warm: #e8a04a;
-    --accent-warm-muted: rgba(232, 160, 74, 0.15);
+		--accent-warm: #e8a04a;
+		--accent-warm-muted: rgba(232, 160, 74, 0.15);
 
-    /* Deep companion — oxblood / kumkumam. Used for transitions,
+		/* Deep companion — oxblood / kumkumam. Used for transitions,
        destructive confirms, and emphatic moments. */
-    --accent-deep: #9b3a3a;
-    --accent-deep-muted: rgba(155, 58, 58, 0.15);
+		--accent-deep: #9b3a3a;
+		--accent-deep-muted: rgba(155, 58, 58, 0.15);
 
-    /* State colors */
-    --dirty: #e8a04a;
-    --error: #c0574a;
-    --success: #4a9e6e;
+		/* State colors */
+		--dirty: #e8a04a;
+		--error: #c0574a;
+		--success: #4a9e6e;
 
-    /* Borders */
-    --border-subtle: rgba(255, 255, 255, 0.07);
-    --border-medium: rgba(255, 255, 255, 0.12);
+		/* Borders */
+		--border-subtle: rgba(255, 255, 255, 0.07);
+		--border-medium: rgba(255, 255, 255, 0.12);
 
-    /* Shadows and overlays */
-    --shadow-soft: rgba(0, 0, 0, 0.2);
-    --shadow-medium: rgba(0, 0, 0, 0.3);
-    --shadow-heavy: rgba(0, 0, 0, 0.4);
-    --backdrop: rgba(0, 0, 0, 0.6);
+		/* Shadows and overlays */
+		--shadow-soft: rgba(0, 0, 0, 0.2);
+		--shadow-medium: rgba(0, 0, 0, 0.3);
+		--shadow-heavy: rgba(0, 0, 0, 0.4);
+		--backdrop: rgba(0, 0, 0, 0.6);
 
-    /* Text on accent background (e.g. Save button) */
-    --text-on-accent: #ffffff;
+		/* Text on accent background (e.g. Save button) */
+		--text-on-accent: #ffffff;
 
-    /* Find/replace highlights */
-    --find-match: rgba(255, 213, 79, 0.35);
-    --find-match-current: rgba(45, 155, 138, 0.30);
-  }
+		/* Find/replace highlights */
+		--find-match: rgba(255, 213, 79, 0.35);
+		--find-match-current: rgba(45, 155, 138, 0.3);
+	}
 
-  /* ─── Light mode ─── */
-  :global([data-theme="light"]) {
-    --surface-base: #f0ede8;
-    --surface-elevated: #e8e4de;
-    --surface-float: #faf8f5;
-    --surface-hover: #dedad4;
-    --surface-active: #d2cdc7;
+	/* ─── Light mode ─── */
+	:global([data-theme='light']) {
+		--surface-base: #f0ede8;
+		--surface-elevated: #e8e4de;
+		--surface-float: #faf8f5;
+		--surface-hover: #dedad4;
+		--surface-active: #d2cdc7;
 
-    --page-bg: #ffffff;
-    --page-shadow: rgba(0, 0, 0, 0.18);
-    --page-shadow-close: rgba(0, 0, 0, 0.08);
-    --page-edge-highlight: rgba(255, 255, 255, 0.9);
-    /* Light mode gets a slightly warmer grain so the white page
+		--page-bg: #ffffff;
+		--page-shadow: rgba(0, 0, 0, 0.18);
+		--page-shadow-close: rgba(0, 0, 0, 0.08);
+		--page-edge-highlight: rgba(255, 255, 255, 0.9);
+		/* Light mode gets a slightly warmer grain so the white page
        reads as stock paper rather than screen. */
-    --page-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.08  0 0 0 0 0.06  0 0 0 0 0.03  0 0 0 0.045 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+		--page-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.08  0 0 0 0 0.06  0 0 0 0 0.03  0 0 0 0.045 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
 
-    --text-primary: #1a1916;
-    --text-secondary: #4a4740;
-    --text-muted: #6b6860;
-    --text-caption: #6b6860;
-    --text-on-page: #1a1a1a;
+		--text-primary: #1a1916;
+		--text-secondary: #4a4740;
+		--text-muted: #6b6860;
+		--text-caption: #6b6860;
+		--text-on-page: #1a1a1a;
 
-    --accent: #1e8070;
-    --accent-hover: #237a6a;
-    --accent-muted: rgba(30, 128, 112, 0.1);
+		--accent: #1e8070;
+		--accent-hover: #237a6a;
+		--accent-muted: rgba(30, 128, 112, 0.1);
 
-    --accent-warm: #b76d0f;
-    --accent-warm-muted: rgba(183, 109, 15, 0.12);
+		--accent-warm: #b76d0f;
+		--accent-warm-muted: rgba(183, 109, 15, 0.12);
 
-    --accent-deep: #7a2b2b;
-    --accent-deep-muted: rgba(122, 43, 43, 0.12);
+		--accent-deep: #7a2b2b;
+		--accent-deep-muted: rgba(122, 43, 43, 0.12);
 
-    --dirty: #b76d0f;
-    --error: #a83c30;
-    --success: #2e7d52;
+		--dirty: #b76d0f;
+		--error: #a83c30;
+		--success: #2e7d52;
 
-    --border-subtle: rgba(0, 0, 0, 0.14);
-    --border-medium: rgba(0, 0, 0, 0.22);
+		--border-subtle: rgba(0, 0, 0, 0.14);
+		--border-medium: rgba(0, 0, 0, 0.22);
 
-    --shadow-soft: rgba(0, 0, 0, 0.1);
-    --shadow-medium: rgba(0, 0, 0, 0.2);
-    --shadow-heavy: rgba(0, 0, 0, 0.3);
-    --backdrop: rgba(0, 0, 0, 0.5);
+		--shadow-soft: rgba(0, 0, 0, 0.1);
+		--shadow-medium: rgba(0, 0, 0, 0.2);
+		--shadow-heavy: rgba(0, 0, 0, 0.3);
+		--backdrop: rgba(0, 0, 0, 0.5);
 
-    --text-on-accent: #ffffff;
+		--text-on-accent: #ffffff;
 
-    --find-match: rgba(255, 200, 50, 0.4);
-    --find-match-current: rgba(30, 128, 112, 0.22);
-  }
+		--find-match: rgba(255, 200, 50, 0.4);
+		--find-match-current: rgba(30, 128, 112, 0.22);
+	}
 
-  /* ─── Shared typography tokens for small form labels ───
+	/* ─── Shared typography tokens for small form labels ───
      Used by SceneCardsView's Description/Notes labels and the annotation
      gutter in Editor.svelte so the same data reads as the same system in
      both places. */
-  :global(:root) {
-    --label-font-size: 10px;
-    --label-font-weight: 700;
-    --label-tracking: 0.06em;
-    --label-color: var(--text-muted);
+	:global(:root) {
+		--label-font-size: 10px;
+		--label-font-weight: 700;
+		--label-tracking: 0.06em;
+		--label-color: var(--text-muted);
 
-    /* ─── Editorial masthead tokens (#176) ───
+		/* ─── Editorial masthead tokens (#176) ───
        Vocabulary used by SceneCardsView hero, WelcomeScreen,
        AboutModal, HelpModal, ExportModal, StatisticsModal,
        MetadataModal, the PDF title page preview, and the printed
        cover. Centralised so all surfaces stay in lock-step. */
-    --mh-eyebrow-size: 9.5px;
-    --mh-eyebrow-tracking: 0.22em;
-    --mh-eyebrow-color: var(--text-secondary);
-    --mh-rule-width: 24px;
-    --mh-rule-color: var(--border-medium);
-    --mh-rule-gap: 10px;
-    --mh-title-tracking: 0.06em;
-    --mh-asterism-size: 14px;
-    --mh-asterism-gap: 14px;
-    --mh-asterism-color: var(--text-muted);
+		--mh-eyebrow-size: 9.5px;
+		--mh-eyebrow-tracking: 0.22em;
+		--mh-eyebrow-color: var(--text-secondary);
+		--mh-rule-width: 24px;
+		--mh-rule-color: var(--border-medium);
+		--mh-rule-gap: 10px;
+		--mh-title-tracking: 0.06em;
+		--mh-asterism-size: 14px;
+		--mh-asterism-gap: 14px;
+		--mh-asterism-color: var(--text-muted);
 
-    /* ─── Marker role (#185) ───
+		/* ─── Marker role (#185) ───
        Promotes --accent-warm to a typographic-marker role. The same hue
        was already in use as the dirty-state pip; the marketing site
        (docs/index.html) uses it as a deliberate marker color for
@@ -178,12 +180,12 @@
        moves don't accidentally drift. Don't paint dirty-state with this
        — keep that wired through --dirty so the indicator stays an
        indicator, not a decoration. */
-    --marker-color: var(--accent-warm);
-    --mh-marker-size: 10px;
-    --mh-marker-tracking: 0.18em;
-    --mh-marker-weight: 700;
+		--marker-color: var(--accent-warm);
+		--mh-marker-size: 10px;
+		--mh-marker-tracking: 0.18em;
+		--mh-marker-weight: 700;
 
-    /* ─── Three font roles (issue #66) ───
+		/* ─── Three font roles (issue #66) ───
        --ui-font: chrome, menus, toolbars, buttons, dialogs
        --editor-font-en: Latin script inside the editor page — Courier Prime,
          the accepted typographic standard for screenplays
@@ -198,37 +200,37 @@
        that Malayalam glyphs fall through to --editor-font-ml; otherwise a
        system monospace (which ships notdef/placeholder Malayalam glyphs
        on some platforms) would intercept the fallback chain. */
-    --ui-font: system-ui, -apple-system, sans-serif;
-    --editor-font-en: 'Courier Prime';
-    /* Display-serif role used by the brand wordmark in the title bar.
+		--ui-font: system-ui, -apple-system, sans-serif;
+		--editor-font-en: 'Courier Prime';
+		/* Display-serif role used by the brand wordmark in the title bar.
        Same family as the marketing site's hero so the app and the site
        read as one identity. Falls back to Georgia (a near-universal
        transitional serif) so the wordmark still reads if Fraunces fails
        to load — never to system-ui, which would lose the serif voice. */
-    --display-font: 'Fraunces', Georgia, 'Times New Roman', serif;
+		--display-font: 'Fraunces', Georgia, 'Times New Roman', serif;
 
-    /* ─── Modal architecture tokens (issue #108) ───
+		/* ─── Modal architecture tokens (issue #108) ───
        Centered modals (Metadata, Export, Statistics, About, Help, etc.)
        all use these tokens so chrome stays unified as new modals land.
        Width can override per-modal: dialogs go narrower (`--modal-w-sm`),
        references go wider (`--modal-w-lg`); everything else uses the base.
        The `--popover-z` token sits one layer below modals so a modal
        opened from a popover correctly overlays it. */
-    --modal-radius: 12px;
-    --modal-padding: 24px;
-    --modal-w-sm: 420px;
-    --modal-w-base: 480px;
-    --modal-w-lg: 960px;
-    --modal-shadow: 0 8px 32px var(--shadow-heavy);
-    --modal-anim-duration: 150ms;
-    --modal-header-size: 15px;
-    --modal-header-weight: 600;
-    --backdrop-blur: blur(4px);
-    --popover-z: 900;
-    --modal-z: 1000;
-    --modal-z-stacked: 1100;
+		--modal-radius: 12px;
+		--modal-padding: 24px;
+		--modal-w-sm: 420px;
+		--modal-w-base: 480px;
+		--modal-w-lg: 960px;
+		--modal-shadow: 0 8px 32px var(--shadow-heavy);
+		--modal-anim-duration: 150ms;
+		--modal-header-size: 15px;
+		--modal-header-weight: 600;
+		--backdrop-blur: blur(4px);
+		--popover-z: 900;
+		--modal-z: 1000;
+		--modal-z-stacked: 1100;
 
-    /* ─── Motion tokens (issue #112) ───
+		/* ─── Motion tokens (issue #112) ───
        Default to one of three buckets instead of inventing new durations
        per component. Pick by intent, not feel:
        - --motion-fast: micro-interactions where snap is wanted
@@ -238,145 +240,145 @@
        Custom durations are still allowed for one-off cases (e.g. the
        progress-slide loop in ExportModal), but anything resembling a
        hover or state change should use the tokens. */
-    --motion-fast: 100ms;
-    --motion-base: 160ms;
-    --motion-slow: 220ms;
-    --motion-easing: cubic-bezier(0.4, 0, 0.2, 1);
-  }
+		--motion-fast: 100ms;
+		--motion-base: 160ms;
+		--motion-slow: 220ms;
+		--motion-easing: cubic-bezier(0.4, 0, 0.2, 1);
+	}
 
-  /* ─── Editorial masthead utility classes (#176) ───
+	/* ─── Editorial masthead utility classes (#176) ───
      Reusable across modals, sidebars and the welcome surface so the
      masthead vocabulary stays consistent without each component
      duplicating the rule structure. Left-aligned by default —
      center-aligned variants keep the trailing rule visible (use the
      class `mh-eyebrow.is-centered`). */
-  :global(.mh-eyebrow) {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--mh-rule-gap);
-    font-family: var(--ui-font);
-    font-size: var(--mh-eyebrow-size);
-    font-weight: 700;
-    letter-spacing: var(--mh-eyebrow-tracking);
-    text-transform: uppercase;
-    color: var(--mh-eyebrow-color);
-    line-height: 1;
-  }
+	:global(.mh-eyebrow) {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--mh-rule-gap);
+		font-family: var(--ui-font);
+		font-size: var(--mh-eyebrow-size);
+		font-weight: 700;
+		letter-spacing: var(--mh-eyebrow-tracking);
+		text-transform: uppercase;
+		color: var(--mh-eyebrow-color);
+		line-height: 1;
+	}
 
-  :global(.mh-eyebrow .mh-rule) {
-    display: inline-block;
-    width: var(--mh-rule-width);
-    height: 1px;
-    background: var(--mh-rule-color);
-  }
+	:global(.mh-eyebrow .mh-rule) {
+		display: inline-block;
+		width: var(--mh-rule-width);
+		height: 1px;
+		background: var(--mh-rule-color);
+	}
 
-  /* In the left-aligned default, only the leading rule renders. The
+	/* In the left-aligned default, only the leading rule renders. The
      `.is-centered` variant flips both back on. */
-  :global(.mh-eyebrow .mh-rule:last-child) {
-    display: none;
-  }
+	:global(.mh-eyebrow .mh-rule:last-child) {
+		display: none;
+	}
 
-  :global(.mh-eyebrow.is-centered .mh-rule:last-child) {
-    display: inline-block;
-  }
+	:global(.mh-eyebrow.is-centered .mh-rule:last-child) {
+		display: inline-block;
+	}
 
-  :global(.mh-asterism) {
-    display: inline-flex;
-    gap: var(--mh-asterism-gap);
-    color: var(--mh-asterism-color);
-    font-size: var(--mh-asterism-size);
-    line-height: 1;
-    user-select: none;
-  }
+	:global(.mh-asterism) {
+		display: inline-flex;
+		gap: var(--mh-asterism-gap);
+		color: var(--mh-asterism-color);
+		font-size: var(--mh-asterism-size);
+		line-height: 1;
+		user-select: none;
+	}
 
-  :global(.mh-title) {
-    font-family: var(--editor-font-en), ui-monospace, monospace;
-    font-weight: 700;
-    letter-spacing: var(--mh-title-tracking);
-    text-transform: uppercase;
-    color: var(--text-primary);
-    line-height: 1;
-  }
+	:global(.mh-title) {
+		font-family: var(--editor-font-en), ui-monospace, monospace;
+		font-weight: 700;
+		letter-spacing: var(--mh-title-tracking);
+		text-transform: uppercase;
+		color: var(--text-primary);
+		line-height: 1;
+	}
 
-  /* Italic + accent emphasis inside any masthead title. Lifted from the
+	/* Italic + accent emphasis inside any masthead title. Lifted from the
      marketing site, where one phrase per heading carries the editorial
      accent (e.g. "Built for how screenwriters *actually* work"). The
      emphasised run loses the upper-case treatment so the italic reads as
      copy, not as another tracked-caps token competing for attention. */
-  :global(.mh-title em),
-  :global(.mh-em) {
-    font-style: italic;
-    font-weight: 500;
-    color: var(--accent);
-    text-transform: none;
-    letter-spacing: 0.005em;
-  }
+	:global(.mh-title em),
+	:global(.mh-em) {
+		font-style: italic;
+		font-weight: 500;
+		color: var(--accent);
+		text-transform: none;
+		letter-spacing: 0.005em;
+	}
 
-  /* Department / section numeral. Small Courier eyebrow in the marker
+	/* Department / section numeral. Small Courier eyebrow in the marker
      color, used above section titles ("№ 01 · Idea") and inline alongside
      section names. Pair with text content like "№ 03 · Treatment".
      The `--marker-color` token is themed; both modes get the same hue
      family as the dirty-state pip, so the editorial vocabulary stays
      coherent with the rest of the chrome. */
-  :global(.mh-marker) {
-    font-family: var(--editor-font-en), ui-monospace, monospace;
-    font-size: var(--mh-marker-size);
-    font-weight: var(--mh-marker-weight);
-    letter-spacing: var(--mh-marker-tracking);
-    text-transform: uppercase;
-    color: var(--marker-color);
-    line-height: 1;
-  }
+	:global(.mh-marker) {
+		font-family: var(--editor-font-en), ui-monospace, monospace;
+		font-size: var(--mh-marker-size);
+		font-weight: var(--mh-marker-weight);
+		letter-spacing: var(--mh-marker-tracking);
+		text-transform: uppercase;
+		color: var(--marker-color);
+		line-height: 1;
+	}
 
-  :global(.mh-subtitle) {
-    font-family: 'Manjari', var(--ui-font);
-    font-style: italic;
-    color: var(--text-secondary);
-    line-height: 1.3;
-    letter-spacing: 0.005em;
-  }
+	:global(.mh-subtitle) {
+		font-family: 'Manjari', var(--ui-font);
+		font-style: italic;
+		color: var(--text-secondary);
+		line-height: 1.3;
+		letter-spacing: 0.005em;
+	}
 
-  /* ─── Disabled button baseline ───
+	/* ─── Disabled button baseline ───
      Applies to every native <button> across the app so disabled state is
      always visible even if the component didn't author its own :disabled
      rule. Components may still add component-specific overrides, but this
      guarantees the baseline. `pointer-events: none` also neutralizes any
      :hover background changes on disabled buttons. */
-  :global(button:disabled),
-  :global(button[aria-disabled='true']) {
-    opacity: 0.5;
-    cursor: not-allowed;
-    pointer-events: none;
-  }
+	:global(button:disabled),
+	:global(button[aria-disabled='true']) {
+		opacity: 0.5;
+		cursor: not-allowed;
+		pointer-events: none;
+	}
 
-  /* ─── Global focus-visible ring ───
+	/* ─── Global focus-visible ring ───
      Keyboard users tabbing through chrome buttons (TitleBar, StatusBar,
      CommandPalette, SeriesEpisodeList, etc.) need a visible focus indicator.
      `:focus-visible` only triggers on keyboard focus, so mouse clicks don't
      get an outline (matching native browser behavior). `border-radius: inherit`
      keeps the ring shaped like the button. Components can opt out with
      `outline: none` on focus-visible if they own a richer indicator. */
-  :global(button:focus-visible),
-  :global([role='button']:focus-visible),
-  :global([role='tab']:focus-visible),
-  :global([role='option']:focus-visible) {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-    border-radius: inherit;
-  }
+	:global(button:focus-visible),
+	:global([role='button']:focus-visible),
+	:global([role='tab']:focus-visible),
+	:global([role='option']:focus-visible) {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
+		border-radius: inherit;
+	}
 
-  /* ─── Scrollbar styling ─── */
-  :global(::-webkit-scrollbar) {
-    width: 6px;
-  }
-  :global(::-webkit-scrollbar-track) {
-    background: transparent;
-  }
-  :global(::-webkit-scrollbar-thumb) {
-    background: var(--text-muted);
-    border-radius: 3px;
-  }
-  :global(::-webkit-scrollbar-thumb:hover) {
-    background: var(--text-secondary);
-  }
+	/* ─── Scrollbar styling ─── */
+	:global(::-webkit-scrollbar) {
+		width: 6px;
+	}
+	:global(::-webkit-scrollbar-track) {
+		background: transparent;
+	}
+	:global(::-webkit-scrollbar-thumb) {
+		background: var(--text-muted);
+		border-radius: 3px;
+	}
+	:global(::-webkit-scrollbar-thumb:hover) {
+		background: var(--text-secondary);
+	}
 </style>

@@ -114,11 +114,7 @@ const marks: Record<string, MarkSpec> = {
 			return ['em', 0];
 		},
 		// Parse <em> and <i> tags back into the italic mark
-		parseDOM: [
-			{ tag: 'em' },
-			{ tag: 'i' },
-			{ style: 'font-style=italic' }
-		]
+		parseDOM: [{ tag: 'em' }, { tag: 'i' }, { style: 'font-style=italic' }]
 	},
 
 	underline: {
@@ -127,10 +123,7 @@ const marks: Record<string, MarkSpec> = {
 			return ['u', 0];
 		},
 		// Parse <u> tags and text-decoration style back into the underline mark
-		parseDOM: [
-			{ tag: 'u' },
-			{ style: 'text-decoration=underline' }
-		]
+		parseDOM: [{ tag: 'u' }, { style: 'text-decoration=underline' }]
 	}
 };
 

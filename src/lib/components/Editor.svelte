@@ -1,984 +1,1054 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { EditorState, Plugin, PluginKey } from 'prosemirror-state';
-  import { EditorView, Decoration, DecorationSet } from 'prosemirror-view';
-  import { history } from 'prosemirror-history';
-  import { baseKeymap } from 'prosemirror-commands';
-  import { keymap } from 'prosemirror-keymap';
-  import { Node as ProseMirrorNode } from 'prosemirror-model';
-  import { screenplaySchema } from '$lib/editor/schema';
-  import { screenplayKeymap } from '$lib/editor/keymap';
-  import { autoUppercasePlugin } from '$lib/editor/autoUppercase';
-  import { smartQuotesPlugin } from '$lib/editor/smartQuotes';
-  import { characterAutocompletePlugin, autocompleteKey } from '$lib/editor/characterAutocomplete';
-  import { characterListPlugin, characterListKey } from '$lib/editor/characterList';
-  import { sceneTimeOfDayPlugin } from '$lib/editor/sceneTimeOfDay';
-  import { findReplacePlugin } from '$lib/editor/findReplace';
-  import FindReplaceBar from '$lib/components/FindReplaceBar.svelte';
-  import FormatBubble from '$lib/components/FormatBubble.svelte';
-  import { InputModeManager } from '$lib/editor/input/InputModeManager';
-  import { documentStore } from '$lib/stores/documentStore.svelte';
-  import { editorStore } from '$lib/stores/editorStore.svelte';
-  import { message } from '@tauri-apps/plugin-dialog';
-
-  // Parse a stored ProseMirror JSON payload back into a document node,
-  // or fall back to a fresh empty doc if the payload is corrupted. A
-  // hand-edited .screenplay, a partial-write from a crash, or a schema
-  // change in a future version could all make fromJSON throw; without
-  // this guard the editor fails to mount and the whole file is unusable.
-  function safeDocFromJSON(content: unknown): ProseMirrorNode {
-    try {
-      const normalized = normalizeProseMirrorDoc(content);
-      const migrated = migrateParensInJSON(normalized);
-      return ProseMirrorNode.fromJSON(screenplaySchema, migrated as Record<string, unknown>);
-    } catch (err) {
-      console.error('[Editor] Failed to parse document content — falling back to empty doc');
-      console.error('[Editor] err:', err);
-      console.error('[Editor] raw content preview:', JSON.stringify(content).slice(0, 500));
-      message(
-        "This .screenplay file couldn't be parsed — it may be corrupted or from a newer version of Scriptty. The editor has started with a blank document so you can save under a new name without overwriting the original.",
-        { title: 'Could not load document', kind: 'warning' }
-      ).catch(() => {});
-      return createInitialDoc();
-    }
-  }
-
-  // Accept both the canonical ProseMirror shape ({type:'doc', content:[...]})
-  // and a flat authoring shape ({type, text}[]) that series files and
-  // hand-written .screenplay payloads may use. Converts flat nodes into
-  // proper ProseMirror paragraphs with inline text children so fromJSON
-  // doesn't reject them.
-  function normalizeProseMirrorDoc(content: unknown): unknown {
-    const emptyDoc = { type: 'doc', content: [] as unknown[] };
-    if (!content) return emptyDoc;
-
-    const wrapNode = (raw: unknown): unknown => {
-      if (!raw || typeof raw !== 'object') return null;
-      const node = raw as { type?: string; text?: unknown; content?: unknown };
-      if (typeof node.type !== 'string') return null;
-      // Already a valid block node with inline children — leave it alone.
-      if (Array.isArray(node.content)) return node;
-      // Flat shape: a block node storing its inline text as a plain string.
-      if (typeof node.text === 'string') {
-        const text = node.text;
-        const inline = text.length > 0 ? [{ type: 'text', text }] : [];
-        return { type: node.type, content: inline };
-      }
-      // Block node with no content field at all — treat as empty paragraph.
-      return { type: node.type, content: [] };
-    };
-
-    if (Array.isArray(content)) {
-      const children = content.map(wrapNode).filter((n): n is object => n !== null);
-      return { type: 'doc', content: children };
-    }
-
-    if (typeof content === 'object') {
-      const obj = content as { type?: string; content?: unknown };
-      if (obj.type === 'doc') return content;
-      // Single block node handed in without a doc wrapper.
-      const wrapped = wrapNode(content);
-      return { type: 'doc', content: wrapped ? [wrapped] : [] };
-    }
-
-    return emptyDoc;
-  }
-
-  // Walk ProseMirror JSON and make sure every parenthetical node contains
-  // its own parens as real text content. Earlier versions rendered them via
-  // CSS pseudo-elements, so legacy files stored text like "whispering"
-  // instead of "(whispering)" — which broke Find, copy-paste, and screen
-  // readers (issue #59). This is a pure JSON rewrite: no schema change,
-  // returns a new tree, never mutates the input.
-  function migrateParensInJSON(content: unknown): unknown {
-    if (!content || typeof content !== 'object') return content;
-    const node = content as { type?: string; content?: unknown[]; [k: string]: unknown };
-
-    if (node.type === 'parenthetical') {
-      const inline = Array.isArray(node.content) ? (node.content as Array<{ type?: string; text?: string }>) : [];
-      // Flatten text to test for existing parens; marks on inline children
-      // are preserved below by only editing the first/last text nodes.
-      const flat = inline.map((c) => c.text ?? '').join('');
-      const trimmed = flat.trim();
-      if (trimmed.length === 0) {
-        // Empty parens render as "()" — matches what the old CSS showed and
-        // keeps the node self-describing.
-        return { ...node, content: [{ type: 'text', text: '()' }] };
-      }
-      if (!trimmed.startsWith('(') || !trimmed.endsWith(')')) {
-        const firstText = inline.findIndex((c) => c.type === 'text' && (c.text ?? '').length > 0);
-        const lastText = (() => {
-          for (let i = inline.length - 1; i >= 0; i--) {
-            if (inline[i].type === 'text' && (inline[i].text ?? '').length > 0) return i;
-          }
-          return -1;
-        })();
-        const next = inline.map((c, i) => {
-          if (i !== firstText && i !== lastText) return c;
-          let text = c.text ?? '';
-          if (i === firstText && !text.trimStart().startsWith('(')) text = '(' + text;
-          if (i === lastText && !text.trimEnd().endsWith(')')) text = text + ')';
-          return { ...c, text };
-        });
-        return { ...node, content: next };
-      }
-    }
-
-    if (Array.isArray(node.content)) {
-      const next = node.content.map((child) => migrateParensInJSON(child));
-      return { ...node, content: next };
-    }
-    return node;
-  }
-
-  let {
-    findReplaceOpen = $bindable(false),
-    findReplaceMode = $bindable<'find' | 'replace'>('find'),
-    showAnnotations = true,
-    isActive = true,
-  } = $props<{
-    findReplaceOpen: boolean;
-    findReplaceMode: 'find' | 'replace';
-    showAnnotations?: boolean;
-    isActive?: boolean;
-  }>();
-
-  // Recalculate spacers when the editor becomes visible again
-  // (e.g. switching from Cards/Story back to Writing view)
-  $effect(() => {
-    if (isActive && showAnnotations) {
-      scheduleAnnotationUpdate();
-    }
-  });
-
-  // Push the current Show-Characters setting + per-scene extras into the
-  // characterList plugin state whenever either changes. Reading both here
-  // creates the reactive dependency; we also re-measure annotations since
-  // the widget line changes the editor's vertical layout.
-  $effect(() => {
-    const enabled = documentStore.activeSettings?.show_characters_below_header ?? false;
-    // Build a { sceneIndex: string[] } map from scene_cards so the plugin can
-    // merge user-supplied non-speaking characters with auto-detected speakers.
-    const extras: Record<number, string[]> = {};
-    const cards = documentStore.activeSceneCards;
-    for (const card of cards) {
-      const raw = (card.extra_characters ?? '').trim();
-      if (raw.length === 0) continue;
-      extras[card.scene_index] = raw
-        .split(',')
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0);
-    }
-    if (!view) return;
-    const current = characterListKey.getState(view.state);
-    const sameEnabled = current?.enabled === enabled;
-    const sameExtras = current ? JSON.stringify(current.extras) === JSON.stringify(extras) : false;
-    if (sameEnabled && sameExtras) return;
-    view.dispatch(view.state.tr.setMeta(characterListKey, { enabled, extras }));
-    scheduleAnnotationUpdate();
-  });
-
-  let editorElement: HTMLDivElement;
-  let view: EditorView | null = null;
-  const inputManager = InputModeManager.getInstance();
-
-  // Map the font setting slug to a CSS font-family name
-  let fontFamily = $derived(
-    documentStore.currentFont === 'manjari' ? 'Manjari' : 'Noto Sans Malayalam'
-  );
-
-  // Svelte 5 runes for reactive state
-  let isMalayalam = $state(inputManager.isMalayalam);
-
-  // Scene index being actively edited via shortcut — forces the annotation
-  // fields to show even when empty, so the user can type into them.
-  let editingSceneIndex = $state<number>(-1);
-  let gutterEl = $state<HTMLDivElement | null>(null);
-
-  // ─── Scene annotations with ProseMirror spacer decorations ───
-  // When an annotation is taller than its scene's natural space, a spacer
-  // widget decoration is injected into the ProseMirror doc BEFORE the next
-  // scene heading, pushing the editor content down to make room.
-  // This keeps annotations aligned with their scene headings.
-
-  interface SceneSlot {
-    sceneOrder: number;
-    extent: number;
-    description: string;
-    shootNotes: string;
-  }
-
-  // Plugin that inserts invisible spacer divs before scene headings.
-  // Spacer heights are stored in plugin state, updated via transaction metadata.
-  const spacerKey = new PluginKey<Record<number, number>>('annotation-spacers');
-
-  const annotationSpacerPlugin = new Plugin({
-    key: spacerKey,
-    state: {
-      init(): Record<number, number> { return {}; },
-      apply(tr, value): Record<number, number> {
-        const meta = tr.getMeta(spacerKey);
-        return meta !== undefined ? meta : value;
-      }
-    },
-    props: {
-      decorations(state) {
-        const heights = spacerKey.getState(state);
-        if (!heights || Object.keys(heights).length === 0) return DecorationSet.empty;
-
-        const decos: Decoration[] = [];
-        let idx = 0;
-        state.doc.forEach((node, pos) => {
-          if (node.type.name === 'scene_heading') {
-            const extra = heights[idx];
-            if (extra && extra > 0) {
-              // Insert an invisible spacer div before this scene heading
-              decos.push(Decoration.widget(pos, () => {
-                const el = document.createElement('div');
-                el.style.height = extra + 'px';
-                el.setAttribute('aria-hidden', 'true');
-                return el;
-              }, { side: -1 }));
-            }
-            idx++;
-          }
-        });
-
-        return DecorationSet.create(state.doc, decos);
-      }
-    }
-  });
-
-  let sceneSlots = $state<SceneSlot[]>([]);
-  let gutterTopPad = $state(0);
-  let annotationRafId = 0;
-  let spacerRafId = 0;
-  let gutterResizeObserver: ResizeObserver | null = null;
-
-  // Track which scenes have had their annotation explicitly collapsed.
-  // Expanded is the default; users opt into the compact two-line view.
-  // Collapsed slots limit description/notes to ~2 visible lines; expanded
-  // shows the full text.
-  let collapsedSlots = $state(new Set<number>());
-
-  function toggleSlotExpanded(sceneOrder: number) {
-    const next = new Set(collapsedSlots);
-    if (next.has(sceneOrder)) next.delete(sceneOrder);
-    else next.add(sceneOrder);
-    collapsedSlots = next;
-    // Svelte flushes the state change in the same microtask; a single RAF
-    // is enough to let layout settle before we measure.
-    scheduleSpacerRecalc();
-  }
-
-  function scheduleAnnotationUpdate() {
-    cancelAnimationFrame(annotationRafId);
-    annotationRafId = requestAnimationFrame(updateAnnotationPositions);
-  }
-
-  /** Debounced single-frame scheduler for spacer recomputation.
-   *  Called directly after any change that might grow/shrink a gutter slot
-   *  (toggle, textarea typing, ResizeObserver firing). Collapses bursts of
-   *  calls into one measurement pass. */
-  function scheduleSpacerRecalc() {
-    cancelAnimationFrame(spacerRafId);
-    spacerRafId = requestAnimationFrame(() => measureAndApplySpacers());
-  }
-
-  /** Get an element's vertical position relative to a container's content top.
-   *  Uses getBoundingClientRect which is reliable regardless of
-   *  offsetParent chains or ProseMirror's position:relative usage.
-   *  The difference between two rects is stable regardless of scroll. */
-  function posRelativeTo(el: HTMLElement, container: HTMLElement): number {
-    return el.getBoundingClientRect().top - container.getBoundingClientRect().top;
-  }
-
-  function updateAnnotationPositions() {
-    if (!editorElement || !view) return;
-    const doc = documentStore.document;
-    if (!doc) return;
-
-    const headingEls = Array.from(
-      editorElement.querySelectorAll('.scene-heading')
-    ) as HTMLElement[];
-    if (headingEls.length === 0) { sceneSlots = []; return; }
-
-    // Read positions (may include existing spacers)
-    const positions = headingEls.map((el) => posRelativeTo(el, editorElement));
-    const editorHeight = editorElement.scrollHeight || editorElement.offsetHeight;
-    gutterTopPad = positions[0];
-
-    // Build slots so the gutter renders annotation content.
-    // Pull from `activeSceneCards`, not `doc.scene_cards` — for a series
-    // the top-level list is unused and the real cards live on the active
-    // episode, so reading directly off the doc drops every annotation.
-    const cards = documentStore.activeSceneCards;
-    const slots: SceneSlot[] = [];
-    for (let i = 0; i < headingEls.length; i++) {
-      const nextTop = i + 1 < positions.length ? positions[i + 1] : editorHeight;
-      const extent = nextTop - positions[i];
-      const card = cards.find(
-        (c: { scene_index: number }) => c.scene_index === i
-      );
-      slots.push({
-        sceneOrder: i,
-        extent,
-        description: card?.description ?? '',
-        shootNotes: card?.shoot_notes ?? '',
-      });
-    }
-    sceneSlots = slots;
-
-    // Slot data changed; re-measure next frame once the gutter re-renders.
-    scheduleSpacerRecalc();
-  }
-
-  /** Full spacer recompute: clear → measure base positions → measure
-   *  annotation heights → apply new spacers. All in one synchronous
-   *  block before the browser paints, so no visible flicker. */
-  function measureAndApplySpacers() {
-    if (!gutterEl || !editorElement || !view) return;
-    const doc = documentStore.document;
-    if (!doc) return;
-
-    const GAP = 20;
-
-    // 1. Clear all spacers to get base positions
-    const currentSpacers = spacerKey.getState(view.state) ?? {};
-    if (Object.keys(currentSpacers).length > 0) {
-      view.dispatch(view.state.tr.setMeta(spacerKey, {}));
-    }
-    // Force reflow so positions reflect the cleared state
-    void editorElement.offsetHeight;
-
-    // 2. Read base positions (no spacers)
-    const headingEls = Array.from(
-      editorElement.querySelectorAll('.scene-heading')
-    ) as HTMLElement[];
-    const basePositions = headingEls.map((el) => posRelativeTo(el, editorElement));
-    const baseEditorHeight = editorElement.scrollHeight || editorElement.offsetHeight;
-
-    // Update gutter top pad and slot extents to base values
-    gutterTopPad = basePositions[0];
-    for (let i = 0; i < sceneSlots.length && i < headingEls.length; i++) {
-      const nextTop = i + 1 < basePositions.length ? basePositions[i + 1] : baseEditorHeight;
-      sceneSlots[i].extent = nextTop - basePositions[i];
-    }
-
-    // 3. Measure actual annotation content heights (not scrollHeight of the
-    //    slot, which includes min-height and would give inflated values)
-    const contentEls = gutterEl.querySelectorAll('.slot-content');
-    const newSpacers: Record<number, number> = {};
-
-    contentEls.forEach((contentEl, i) => {
-      const contentHeight = (contentEl as HTMLElement).offsetHeight;
-      const baseExtent = sceneSlots[i]?.extent ?? 0;
-      if (contentHeight > baseExtent && i + 1 < contentEls.length) {
-        newSpacers[i + 1] = contentHeight - baseExtent + GAP;
-      }
-    });
-
-    // 4. Apply new spacers (if any)
-    if (Object.keys(newSpacers).length > 0) {
-      view.dispatch(view.state.tr.setMeta(spacerKey, newSpacers));
-      void editorElement.offsetHeight;
-
-      // Update positions and extents with spacers applied
-      const finalPositions = headingEls.map((el) => posRelativeTo(el, editorElement));
-      const finalEditorHeight = editorElement.scrollHeight || editorElement.offsetHeight;
-      gutterTopPad = finalPositions[0];
-
-      for (let i = 0; i < sceneSlots.length && i < headingEls.length; i++) {
-        const nextTop = i + 1 < finalPositions.length ? finalPositions[i + 1] : finalEditorHeight;
-        sceneSlots[i].extent = nextTop - finalPositions[i];
-      }
-    }
-  }
-
-  /** Open annotation fields for the scene at the cursor position.
-   *  Creates empty card entries if needed, then focuses the description textarea. */
-  export function editCurrentSceneAnnotation() {
-    if (!view || !documentStore.document) return;
-
-    // Find which scene the cursor is in
-    const cursorPos = view.state.selection.$from.pos;
-    let sceneIdx = -1;
-    view.state.doc.forEach((node, offset, index) => {
-      if (offset <= cursorPos && node.type.name === 'scene_heading') {
-        sceneIdx = index;
-      }
-    });
-
-    // Count scene_heading nodes to get the 0-based scene order
-    let sceneOrder = -1;
-    let headingCount = 0;
-    view.state.doc.forEach((node, _offset, index) => {
-      if (node.type.name === 'scene_heading') {
-        if (index === sceneIdx) sceneOrder = headingCount;
-        headingCount++;
-      }
-    });
-
-    if (sceneOrder < 0) return;
-
-    // Ensure a scene_card entry exists
-    const cards = documentStore.activeSceneCards;
-    if (!cards.find((c: { scene_index: number }) => c.scene_index === sceneOrder)) {
-      cards.push({
-        scene_index: sceneOrder,
-        description: '',
-        shoot_notes: '',
-        extra_characters: '',
-        scheduled_date: '',
-        location_group: '',
-      });
-    }
-
-    // Show annotation fields for this scene and trigger update
-    editingSceneIndex = sceneOrder;
-    scheduleAnnotationUpdate();
-
-    // Focus the description textarea after DOM updates
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        if (gutterEl) {
-          const textarea = gutterEl.querySelector(`[data-scene="${sceneOrder}"] .ann-text`) as HTMLTextAreaElement;
-          textarea?.focus();
-        }
-      });
-    });
-  }
-
-  function updateSceneCard(sceneOrder: number, field: 'description' | 'shoot_notes', value: string) {
-    if (!documentStore.document) return;
-    const cards = documentStore.activeSceneCards;
-    const existing = cards.find((c: { scene_index: number }) => c.scene_index === sceneOrder);
-    if (existing) {
-      if (field === 'description') existing.description = value;
-      else existing.shoot_notes = value;
-    } else {
-      cards.push({
-        scene_index: sceneOrder,
-        description: field === 'description' ? value : '',
-        shoot_notes: field === 'shoot_notes' ? value : '',
-        extra_characters: '',
-        scheduled_date: '',
-        location_group: '',
-      });
-    }
-    documentStore.markDirty();
-    // Textarea grows via field-sizing:content — ResizeObserver picks that up
-    // automatically via scheduleSpacerRecalc. This call is a belt-and-braces
-    // scheduler in case the observer hasn't fired yet for a fresh slot.
-    scheduleSpacerRecalc();
-  }
-
-  // Create initial document with one empty scene_heading
-  function createInitialDoc() {
-    return screenplaySchema.node('doc', null, [
-      screenplaySchema.node('scene_heading')
-    ]);
-  }
-
-  // Update the current element type display and mark state based on cursor position
-  function updateCurrentElement(state: EditorState) {
-    const nodeName = state.selection.$from.parent.type.name;
-    // Convert node type name to display name
-    const displayNames: Record<string, string> = {
-      scene_heading: 'SCENE HEADING',
-      action: 'ACTION',
-      character: 'CHARACTER',
-      parenthetical: 'PARENTHETICAL',
-      dialogue: 'DIALOGUE',
-      transition: 'TRANSITION',
-    };
-    editorStore.currentElement = displayNames[nodeName] ?? nodeName.toUpperCase();
-
-    // Update which inline marks are active at the current cursor/selection.
-    // `storedMarks` are marks that will be applied to the next typed character
-    // (set when toggling a mark with an empty selection). `$from.marks()` returns
-    // marks on existing text at the cursor position.
-    const marks = state.storedMarks || state.selection.$from.marks();
-    editorStore.markState = {
-      bold: marks.some(m => m.type === screenplaySchema.marks.bold),
-      italic: marks.some(m => m.type === screenplaySchema.marks.italic),
-      underline: marks.some(m => m.type === screenplaySchema.marks.underline),
-    };
-
-    // Track which scene the cursor sits in. We walk the top-level children
-    // and count scene_heading nodes until we reach or pass the cursor.
-    // Cheap: doc.forEach is just the top-level children, not the full tree.
-    const cursorPos = state.selection.from;
-    let sceneIdx = -1;
-    let count = -1;
-    state.doc.forEach((node, offset) => {
-      if (node.type.name === 'scene_heading') count++;
-      // `offset` is the position just before this node — if the cursor is
-      // at or past this point, the cursor belongs to this scene.
-      if (offset <= cursorPos) sceneIdx = count;
-    });
-    editorStore.currentSceneIndex = sceneIdx;
-  }
-
-  // Watch for New/Open events only — loadTrigger is incremented exclusively by
-  // newDocument() and openDocument(), never by setContent() during typing.
-  // IMPORTANT: only read loadTrigger and loadedContent here — NOT document or
-  // document.content, because those are mutated on every keystroke by setContent().
-  $effect(() => {
-    // Read loadTrigger to establish the reactive dependency
-    const _trigger = documentStore.loadTrigger;
-    // Read the snapshot taken at load time — not the live document
-    const content = documentStore.loadedContent;
-
-    if (!view) return;
-
-    const newDoc = content !== null ? safeDocFromJSON(content) : createInitialDoc();
-
-    const newState = EditorState.create({
-      doc: newDoc,
-      plugins: view.state.plugins,
-    });
-    view.updateState(newState);
-    updateCurrentElement(newState);
-    // Fresh document → every annotation starts expanded. Dropping the set
-    // also prevents stale scene indices from the previous document from
-    // collapsing unrelated slots after an Open.
-    collapsedSlots = new Set();
-    scheduleAnnotationUpdate();
-  });
-
-  onMount(() => {
-    // Guard: never create a second EditorView if one already exists.
-    // This prevents issues if onMount somehow fires twice (e.g. HMR, re-mount).
-    if (view) return;
-
-    // Restore the document from the store if it exists (e.g. returning from Scene Cards).
-    // Fall back to a fresh empty doc for first launch. Uses activeContent so
-    // series projects restore the currently-selected episode's doc.
-    const content = documentStore.activeContent;
-    const initialDoc = content ? safeDocFromJSON(content) : createInitialDoc();
-
-    const state = EditorState.create({
-      doc: initialDoc,
-      plugins: [
-        characterAutocompletePlugin,
-        screenplayKeymap,
-        keymap(baseKeymap),
-        history(),
-        autoUppercasePlugin,
-        smartQuotesPlugin,
-        findReplacePlugin,
-        annotationSpacerPlugin,
-        characterListPlugin,
-        sceneTimeOfDayPlugin,
-      ]
-    });
-
-    view = new EditorView(editorElement, {
-      // Store the view in editorStore so other components can access it
-      // (we set editorStore.view right after the constructor returns — see below)
-      state,
-      // Turn off every native text-input assist macOS / webkit layers on top
-      // of a contenteditable. Spellcheck, autocorrect, smart quotes, and the
-      // text-replacement popup all intercept the writer's keystrokes and
-      // collide with Malayalam input — we own the editing surface fully,
-      // so none of these are useful and the popups are a visible distraction.
-      attributes: {
-        spellcheck: 'false',
-        autocorrect: 'off',
-        autocapitalize: 'off',
-        autocomplete: 'off',
-        translate: 'no',
-      },
-      dispatchTransaction(tr) {
-        if (!view) return;
-        const newState = view.state.apply(tr);
-        view.updateState(newState);
-        updateCurrentElement(newState);
-
-        // Sync document changes to the store — setContent() does not
-        // increment loadTrigger, so the $effect won't re-trigger
-        if (tr.docChanged) {
-          documentStore.setContent(newState.doc.toJSON());
-          documentStore.markDirty();
-          scheduleAnnotationUpdate();
-        }
-      }
-    });
-
-    // Share the EditorView with other components via the store
-    editorStore.view = view;
-
-    // Attach a capture-phase keydown listener directly on the EditorView's DOM element.
-    // Using capture: true ensures this fires BEFORE ProseMirror's own keydown handler
-    // and before the browser's default text input, so we can intercept keys reliably.
-    const editorDom = view.dom;
-
-    function handleMalayalamKeydown(event: KeyboardEvent) {
-      // When character autocomplete dropdown is open, let ProseMirror's plugin
-      // system handle navigation keys (Arrow, Enter, Tab, Escape) so the
-      // autocomplete plugin can process them. Without this, the capture-phase
-      // listener would swallow these keys before ProseMirror sees them.
-      if (view) {
-        const acState = autocompleteKey.getState(view.state);
-        if (acState?.active) {
-          const autocompleteKeys = new Set(['ArrowDown', 'ArrowUp', 'Enter', 'Tab', 'Escape']);
-          if (autocompleteKeys.has(event.key)) {
-            // Don't intercept — let ProseMirror's handleKeyDown handle it
-            return;
-          }
-        }
-      }
-
-      // Cmd+S (Mac) or Ctrl+S (Windows/Linux) — save the document
-      if ((event.metaKey || event.ctrlKey) && event.key === 's') {
-        event.preventDefault();
-        event.stopPropagation();
-        documentStore.saveWithDialog();
-        return;
-      }
-
-      // Ctrl+Space toggles input mode — intercept before ProseMirror sees it
-      if (event.ctrlKey && event.code === 'Space') {
-        event.preventDefault();
-        event.stopPropagation();
-        inputManager.toggle();
-        // Sync the reactive state so the status bar updates
-        isMalayalam = inputManager.isMalayalam;
-        return;
-      }
-
-      // Only intercept when Malayalam mode is active, the key is a printable character
-      // (key.length === 1), and no modifier keys are held
-      if (
-        inputManager.isMalayalam &&
-        event.key.length === 1 &&
-        !event.ctrlKey &&
-        !event.metaKey &&
-        !event.altKey
-      ) {
-        const result = inputManager.processKey(event.key);
-        if (result !== null && view) {
-          // Stop the browser from inserting the English character
-          event.preventDefault();
-          // Stop ProseMirror from also processing this key
-          event.stopPropagation();
-
-          // Build a ProseMirror transaction that handles Mozhi's delete-back-and-replace
-          let tr = view.state.tr;
-          if (result.deleteBack > 0) {
-            // Delete the specified number of characters before the cursor.
-            // This is needed for Mozhi, which sometimes replaces previously inserted
-            // Malayalam characters (e.g., ക് + h → ഖ്, deleting ക് and inserting ഖ്).
-            const from = tr.selection.from - result.deleteBack;
-            const to = tr.selection.from;
-            tr = tr.delete(from, to);
-          }
-          if (result.text) {
-            tr = tr.insertText(result.text);
-          }
-          view.dispatch(tr);
-        }
-
-        // Reset Mozhi buffer on word boundaries — space means the next keystroke
-        // should not combine with the previous word's output
-        if (event.key === ' ') {
-          inputManager.resetMozhi();
-        }
-      }
-
-      // Reset Mozhi buffer on keys that invalidate the context, even if they
-      // weren't intercepted above (e.g., Backspace deletes editor content so
-      // the buffer no longer matches what's in the document)
-      if (inputManager.isMalayalam && inputManager.scheme === 'mozhi') {
-        if (event.key === 'Backspace' || event.key === 'Enter' ||
-            event.key === 'ArrowLeft' || event.key === 'ArrowRight' ||
-            event.key === 'ArrowUp' || event.key === 'ArrowDown' ||
-            event.key === 'Home' || event.key === 'End') {
-          inputManager.resetMozhi();
-        }
-      }
-    }
-
-    editorDom.addEventListener('keydown', handleMalayalamKeydown, { capture: true });
-
-    // Set initial element display
-    updateCurrentElement(view.state);
-    scheduleAnnotationUpdate();
-
-    // Recompute annotation positions on window resize
-    window.addEventListener('resize', scheduleAnnotationUpdate);
-
-    // Watch the gutter for intrinsic size changes — e.g. field-sizing:content
-    // textareas growing as the user types. One observer, one debounced RAF.
-    if (gutterEl && typeof ResizeObserver !== 'undefined') {
-      gutterResizeObserver = new ResizeObserver(() => scheduleSpacerRecalc());
-      gutterResizeObserver.observe(gutterEl);
-    }
-
-    return () => {
-      editorStore.view = null;
-      editorDom.removeEventListener('keydown', handleMalayalamKeydown, { capture: true });
-      window.removeEventListener('resize', scheduleAnnotationUpdate);
-      cancelAnimationFrame(annotationRafId);
-      cancelAnimationFrame(spacerRafId);
-      gutterResizeObserver?.disconnect();
-      gutterResizeObserver = null;
-      view?.destroy();
-    };
-  });
+	import { onMount } from 'svelte';
+	import { EditorState, Plugin, PluginKey } from 'prosemirror-state';
+	import { EditorView, Decoration, DecorationSet } from 'prosemirror-view';
+	import { history } from 'prosemirror-history';
+	import { baseKeymap } from 'prosemirror-commands';
+	import { keymap } from 'prosemirror-keymap';
+	import { Node as ProseMirrorNode } from 'prosemirror-model';
+	import { screenplaySchema } from '$lib/editor/schema';
+	import { screenplayKeymap } from '$lib/editor/keymap';
+	import { autoUppercasePlugin } from '$lib/editor/autoUppercase';
+	import { smartQuotesPlugin } from '$lib/editor/smartQuotes';
+	import { characterAutocompletePlugin, autocompleteKey } from '$lib/editor/characterAutocomplete';
+	import { characterListPlugin, characterListKey } from '$lib/editor/characterList';
+	import { sceneTimeOfDayPlugin } from '$lib/editor/sceneTimeOfDay';
+	import { findReplacePlugin } from '$lib/editor/findReplace';
+	import FindReplaceBar from '$lib/components/FindReplaceBar.svelte';
+	import FormatBubble from '$lib/components/FormatBubble.svelte';
+	import { InputModeManager } from '$lib/editor/input/InputModeManager';
+	import { documentStore } from '$lib/stores/documentStore.svelte';
+	import { editorStore } from '$lib/stores/editorStore.svelte';
+	import { message } from '@tauri-apps/plugin-dialog';
+
+	// Parse a stored ProseMirror JSON payload back into a document node,
+	// or fall back to a fresh empty doc if the payload is corrupted. A
+	// hand-edited .screenplay, a partial-write from a crash, or a schema
+	// change in a future version could all make fromJSON throw; without
+	// this guard the editor fails to mount and the whole file is unusable.
+	function safeDocFromJSON(content: unknown): ProseMirrorNode {
+		try {
+			const normalized = normalizeProseMirrorDoc(content);
+			const migrated = migrateParensInJSON(normalized);
+			return ProseMirrorNode.fromJSON(screenplaySchema, migrated as Record<string, unknown>);
+		} catch (err) {
+			console.error('[Editor] Failed to parse document content — falling back to empty doc');
+			console.error('[Editor] err:', err);
+			console.error('[Editor] raw content preview:', JSON.stringify(content).slice(0, 500));
+			message(
+				"This .screenplay file couldn't be parsed — it may be corrupted or from a newer version of Scriptty. The editor has started with a blank document so you can save under a new name without overwriting the original.",
+				{ title: 'Could not load document', kind: 'warning' }
+			).catch(() => {});
+			return createInitialDoc();
+		}
+	}
+
+	// Accept both the canonical ProseMirror shape ({type:'doc', content:[...]})
+	// and a flat authoring shape ({type, text}[]) that series files and
+	// hand-written .screenplay payloads may use. Converts flat nodes into
+	// proper ProseMirror paragraphs with inline text children so fromJSON
+	// doesn't reject them.
+	function normalizeProseMirrorDoc(content: unknown): unknown {
+		const emptyDoc = { type: 'doc', content: [] as unknown[] };
+		if (!content) return emptyDoc;
+
+		const wrapNode = (raw: unknown): unknown => {
+			if (!raw || typeof raw !== 'object') return null;
+			const node = raw as { type?: string; text?: unknown; content?: unknown };
+			if (typeof node.type !== 'string') return null;
+			// Already a valid block node with inline children — leave it alone.
+			if (Array.isArray(node.content)) return node;
+			// Flat shape: a block node storing its inline text as a plain string.
+			if (typeof node.text === 'string') {
+				const text = node.text;
+				const inline = text.length > 0 ? [{ type: 'text', text }] : [];
+				return { type: node.type, content: inline };
+			}
+			// Block node with no content field at all — treat as empty paragraph.
+			return { type: node.type, content: [] };
+		};
+
+		if (Array.isArray(content)) {
+			const children = content.map(wrapNode).filter((n): n is object => n !== null);
+			return { type: 'doc', content: children };
+		}
+
+		if (typeof content === 'object') {
+			const obj = content as { type?: string; content?: unknown };
+			if (obj.type === 'doc') return content;
+			// Single block node handed in without a doc wrapper.
+			const wrapped = wrapNode(content);
+			return { type: 'doc', content: wrapped ? [wrapped] : [] };
+		}
+
+		return emptyDoc;
+	}
+
+	// Walk ProseMirror JSON and make sure every parenthetical node contains
+	// its own parens as real text content. Earlier versions rendered them via
+	// CSS pseudo-elements, so legacy files stored text like "whispering"
+	// instead of "(whispering)" — which broke Find, copy-paste, and screen
+	// readers (issue #59). This is a pure JSON rewrite: no schema change,
+	// returns a new tree, never mutates the input.
+	function migrateParensInJSON(content: unknown): unknown {
+		if (!content || typeof content !== 'object') return content;
+		const node = content as { type?: string; content?: unknown[]; [k: string]: unknown };
+
+		if (node.type === 'parenthetical') {
+			const inline = Array.isArray(node.content)
+				? (node.content as Array<{ type?: string; text?: string }>)
+				: [];
+			// Flatten text to test for existing parens; marks on inline children
+			// are preserved below by only editing the first/last text nodes.
+			const flat = inline.map((c) => c.text ?? '').join('');
+			const trimmed = flat.trim();
+			if (trimmed.length === 0) {
+				// Empty parens render as "()" — matches what the old CSS showed and
+				// keeps the node self-describing.
+				return { ...node, content: [{ type: 'text', text: '()' }] };
+			}
+			if (!trimmed.startsWith('(') || !trimmed.endsWith(')')) {
+				const firstText = inline.findIndex((c) => c.type === 'text' && (c.text ?? '').length > 0);
+				const lastText = (() => {
+					for (let i = inline.length - 1; i >= 0; i--) {
+						if (inline[i].type === 'text' && (inline[i].text ?? '').length > 0) return i;
+					}
+					return -1;
+				})();
+				const next = inline.map((c, i) => {
+					if (i !== firstText && i !== lastText) return c;
+					let text = c.text ?? '';
+					if (i === firstText && !text.trimStart().startsWith('(')) text = '(' + text;
+					if (i === lastText && !text.trimEnd().endsWith(')')) text = text + ')';
+					return { ...c, text };
+				});
+				return { ...node, content: next };
+			}
+		}
+
+		if (Array.isArray(node.content)) {
+			const next = node.content.map((child) => migrateParensInJSON(child));
+			return { ...node, content: next };
+		}
+		return node;
+	}
+
+	let {
+		findReplaceOpen = $bindable(false),
+		findReplaceMode = $bindable<'find' | 'replace'>('find'),
+		showAnnotations = true,
+		isActive = true
+	} = $props<{
+		findReplaceOpen: boolean;
+		findReplaceMode: 'find' | 'replace';
+		showAnnotations?: boolean;
+		isActive?: boolean;
+	}>();
+
+	// Recalculate spacers when the editor becomes visible again
+	// (e.g. switching from Cards/Story back to Writing view)
+	$effect(() => {
+		if (isActive && showAnnotations) {
+			scheduleAnnotationUpdate();
+		}
+	});
+
+	// Push the current Show-Characters setting + per-scene extras into the
+	// characterList plugin state whenever either changes. Reading both here
+	// creates the reactive dependency; we also re-measure annotations since
+	// the widget line changes the editor's vertical layout.
+	$effect(() => {
+		const enabled = documentStore.activeSettings?.show_characters_below_header ?? false;
+		// Build a { sceneIndex: string[] } map from scene_cards so the plugin can
+		// merge user-supplied non-speaking characters with auto-detected speakers.
+		const extras: Record<number, string[]> = {};
+		const cards = documentStore.activeSceneCards;
+		for (const card of cards) {
+			const raw = (card.extra_characters ?? '').trim();
+			if (raw.length === 0) continue;
+			extras[card.scene_index] = raw
+				.split(',')
+				.map((s) => s.trim())
+				.filter((s) => s.length > 0);
+		}
+		if (!view) return;
+		const current = characterListKey.getState(view.state);
+		const sameEnabled = current?.enabled === enabled;
+		const sameExtras = current ? JSON.stringify(current.extras) === JSON.stringify(extras) : false;
+		if (sameEnabled && sameExtras) return;
+		view.dispatch(view.state.tr.setMeta(characterListKey, { enabled, extras }));
+		scheduleAnnotationUpdate();
+	});
+
+	let editorElement: HTMLDivElement;
+	let view: EditorView | null = null;
+	const inputManager = InputModeManager.getInstance();
+
+	// Map the font setting slug to a CSS font-family name
+	let fontFamily = $derived(
+		documentStore.currentFont === 'manjari' ? 'Manjari' : 'Noto Sans Malayalam'
+	);
+
+	// Svelte 5 runes for reactive state
+	let isMalayalam = $state(inputManager.isMalayalam);
+
+	// Scene index being actively edited via shortcut — forces the annotation
+	// fields to show even when empty, so the user can type into them.
+	let editingSceneIndex = $state<number>(-1);
+	let gutterEl = $state<HTMLDivElement | null>(null);
+
+	// ─── Scene annotations with ProseMirror spacer decorations ───
+	// When an annotation is taller than its scene's natural space, a spacer
+	// widget decoration is injected into the ProseMirror doc BEFORE the next
+	// scene heading, pushing the editor content down to make room.
+	// This keeps annotations aligned with their scene headings.
+
+	interface SceneSlot {
+		sceneOrder: number;
+		extent: number;
+		description: string;
+		shootNotes: string;
+	}
+
+	// Plugin that inserts invisible spacer divs before scene headings.
+	// Spacer heights are stored in plugin state, updated via transaction metadata.
+	const spacerKey = new PluginKey<Record<number, number>>('annotation-spacers');
+
+	const annotationSpacerPlugin = new Plugin({
+		key: spacerKey,
+		state: {
+			init(): Record<number, number> {
+				return {};
+			},
+			apply(tr, value): Record<number, number> {
+				const meta = tr.getMeta(spacerKey);
+				return meta !== undefined ? meta : value;
+			}
+		},
+		props: {
+			decorations(state) {
+				const heights = spacerKey.getState(state);
+				if (!heights || Object.keys(heights).length === 0) return DecorationSet.empty;
+
+				const decos: Decoration[] = [];
+				let idx = 0;
+				state.doc.forEach((node, pos) => {
+					if (node.type.name === 'scene_heading') {
+						const extra = heights[idx];
+						if (extra && extra > 0) {
+							// Insert an invisible spacer div before this scene heading
+							decos.push(
+								Decoration.widget(
+									pos,
+									() => {
+										const el = document.createElement('div');
+										el.style.height = extra + 'px';
+										el.setAttribute('aria-hidden', 'true');
+										return el;
+									},
+									{ side: -1 }
+								)
+							);
+						}
+						idx++;
+					}
+				});
+
+				return DecorationSet.create(state.doc, decos);
+			}
+		}
+	});
+
+	let sceneSlots = $state<SceneSlot[]>([]);
+	let gutterTopPad = $state(0);
+	let annotationRafId = 0;
+	let spacerRafId = 0;
+	let gutterResizeObserver: ResizeObserver | null = null;
+
+	// Track which scenes have had their annotation explicitly collapsed.
+	// Expanded is the default; users opt into the compact two-line view.
+	// Collapsed slots limit description/notes to ~2 visible lines; expanded
+	// shows the full text.
+	let collapsedSlots = $state(new Set<number>());
+
+	function toggleSlotExpanded(sceneOrder: number) {
+		const next = new Set(collapsedSlots);
+		if (next.has(sceneOrder)) next.delete(sceneOrder);
+		else next.add(sceneOrder);
+		collapsedSlots = next;
+		// Svelte flushes the state change in the same microtask; a single RAF
+		// is enough to let layout settle before we measure.
+		scheduleSpacerRecalc();
+	}
+
+	function scheduleAnnotationUpdate() {
+		cancelAnimationFrame(annotationRafId);
+		annotationRafId = requestAnimationFrame(updateAnnotationPositions);
+	}
+
+	/** Debounced single-frame scheduler for spacer recomputation.
+	 *  Called directly after any change that might grow/shrink a gutter slot
+	 *  (toggle, textarea typing, ResizeObserver firing). Collapses bursts of
+	 *  calls into one measurement pass. */
+	function scheduleSpacerRecalc() {
+		cancelAnimationFrame(spacerRafId);
+		spacerRafId = requestAnimationFrame(() => measureAndApplySpacers());
+	}
+
+	/** Get an element's vertical position relative to a container's content top.
+	 *  Uses getBoundingClientRect which is reliable regardless of
+	 *  offsetParent chains or ProseMirror's position:relative usage.
+	 *  The difference between two rects is stable regardless of scroll. */
+	function posRelativeTo(el: HTMLElement, container: HTMLElement): number {
+		return el.getBoundingClientRect().top - container.getBoundingClientRect().top;
+	}
+
+	function updateAnnotationPositions() {
+		if (!editorElement || !view) return;
+		const doc = documentStore.document;
+		if (!doc) return;
+
+		const headingEls = Array.from(
+			editorElement.querySelectorAll('.scene-heading')
+		) as HTMLElement[];
+		if (headingEls.length === 0) {
+			sceneSlots = [];
+			return;
+		}
+
+		// Read positions (may include existing spacers)
+		const positions = headingEls.map((el) => posRelativeTo(el, editorElement));
+		const editorHeight = editorElement.scrollHeight || editorElement.offsetHeight;
+		gutterTopPad = positions[0];
+
+		// Build slots so the gutter renders annotation content.
+		// Pull from `activeSceneCards`, not `doc.scene_cards` — for a series
+		// the top-level list is unused and the real cards live on the active
+		// episode, so reading directly off the doc drops every annotation.
+		const cards = documentStore.activeSceneCards;
+		const slots: SceneSlot[] = [];
+		for (let i = 0; i < headingEls.length; i++) {
+			const nextTop = i + 1 < positions.length ? positions[i + 1] : editorHeight;
+			const extent = nextTop - positions[i];
+			const card = cards.find((c: { scene_index: number }) => c.scene_index === i);
+			slots.push({
+				sceneOrder: i,
+				extent,
+				description: card?.description ?? '',
+				shootNotes: card?.shoot_notes ?? ''
+			});
+		}
+		sceneSlots = slots;
+
+		// Slot data changed; re-measure next frame once the gutter re-renders.
+		scheduleSpacerRecalc();
+	}
+
+	/** Full spacer recompute: clear → measure base positions → measure
+	 *  annotation heights → apply new spacers. All in one synchronous
+	 *  block before the browser paints, so no visible flicker. */
+	function measureAndApplySpacers() {
+		if (!gutterEl || !editorElement || !view) return;
+		const doc = documentStore.document;
+		if (!doc) return;
+
+		const GAP = 20;
+
+		// 1. Clear all spacers to get base positions
+		const currentSpacers = spacerKey.getState(view.state) ?? {};
+		if (Object.keys(currentSpacers).length > 0) {
+			view.dispatch(view.state.tr.setMeta(spacerKey, {}));
+		}
+		// Force reflow so positions reflect the cleared state
+		void editorElement.offsetHeight;
+
+		// 2. Read base positions (no spacers)
+		const headingEls = Array.from(
+			editorElement.querySelectorAll('.scene-heading')
+		) as HTMLElement[];
+		const basePositions = headingEls.map((el) => posRelativeTo(el, editorElement));
+		const baseEditorHeight = editorElement.scrollHeight || editorElement.offsetHeight;
+
+		// Update gutter top pad and slot extents to base values
+		gutterTopPad = basePositions[0];
+		for (let i = 0; i < sceneSlots.length && i < headingEls.length; i++) {
+			const nextTop = i + 1 < basePositions.length ? basePositions[i + 1] : baseEditorHeight;
+			sceneSlots[i].extent = nextTop - basePositions[i];
+		}
+
+		// 3. Measure actual annotation content heights (not scrollHeight of the
+		//    slot, which includes min-height and would give inflated values)
+		const contentEls = gutterEl.querySelectorAll('.slot-content');
+		const newSpacers: Record<number, number> = {};
+
+		contentEls.forEach((contentEl, i) => {
+			const contentHeight = (contentEl as HTMLElement).offsetHeight;
+			const baseExtent = sceneSlots[i]?.extent ?? 0;
+			if (contentHeight > baseExtent && i + 1 < contentEls.length) {
+				newSpacers[i + 1] = contentHeight - baseExtent + GAP;
+			}
+		});
+
+		// 4. Apply new spacers (if any)
+		if (Object.keys(newSpacers).length > 0) {
+			view.dispatch(view.state.tr.setMeta(spacerKey, newSpacers));
+			void editorElement.offsetHeight;
+
+			// Update positions and extents with spacers applied
+			const finalPositions = headingEls.map((el) => posRelativeTo(el, editorElement));
+			const finalEditorHeight = editorElement.scrollHeight || editorElement.offsetHeight;
+			gutterTopPad = finalPositions[0];
+
+			for (let i = 0; i < sceneSlots.length && i < headingEls.length; i++) {
+				const nextTop = i + 1 < finalPositions.length ? finalPositions[i + 1] : finalEditorHeight;
+				sceneSlots[i].extent = nextTop - finalPositions[i];
+			}
+		}
+	}
+
+	/** Open annotation fields for the scene at the cursor position.
+	 *  Creates empty card entries if needed, then focuses the description textarea. */
+	export function editCurrentSceneAnnotation() {
+		if (!view || !documentStore.document) return;
+
+		// Find which scene the cursor is in
+		const cursorPos = view.state.selection.$from.pos;
+		let sceneIdx = -1;
+		view.state.doc.forEach((node, offset, index) => {
+			if (offset <= cursorPos && node.type.name === 'scene_heading') {
+				sceneIdx = index;
+			}
+		});
+
+		// Count scene_heading nodes to get the 0-based scene order
+		let sceneOrder = -1;
+		let headingCount = 0;
+		view.state.doc.forEach((node, _offset, index) => {
+			if (node.type.name === 'scene_heading') {
+				if (index === sceneIdx) sceneOrder = headingCount;
+				headingCount++;
+			}
+		});
+
+		if (sceneOrder < 0) return;
+
+		// Ensure a scene_card entry exists
+		const cards = documentStore.activeSceneCards;
+		if (!cards.find((c: { scene_index: number }) => c.scene_index === sceneOrder)) {
+			cards.push({
+				scene_index: sceneOrder,
+				description: '',
+				shoot_notes: '',
+				extra_characters: '',
+				scheduled_date: '',
+				location_group: ''
+			});
+		}
+
+		// Show annotation fields for this scene and trigger update
+		editingSceneIndex = sceneOrder;
+		scheduleAnnotationUpdate();
+
+		// Focus the description textarea after DOM updates
+		requestAnimationFrame(() => {
+			requestAnimationFrame(() => {
+				if (gutterEl) {
+					const textarea = gutterEl.querySelector(
+						`[data-scene="${sceneOrder}"] .ann-text`
+					) as HTMLTextAreaElement;
+					textarea?.focus();
+				}
+			});
+		});
+	}
+
+	function updateSceneCard(
+		sceneOrder: number,
+		field: 'description' | 'shoot_notes',
+		value: string
+	) {
+		if (!documentStore.document) return;
+		const cards = documentStore.activeSceneCards;
+		const existing = cards.find((c: { scene_index: number }) => c.scene_index === sceneOrder);
+		if (existing) {
+			if (field === 'description') existing.description = value;
+			else existing.shoot_notes = value;
+		} else {
+			cards.push({
+				scene_index: sceneOrder,
+				description: field === 'description' ? value : '',
+				shoot_notes: field === 'shoot_notes' ? value : '',
+				extra_characters: '',
+				scheduled_date: '',
+				location_group: ''
+			});
+		}
+		documentStore.markDirty();
+		// Textarea grows via field-sizing:content — ResizeObserver picks that up
+		// automatically via scheduleSpacerRecalc. This call is a belt-and-braces
+		// scheduler in case the observer hasn't fired yet for a fresh slot.
+		scheduleSpacerRecalc();
+	}
+
+	// Create initial document with one empty scene_heading
+	function createInitialDoc() {
+		return screenplaySchema.node('doc', null, [screenplaySchema.node('scene_heading')]);
+	}
+
+	// Update the current element type display and mark state based on cursor position
+	function updateCurrentElement(state: EditorState) {
+		const nodeName = state.selection.$from.parent.type.name;
+		// Convert node type name to display name
+		const displayNames: Record<string, string> = {
+			scene_heading: 'SCENE HEADING',
+			action: 'ACTION',
+			character: 'CHARACTER',
+			parenthetical: 'PARENTHETICAL',
+			dialogue: 'DIALOGUE',
+			transition: 'TRANSITION'
+		};
+		editorStore.currentElement = displayNames[nodeName] ?? nodeName.toUpperCase();
+
+		// Update which inline marks are active at the current cursor/selection.
+		// `storedMarks` are marks that will be applied to the next typed character
+		// (set when toggling a mark with an empty selection). `$from.marks()` returns
+		// marks on existing text at the cursor position.
+		const marks = state.storedMarks || state.selection.$from.marks();
+		editorStore.markState = {
+			bold: marks.some((m) => m.type === screenplaySchema.marks.bold),
+			italic: marks.some((m) => m.type === screenplaySchema.marks.italic),
+			underline: marks.some((m) => m.type === screenplaySchema.marks.underline)
+		};
+
+		// Track which scene the cursor sits in. We walk the top-level children
+		// and count scene_heading nodes until we reach or pass the cursor.
+		// Cheap: doc.forEach is just the top-level children, not the full tree.
+		const cursorPos = state.selection.from;
+		let sceneIdx = -1;
+		let count = -1;
+		state.doc.forEach((node, offset) => {
+			if (node.type.name === 'scene_heading') count++;
+			// `offset` is the position just before this node — if the cursor is
+			// at or past this point, the cursor belongs to this scene.
+			if (offset <= cursorPos) sceneIdx = count;
+		});
+		editorStore.currentSceneIndex = sceneIdx;
+	}
+
+	// Watch for New/Open events only — loadTrigger is incremented exclusively by
+	// newDocument() and openDocument(), never by setContent() during typing.
+	// IMPORTANT: only read loadTrigger and loadedContent here — NOT document or
+	// document.content, because those are mutated on every keystroke by setContent().
+	$effect(() => {
+		// Read loadTrigger to establish the reactive dependency
+		const _trigger = documentStore.loadTrigger;
+		// Read the snapshot taken at load time — not the live document
+		const content = documentStore.loadedContent;
+
+		if (!view) return;
+
+		const newDoc = content !== null ? safeDocFromJSON(content) : createInitialDoc();
+
+		const newState = EditorState.create({
+			doc: newDoc,
+			plugins: view.state.plugins
+		});
+		view.updateState(newState);
+		updateCurrentElement(newState);
+		// Fresh document → every annotation starts expanded. Dropping the set
+		// also prevents stale scene indices from the previous document from
+		// collapsing unrelated slots after an Open.
+		collapsedSlots = new Set();
+		scheduleAnnotationUpdate();
+	});
+
+	onMount(() => {
+		// Guard: never create a second EditorView if one already exists.
+		// This prevents issues if onMount somehow fires twice (e.g. HMR, re-mount).
+		if (view) return;
+
+		// Restore the document from the store if it exists (e.g. returning from Scene Cards).
+		// Fall back to a fresh empty doc for first launch. Uses activeContent so
+		// series projects restore the currently-selected episode's doc.
+		const content = documentStore.activeContent;
+		const initialDoc = content ? safeDocFromJSON(content) : createInitialDoc();
+
+		const state = EditorState.create({
+			doc: initialDoc,
+			plugins: [
+				characterAutocompletePlugin,
+				screenplayKeymap,
+				keymap(baseKeymap),
+				history(),
+				autoUppercasePlugin,
+				smartQuotesPlugin,
+				findReplacePlugin,
+				annotationSpacerPlugin,
+				characterListPlugin,
+				sceneTimeOfDayPlugin
+			]
+		});
+
+		view = new EditorView(editorElement, {
+			// Store the view in editorStore so other components can access it
+			// (we set editorStore.view right after the constructor returns — see below)
+			state,
+			// Turn off every native text-input assist macOS / webkit layers on top
+			// of a contenteditable. Spellcheck, autocorrect, smart quotes, and the
+			// text-replacement popup all intercept the writer's keystrokes and
+			// collide with Malayalam input — we own the editing surface fully,
+			// so none of these are useful and the popups are a visible distraction.
+			attributes: {
+				spellcheck: 'false',
+				autocorrect: 'off',
+				autocapitalize: 'off',
+				autocomplete: 'off',
+				translate: 'no'
+			},
+			dispatchTransaction(tr) {
+				if (!view) return;
+				const newState = view.state.apply(tr);
+				view.updateState(newState);
+				updateCurrentElement(newState);
+
+				// Sync document changes to the store — setContent() does not
+				// increment loadTrigger, so the $effect won't re-trigger
+				if (tr.docChanged) {
+					documentStore.setContent(newState.doc.toJSON());
+					documentStore.markDirty();
+					scheduleAnnotationUpdate();
+				}
+			}
+		});
+
+		// Share the EditorView with other components via the store
+		editorStore.view = view;
+
+		// Attach a capture-phase keydown listener directly on the EditorView's DOM element.
+		// Using capture: true ensures this fires BEFORE ProseMirror's own keydown handler
+		// and before the browser's default text input, so we can intercept keys reliably.
+		const editorDom = view.dom;
+
+		function handleMalayalamKeydown(event: KeyboardEvent) {
+			// When character autocomplete dropdown is open, let ProseMirror's plugin
+			// system handle navigation keys (Arrow, Enter, Tab, Escape) so the
+			// autocomplete plugin can process them. Without this, the capture-phase
+			// listener would swallow these keys before ProseMirror sees them.
+			if (view) {
+				const acState = autocompleteKey.getState(view.state);
+				if (acState?.active) {
+					const autocompleteKeys = new Set(['ArrowDown', 'ArrowUp', 'Enter', 'Tab', 'Escape']);
+					if (autocompleteKeys.has(event.key)) {
+						// Don't intercept — let ProseMirror's handleKeyDown handle it
+						return;
+					}
+				}
+			}
+
+			// Cmd+S (Mac) or Ctrl+S (Windows/Linux) — save the document
+			if ((event.metaKey || event.ctrlKey) && event.key === 's') {
+				event.preventDefault();
+				event.stopPropagation();
+				documentStore.saveWithDialog();
+				return;
+			}
+
+			// Ctrl+Space toggles input mode — intercept before ProseMirror sees it
+			if (event.ctrlKey && event.code === 'Space') {
+				event.preventDefault();
+				event.stopPropagation();
+				inputManager.toggle();
+				// Sync the reactive state so the status bar updates
+				isMalayalam = inputManager.isMalayalam;
+				return;
+			}
+
+			// Only intercept when Malayalam mode is active, the key is a printable character
+			// (key.length === 1), and no modifier keys are held
+			if (
+				inputManager.isMalayalam &&
+				event.key.length === 1 &&
+				!event.ctrlKey &&
+				!event.metaKey &&
+				!event.altKey
+			) {
+				const result = inputManager.processKey(event.key);
+				if (result !== null && view) {
+					// Stop the browser from inserting the English character
+					event.preventDefault();
+					// Stop ProseMirror from also processing this key
+					event.stopPropagation();
+
+					// Build a ProseMirror transaction that handles Mozhi's delete-back-and-replace
+					let tr = view.state.tr;
+					if (result.deleteBack > 0) {
+						// Delete the specified number of characters before the cursor.
+						// This is needed for Mozhi, which sometimes replaces previously inserted
+						// Malayalam characters (e.g., ക് + h → ഖ്, deleting ക് and inserting ഖ്).
+						const from = tr.selection.from - result.deleteBack;
+						const to = tr.selection.from;
+						tr = tr.delete(from, to);
+					}
+					if (result.text) {
+						tr = tr.insertText(result.text);
+					}
+					view.dispatch(tr);
+				}
+
+				// Reset Mozhi buffer on word boundaries — space means the next keystroke
+				// should not combine with the previous word's output
+				if (event.key === ' ') {
+					inputManager.resetMozhi();
+				}
+			}
+
+			// Reset Mozhi buffer on keys that invalidate the context, even if they
+			// weren't intercepted above (e.g., Backspace deletes editor content so
+			// the buffer no longer matches what's in the document)
+			if (inputManager.isMalayalam && inputManager.scheme === 'mozhi') {
+				if (
+					event.key === 'Backspace' ||
+					event.key === 'Enter' ||
+					event.key === 'ArrowLeft' ||
+					event.key === 'ArrowRight' ||
+					event.key === 'ArrowUp' ||
+					event.key === 'ArrowDown' ||
+					event.key === 'Home' ||
+					event.key === 'End'
+				) {
+					inputManager.resetMozhi();
+				}
+			}
+		}
+
+		editorDom.addEventListener('keydown', handleMalayalamKeydown, { capture: true });
+
+		// Set initial element display
+		updateCurrentElement(view.state);
+		scheduleAnnotationUpdate();
+
+		// Recompute annotation positions on window resize
+		window.addEventListener('resize', scheduleAnnotationUpdate);
+
+		// Watch the gutter for intrinsic size changes — e.g. field-sizing:content
+		// textareas growing as the user types. One observer, one debounced RAF.
+		if (gutterEl && typeof ResizeObserver !== 'undefined') {
+			gutterResizeObserver = new ResizeObserver(() => scheduleSpacerRecalc());
+			gutterResizeObserver.observe(gutterEl);
+		}
+
+		return () => {
+			editorStore.view = null;
+			editorDom.removeEventListener('keydown', handleMalayalamKeydown, { capture: true });
+			window.removeEventListener('resize', scheduleAnnotationUpdate);
+			cancelAnimationFrame(annotationRafId);
+			cancelAnimationFrame(spacerRafId);
+			gutterResizeObserver?.disconnect();
+			gutterResizeObserver = null;
+			view?.destroy();
+		};
+	});
 </script>
 
 <div class="editor-wrapper">
-  {#if findReplaceOpen}
-    <FindReplaceBar mode={findReplaceMode} onclose={() => { findReplaceOpen = false; }} />
-  {/if}
-  <div class="editor-scroll">
-    <div
-      class="editor-with-annotations"
-      style="--editor-font-ml: '{fontFamily}'; --editor-font-size: {documentStore.activeSettings?.editor_font_size ?? 14}px"
-    >
-      <div class="editor-container" bind:this={editorElement} style="--scene-counter-start: {(documentStore.activeSettings?.scene_number_start ?? 1) - 1}"></div>
-      {#if showAnnotations}
-      <div class="annotations-gutter" style="padding-top: {gutterTopPad}px" bind:this={gutterEl}>
-        {#each sceneSlots as slot (slot.sceneOrder)}
-          {@const showFields = slot.description || slot.shootNotes || editingSceneIndex === slot.sceneOrder}
-          {@const expanded = !collapsedSlots.has(slot.sceneOrder)}
-          <div class="scene-slot" style="min-height: {slot.extent}px" data-scene={slot.sceneOrder}>
-            <div class="slot-content" class:expanded>
-              {#if showFields}
-                <button
-                  type="button"
-                  class="ann-toggle"
-                  onclick={() => toggleSlotExpanded(slot.sceneOrder)}
-                  aria-label={expanded ? `Collapse annotation for scene ${slot.sceneOrder + 1}` : `Expand annotation for scene ${slot.sceneOrder + 1}`}
-                  title={expanded ? 'Collapse' : 'Expand'}
-                >
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="transform: rotate({expanded ? 180 : 0}deg); transition: transform 120ms ease;">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                  </svg>
-                </button>
-                <div class="ann-field">
-                  <span class="ann-label">Description</span>
-                  <textarea
-                    class="ann-text"
-                    class:collapsed={!expanded}
-                    placeholder="Scene description..."
-                    value={slot.description}
-                    oninput={(e: Event) => updateSceneCard(slot.sceneOrder, 'description', (e.target as HTMLTextAreaElement).value)}
-                    onfocusout={() => { if (editingSceneIndex === slot.sceneOrder) editingSceneIndex = -1; }}
-                  ></textarea>
-                </div>
-                <div class="ann-field">
-                  <span class="ann-label">Notes</span>
-                  <textarea
-                    class="ann-text"
-                    class:collapsed={!expanded}
-                    placeholder="Additional notes..."
-                    value={slot.shootNotes}
-                    oninput={(e: Event) => updateSceneCard(slot.sceneOrder, 'shoot_notes', (e.target as HTMLTextAreaElement).value)}
-                    onfocusout={() => { if (editingSceneIndex === slot.sceneOrder) editingSceneIndex = -1; }}
-                  ></textarea>
-                </div>
-              {/if}
-            </div>
-          </div>
-        {/each}
-      </div>
-      {/if}
-    </div>
-  </div>
+	{#if findReplaceOpen}
+		<FindReplaceBar
+			mode={findReplaceMode}
+			onclose={() => {
+				findReplaceOpen = false;
+			}}
+		/>
+	{/if}
+	<div class="editor-scroll">
+		<div
+			class="editor-with-annotations"
+			style="--editor-font-ml: '{fontFamily}'; --editor-font-size: {documentStore.activeSettings
+				?.editor_font_size ?? 14}px"
+		>
+			<div
+				class="editor-container"
+				bind:this={editorElement}
+				style="--scene-counter-start: {(documentStore.activeSettings?.scene_number_start ?? 1) - 1}"
+			></div>
+			{#if showAnnotations}
+				<div class="annotations-gutter" style="padding-top: {gutterTopPad}px" bind:this={gutterEl}>
+					{#each sceneSlots as slot (slot.sceneOrder)}
+						{@const showFields =
+							slot.description || slot.shootNotes || editingSceneIndex === slot.sceneOrder}
+						{@const expanded = !collapsedSlots.has(slot.sceneOrder)}
+						<div
+							class="scene-slot"
+							style="min-height: {slot.extent}px"
+							data-scene={slot.sceneOrder}
+						>
+							<div class="slot-content" class:expanded>
+								{#if showFields}
+									<button
+										type="button"
+										class="ann-toggle"
+										onclick={() => toggleSlotExpanded(slot.sceneOrder)}
+										aria-label={expanded
+											? `Collapse annotation for scene ${slot.sceneOrder + 1}`
+											: `Expand annotation for scene ${slot.sceneOrder + 1}`}
+										title={expanded ? 'Collapse' : 'Expand'}
+									>
+										<svg
+											width="10"
+											height="10"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="3"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											style="transform: rotate({expanded
+												? 180
+												: 0}deg); transition: transform 120ms ease;"
+										>
+											<polyline points="6 9 12 15 18 9"></polyline>
+										</svg>
+									</button>
+									<div class="ann-field">
+										<span class="ann-label">Description</span>
+										<textarea
+											class="ann-text"
+											class:collapsed={!expanded}
+											placeholder="Scene description..."
+											value={slot.description}
+											oninput={(e: Event) =>
+												updateSceneCard(
+													slot.sceneOrder,
+													'description',
+													(e.target as HTMLTextAreaElement).value
+												)}
+											onfocusout={() => {
+												if (editingSceneIndex === slot.sceneOrder) editingSceneIndex = -1;
+											}}
+										></textarea>
+									</div>
+									<div class="ann-field">
+										<span class="ann-label">Notes</span>
+										<textarea
+											class="ann-text"
+											class:collapsed={!expanded}
+											placeholder="Additional notes..."
+											value={slot.shootNotes}
+											oninput={(e: Event) =>
+												updateSceneCard(
+													slot.sceneOrder,
+													'shoot_notes',
+													(e.target as HTMLTextAreaElement).value
+												)}
+											onfocusout={() => {
+												if (editingSceneIndex === slot.sceneOrder) editingSceneIndex = -1;
+											}}
+										></textarea>
+									</div>
+								{/if}
+							</div>
+						</div>
+					{/each}
+				</div>
+			{/if}
+		</div>
+	</div>
 
-  <FormatBubble />
+	<FormatBubble />
 </div>
 
 <style>
-  .editor-wrapper {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
+	.editor-wrapper {
+		position: relative;
+		width: 100%;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+	}
 
-  .editor-scroll {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    background: var(--surface-base);
-    padding: 40px 0;
-  }
+	.editor-scroll {
+		flex: 1;
+		overflow-y: auto;
+		overflow-x: hidden;
+		background: var(--surface-base);
+		padding: 40px 0;
+	}
 
-  /* Flex-centered editor keeps the page in the viewport center regardless of
+	/* Flex-centered editor keeps the page in the viewport center regardless of
      whether the annotation gutter is visible. The gutter is absolutely
      positioned so toggling it on/off doesn't shift the editor horizontally. */
-  .editor-with-annotations {
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    min-height: 100%;
-    padding: 0 20px;
-  }
+	.editor-with-annotations {
+		position: relative;
+		display: flex;
+		justify-content: center;
+		align-items: flex-start;
+		min-height: 100%;
+		padding: 0 20px;
+	}
 
-  .editor-container {
-    flex: 0 0 680px;
-    max-width: 680px;
-    min-width: 0;
-    position: relative;
-  }
+	.editor-container {
+		flex: 0 0 680px;
+		max-width: 680px;
+		min-width: 0;
+		position: relative;
+	}
 
-  .annotations-gutter {
-    position: absolute;
-    top: 0;
-    /* Park the gutter just to the right of the centered 680px editor. */
-    left: calc(50% + 340px + 16px);
-    width: 320px;
-  }
+	.annotations-gutter {
+		position: absolute;
+		top: 0;
+		/* Park the gutter just to the right of the centered 680px editor. */
+		left: calc(50% + 340px + 16px);
+		width: 320px;
+	}
 
-  .scene-slot {
-    box-sizing: border-box;
-    flex-shrink: 0;
-    border-top: 1px solid transparent;
-  }
+	.scene-slot {
+		box-sizing: border-box;
+		flex-shrink: 0;
+		border-top: 1px solid transparent;
+	}
 
-  /* Add a visible separator between adjacent annotated slots */
-  .scene-slot:has(.ann-field) + .scene-slot:has(.ann-field) {
-    border-top-color: var(--border-subtle);
-    padding-top: 8px;
-  }
+	/* Add a visible separator between adjacent annotated slots */
+	.scene-slot:has(.ann-field) + .scene-slot:has(.ann-field) {
+		border-top-color: var(--border-subtle);
+		padding-top: 8px;
+	}
 
-  .slot-content {
-    position: relative;
-  }
+	.slot-content {
+		position: relative;
+	}
 
-  .ann-toggle {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 18px;
-    height: 18px;
-    padding: 0;
-    border: none;
-    background: transparent;
-    color: var(--text-muted);
-    border-radius: 3px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0.7;
-    transition: opacity 120ms ease, background 120ms ease, color 120ms ease;
-  }
+	.ann-toggle {
+		position: absolute;
+		top: 0;
+		right: 0;
+		width: 18px;
+		height: 18px;
+		padding: 0;
+		border: none;
+		background: transparent;
+		color: var(--text-muted);
+		border-radius: 3px;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		opacity: 0.7;
+		transition:
+			opacity 120ms ease,
+			background 120ms ease,
+			color 120ms ease;
+	}
 
-  .ann-toggle:hover {
-    opacity: 1;
-    background: var(--accent-muted);
-    color: var(--accent);
-  }
+	.ann-toggle:hover {
+		opacity: 1;
+		background: var(--accent-muted);
+		color: var(--accent);
+	}
 
-  .ann-field {
-    border-left: 2px solid var(--accent);
-    padding-left: 10px;
-    margin-bottom: 8px;
-  }
+	.ann-field {
+		border-left: 2px solid var(--accent);
+		padding-left: 10px;
+		margin-bottom: 8px;
+	}
 
-  /* Shared tokens — keep in lock-step with .field-label in SceneCardsView.svelte */
-  .ann-label {
-    display: block;
-    font-family: system-ui, -apple-system, sans-serif;
-    font-size: var(--label-font-size);
-    font-weight: var(--label-font-weight);
-    color: var(--label-color);
-    text-transform: uppercase;
-    letter-spacing: var(--label-tracking);
-    margin-bottom: 2px;
-  }
+	/* Shared tokens — keep in lock-step with .field-label in SceneCardsView.svelte */
+	.ann-label {
+		display: block;
+		font-family:
+			system-ui,
+			-apple-system,
+			sans-serif;
+		font-size: var(--label-font-size);
+		font-weight: var(--label-font-weight);
+		color: var(--label-color);
+		text-transform: uppercase;
+		letter-spacing: var(--label-tracking);
+		margin-bottom: 2px;
+	}
 
-  .ann-text {
-    width: 100%;
-    resize: none;
-    border: none;
-    background: transparent;
-    color: var(--text-secondary);
-    /* Use the editor stack so annotations read as extensions of the page,
+	.ann-text {
+		width: 100%;
+		resize: none;
+		border: none;
+		background: transparent;
+		color: var(--text-secondary);
+		/* Use the editor stack so annotations read as extensions of the page,
        not as chrome. Courier Prime for Latin, the document's selected
        Malayalam font for Malayalam runs. */
-    font-family: var(--editor-font-en), var(--editor-font-ml), ui-monospace, monospace;
-    font-size: 12px;
-    line-height: 1.5;
-    padding: 0;
-    outline: none;
-    overflow: hidden;
-    field-sizing: content;
-    min-height: 1.4em;
-  }
+		font-family: var(--editor-font-en), var(--editor-font-ml), ui-monospace, monospace;
+		font-size: 12px;
+		line-height: 1.5;
+		padding: 0;
+		outline: none;
+		overflow: hidden;
+		field-sizing: content;
+		min-height: 1.4em;
+	}
 
-  /* Collapsed state: limit the textarea to two lines of content. max-height
+	/* Collapsed state: limit the textarea to two lines of content. max-height
      caps field-sizing: content from growing past two lines; overflow hidden
      clips anything longer so the gutter stays compact. */
-  .ann-text.collapsed {
-    max-height: calc(1.4em * 2);
-    overflow: hidden;
-  }
+	.ann-text.collapsed {
+		max-height: calc(1.4em * 2);
+		overflow: hidden;
+	}
 
-  .ann-text::placeholder {
-    color: var(--text-muted);
-    opacity: 0.4;
-  }
+	.ann-text::placeholder {
+		color: var(--text-muted);
+		opacity: 0.4;
+	}
 
-  /* ─── ProseMirror editor — the screenplay page ─── */
-  /* Courier Prime first for Latin, user-selected Malayalam font second.
+	/* ─── ProseMirror editor — the screenplay page ─── */
+	/* Courier Prime first for Latin, user-selected Malayalam font second.
      Per-glyph fallback keeps mixed-script lines rendering cleanly. The
      monospace generic sits AFTER the Malayalam font so it can't intercept
      Malayalam glyphs via a system-monospace notdef. */
-  .editor-container :global(.ProseMirror) {
-    padding: 60px 72px 60vh 72px;
-    box-sizing: border-box;
-    /* Increased from 800px to 2000px to simulate infinite/continuous page rendering */
-    min-height: 2000px;
-    outline: none;
-    font-family: var(--editor-font-en), var(--editor-font-ml), ui-monospace, monospace;
-    /* Per-document font size (#123) — driven by Settings → Editor text
+	.editor-container :global(.ProseMirror) {
+		padding: 60px 72px 60vh 72px;
+		box-sizing: border-box;
+		/* Increased from 800px to 2000px to simulate infinite/continuous page rendering */
+		min-height: 2000px;
+		outline: none;
+		font-family: var(--editor-font-en), var(--editor-font-ml), ui-monospace, monospace;
+		/* Per-document font size (#123) — driven by Settings → Editor text
        size. Default falls back to the historical 14px when the setting
        is missing on legacy files. */
-    font-size: var(--editor-font-size, 14px);
-    line-height: 1.6;
-    color: var(--text-on-page);
-    background-color: var(--page-bg);
-    background-image: var(--page-grain);
-    background-repeat: repeat;
-    background-size: 240px 240px;
-    border-radius: 2px;
-    box-shadow:
-      inset 0 1px 0 var(--page-edge-highlight),
-      0 1px 2px var(--page-shadow-close),
-      0 12px 32px var(--page-shadow);
-    direction: ltr;
-    unicode-bidi: normal;
-    counter-reset: scene-counter var(--scene-counter-start, 0);
-  }
+		font-size: var(--editor-font-size, 14px);
+		line-height: 1.6;
+		color: var(--text-on-page);
+		background-color: var(--page-bg);
+		background-image: var(--page-grain);
+		background-repeat: repeat;
+		background-size: 240px 240px;
+		border-radius: 2px;
+		box-shadow:
+			inset 0 1px 0 var(--page-edge-highlight),
+			0 1px 2px var(--page-shadow-close),
+			0 12px 32px var(--page-shadow);
+		direction: ltr;
+		unicode-bidi: normal;
+		counter-reset: scene-counter var(--scene-counter-start, 0);
+	}
 
-  /* ─── Screenplay element styles — Hollywood format ─── */
-  :global(.ProseMirror p) {
-    margin: 0;
-    padding: 4px 0;
-  }
+	/* ─── Screenplay element styles — Hollywood format ─── */
+	:global(.ProseMirror p) {
+		margin: 0;
+		padding: 4px 0;
+	}
 
-  /* Scene heading: display weight, slight up-size and tracking so the eye
+	/* Scene heading: display weight, slight up-size and tracking so the eye
      catches scene boundaries before parsing words (issue #70). */
-  :global(.ProseMirror .scene-heading) {
-    font-weight: 700;
-    font-size: 15px;
-    letter-spacing: 0.04em;
-    margin-top: 2em;
-    margin-bottom: 0.5em;
-    color: var(--text-on-page);
-    counter-increment: scene-counter;
-    position: relative;
-  }
+	:global(.ProseMirror .scene-heading) {
+		font-weight: 700;
+		font-size: 15px;
+		letter-spacing: 0.04em;
+		margin-top: 2em;
+		margin-bottom: 0.5em;
+		color: var(--text-on-page);
+		counter-increment: scene-counter;
+		position: relative;
+	}
 
-  /* Signature gutter scene number — floats into the left margin and
+	/* Signature gutter scene number — floats into the left margin and
      mirrors the SceneCardsView card-gutter typography: zero-padded
      Courier Prime numeral, large enough to anchor the page like a
      printed shooting-script slug-number. Right-aligned so two- and
@@ -986,75 +1056,78 @@
      time-of-day via the data-time attribute the navigator uses (set
      by Editor's plugin) — keeps the page-margin numerals visually
      synchronized with the card view's gutter numerals. */
-  :global(.ProseMirror .scene-heading::before) {
-    content: counter(scene-counter, decimal-leading-zero);
-    position: absolute;
-    left: -64px;
-    width: 48px;
-    top: 0;
-    text-align: right;
-    font-family: var(--editor-font-en), ui-monospace, monospace;
-    font-style: normal;
-    font-weight: 700;
-    font-size: 17px;
-    line-height: inherit;
-    color: var(--text-secondary);
-    letter-spacing: -0.01em;
-    font-variant-numeric: tabular-nums;
-    pointer-events: none;
-    user-select: none;
-  }
+	:global(.ProseMirror .scene-heading::before) {
+		content: counter(scene-counter, decimal-leading-zero);
+		position: absolute;
+		left: -64px;
+		width: 48px;
+		top: 0;
+		text-align: right;
+		font-family: var(--editor-font-en), ui-monospace, monospace;
+		font-style: normal;
+		font-weight: 700;
+		font-size: 17px;
+		line-height: inherit;
+		color: var(--text-secondary);
+		letter-spacing: -0.01em;
+		font-variant-numeric: tabular-nums;
+		pointer-events: none;
+		user-select: none;
+	}
 
-  :global(.ProseMirror .scene-heading.time-day::before) {
-    color: var(--accent-warm);
-  }
+	:global(.ProseMirror .scene-heading.time-day::before) {
+		color: var(--accent-warm);
+	}
 
-  :global(.ProseMirror .scene-heading.time-night::before) {
-    color: var(--accent-deep);
-  }
+	:global(.ProseMirror .scene-heading.time-night::before) {
+		color: var(--accent-deep);
+	}
 
-  :global(.ProseMirror .scene-characters-line) {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 6px;
-    font-family: system-ui, -apple-system, sans-serif;
-    font-size: 11px;
-    line-height: 1.5;
-    margin: 0 0 0.9em 0;
-    padding: 0;
-    user-select: none;
-    -webkit-user-select: none;
-  }
+	:global(.ProseMirror .scene-characters-line) {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 6px;
+		font-family:
+			system-ui,
+			-apple-system,
+			sans-serif;
+		font-size: 11px;
+		line-height: 1.5;
+		margin: 0 0 0.9em 0;
+		padding: 0;
+		user-select: none;
+		-webkit-user-select: none;
+	}
 
-  :global(.ProseMirror .scene-characters-label) {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--text-muted);
-  }
+	:global(.ProseMirror .scene-characters-label) {
+		font-size: 10px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		color: var(--text-muted);
+	}
 
-  :global(.ProseMirror .scene-characters-sep) {
-    color: var(--text-muted);
-    opacity: 0.5;
-    font-weight: 700;
-  }
+	:global(.ProseMirror .scene-characters-sep) {
+		color: var(--text-muted);
+		opacity: 0.5;
+		font-weight: 700;
+	}
 
-  :global(.ProseMirror .scene-characters-names) {
-    font-size: 11.5px;
-    font-weight: 500;
-    color: var(--text-on-page);
-    opacity: 0.75;
-  }
+	:global(.ProseMirror .scene-characters-names) {
+		font-size: 11.5px;
+		font-weight: 500;
+		color: var(--text-on-page);
+		opacity: 0.75;
+	}
 
-  :global(.ProseMirror .action) {
-    margin: 0.5em 0;
-    color: var(--text-on-page);
-    opacity: 0.85;
-  }
+	:global(.ProseMirror .action) {
+		margin: 0.5em 0;
+		color: var(--text-on-page);
+		opacity: 0.85;
+	}
 
-  /* Character / parenthetical / dialogue — all share a common visual
+	/* Character / parenthetical / dialogue — all share a common visual
      centerline so the dialogue + parenthetical read as visually
      anchored to the character cue above. The character and
      parenthetical are short single-line elements, so text-align:
@@ -1062,115 +1135,117 @@
      centered narrow block with left-aligned text inside, so the block
      stays centered but multi-line dialogue still wraps in a readable
      left-to-right flow. */
-  :global(.ProseMirror .character) {
-    text-align: center;
-    margin-top: 1em;
-    margin-bottom: 0;
-    color: var(--text-on-page);
-    font-weight: 700;
-    letter-spacing: 0.08em;
-  }
+	:global(.ProseMirror .character) {
+		text-align: center;
+		margin-top: 1em;
+		margin-bottom: 0;
+		color: var(--text-on-page);
+		font-weight: 700;
+		letter-spacing: 0.08em;
+	}
 
-  :global(.ProseMirror .dialogue) {
-    max-width: 360px;
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: 0;
-    margin-bottom: 0.5em;
-    /* Each dialogue line is centered horizontally on the page so it
+	:global(.ProseMirror .dialogue) {
+		max-width: 360px;
+		margin-left: auto;
+		margin-right: auto;
+		margin-top: 0;
+		margin-bottom: 0.5em;
+		/* Each dialogue line is centered horizontally on the page so it
        sits on the same visual axis as the character cue above. The
        block is centered AND its text is centered — without the text
        align, single-line / short dialogue visually drifts to the
        left of the character. */
-    text-align: center;
-    color: var(--text-on-page);
-    opacity: 0.85;
-  }
+		text-align: center;
+		color: var(--text-on-page);
+		opacity: 0.85;
+	}
 
-  /* Parenthetical: italic direction note, slightly smaller than body so it
+	/* Parenthetical: italic direction note, slightly smaller than body so it
      reads as a whispered aside rather than a peer to dialogue (issue #70).
      Text-align: center keeps it visually anchored beneath the character. */
-  :global(.ProseMirror .parenthetical) {
-    text-align: center;
-    margin-top: 0;
-    margin-bottom: 0;
-    color: var(--text-on-page);
-    opacity: 0.6;
-    font-style: italic;
-    font-size: 0.92em;
-  }
+	:global(.ProseMirror .parenthetical) {
+		text-align: center;
+		margin-top: 0;
+		margin-bottom: 0;
+		color: var(--text-on-page);
+		opacity: 0.6;
+		font-style: italic;
+		font-size: 0.92em;
+	}
 
-  :global(.ProseMirror .parenthetical br.ProseMirror-trailingBreak) {
-    display: none;
-  }
+	:global(.ProseMirror .parenthetical br.ProseMirror-trailingBreak) {
+		display: none;
+	}
 
-  /* Transition: right-aligned caps — the widest tracking in the hierarchy
+	/* Transition: right-aligned caps — the widest tracking in the hierarchy
      so it reads as a boundary mark, not a body line (issue #70). */
-  :global(.ProseMirror .transition) {
-    text-align: right;
-    margin-top: 1em;
-    color: var(--accent-deep);
-    letter-spacing: 0.1em;
-    font-weight: 700;
-  }
+	:global(.ProseMirror .transition) {
+		text-align: right;
+		margin-top: 1em;
+		color: var(--accent-deep);
+		letter-spacing: 0.1em;
+		font-weight: 700;
+	}
 
+	/* ─── Inline formatting (bold, italic, underline) ─── */
+	:global(.ProseMirror strong) {
+		font-weight: bold;
+	}
 
-  /* ─── Inline formatting (bold, italic, underline) ─── */
-  :global(.ProseMirror strong) {
-    font-weight: bold;
-  }
+	:global(.ProseMirror em) {
+		font-style: italic;
+	}
 
-  :global(.ProseMirror em) {
-    font-style: italic;
-  }
+	:global(.ProseMirror u) {
+		text-decoration: underline;
+	}
 
-  :global(.ProseMirror u) {
-    text-decoration: underline;
-  }
+	/* ─── Character autocomplete dropdown ─── */
+	:global(.character-autocomplete) {
+		position: absolute;
+		z-index: 100;
+		list-style: none;
+		margin: 0;
+		padding: 4px 0;
+		min-width: 180px;
+		max-width: 320px;
+		max-height: 200px;
+		overflow-y: auto;
+		background: var(--surface-elevated);
+		border: 1px solid var(--border-subtle);
+		border-radius: 6px;
+		box-shadow: 0 4px 16px var(--shadow-medium);
+		font-family:
+			system-ui,
+			-apple-system,
+			sans-serif;
+		font-size: 13px;
+	}
 
-  /* ─── Character autocomplete dropdown ─── */
-  :global(.character-autocomplete) {
-    position: absolute;
-    z-index: 100;
-    list-style: none;
-    margin: 0;
-    padding: 4px 0;
-    min-width: 180px;
-    max-width: 320px;
-    max-height: 200px;
-    overflow-y: auto;
-    background: var(--surface-elevated);
-    border: 1px solid var(--border-subtle);
-    border-radius: 6px;
-    box-shadow: 0 4px 16px var(--shadow-medium);
-    font-family: system-ui, -apple-system, sans-serif;
-    font-size: 13px;
-  }
+	:global(.autocomplete-item) {
+		padding: 6px 12px;
+		cursor: pointer;
+		color: var(--text-secondary);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
 
-  :global(.autocomplete-item) {
-    padding: 6px 12px;
-    cursor: pointer;
-    color: var(--text-secondary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+	:global(.autocomplete-item:hover),
+	:global(.autocomplete-item.selected) {
+		background: var(--accent-muted);
+		color: var(--accent);
+	}
 
-  :global(.autocomplete-item:hover),
-  :global(.autocomplete-item.selected) {
-    background: var(--accent-muted);
-    color: var(--accent);
-  }
+	/* ─── Find and Replace highlights ─── */
+	:global(.find-match) {
+		background: var(--find-match);
+		border-radius: 2px;
+	}
 
-  /* ─── Find and Replace highlights ─── */
-  :global(.find-match) {
-    background: var(--find-match);
-    border-radius: 2px;
-  }
-
-  :global(.find-match-current) {
-    background: var(--find-match-current);
-    border-radius: 2px;
-    outline: 2px solid var(--accent);
-  }
+	:global(.find-match-current) {
+		background: var(--find-match-current);
+		border-radius: 2px;
+		outline: 2px solid var(--accent);
+	}
 </style>

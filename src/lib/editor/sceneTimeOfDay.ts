@@ -20,7 +20,12 @@ export const sceneTimeKey = new PluginKey<SceneTimeState>('scene-time');
  *  `'time-day'` / `'time-night'` for tinted classes, or empty string
  *  when no recognized time word appears (so the numeral stays neutral). */
 function classFor(headingText: string): string {
-	const tail = headingText.split(/\s[-–—]\s|\s-\s/).pop()?.trim().toUpperCase() ?? '';
+	const tail =
+		headingText
+			.split(/\s[-–—]\s|\s-\s/)
+			.pop()
+			?.trim()
+			.toUpperCase() ?? '';
 	if (/\b(NIGHT|DUSK|EVENING)\b/.test(tail)) return 'time-night';
 	if (/\b(DAY|DAWN|MORNING|AFTERNOON)\b/.test(tail)) return 'time-day';
 	return '';

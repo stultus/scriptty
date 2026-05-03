@@ -56,7 +56,7 @@ const handleEnter: Command = (state, dispatch) => {
 	if (isEmpty && typeName === 'character') {
 		if (dispatch) {
 			const pos = state.selection.$from.before();
-			let tr = state.tr.setNodeMarkup(pos, screenplaySchema.nodes.action);
+			const tr = state.tr.setNodeMarkup(pos, screenplaySchema.nodes.action);
 			tr.scrollIntoView();
 			dispatch(tr);
 		}
@@ -140,7 +140,12 @@ const handleEnter: Command = (state, dispatch) => {
  * Used when switching into or out of a parenthetical so the parens live in
  * the actual content rather than in CSS (issue #59).
  */
-function replaceBlockContent(tr: Transaction, blockPos: number, block: ProseNode, newContent: Fragment): Transaction {
+function replaceBlockContent(
+	tr: Transaction,
+	blockPos: number,
+	block: ProseNode,
+	newContent: Fragment
+): Transaction {
 	const from = blockPos + 1;
 	const to = blockPos + 1 + block.content.size;
 	return tr.replaceWith(from, to, newContent);

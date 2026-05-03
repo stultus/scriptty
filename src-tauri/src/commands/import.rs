@@ -138,7 +138,9 @@ pub fn import_fdx_as_episode(
     mut current_document: ScreenplayDocument,
 ) -> Result<FdxImportResult, String> {
     if current_document.project_type != ProjectType::Series {
-        return Err("Cannot import a Final Draft file as an episode unless a Series is open.".into());
+        return Err(
+            "Cannot import a Final Draft file as an episode unless a Series is open.".into(),
+        );
     }
 
     let text = std::fs::read_to_string(&path)

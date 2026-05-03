@@ -16,10 +16,12 @@ public issues for security problems.
 ## Scope
 
 In scope:
+
 - The Scriptty desktop application (Tauri shell, SvelteKit UI, Typst
   rendering pipeline)
 - The release / build workflows under `.github/workflows`
 
 Out of scope:
+
 - Third-party dependencies (report upstream and notify us)
 - Content within user-authored screenplays

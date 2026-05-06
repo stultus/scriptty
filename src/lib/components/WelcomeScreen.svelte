@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { createTimeline, stagger, utils } from 'animejs';
 	import { documentStore } from '$lib/stores/documentStore.svelte';
 	import NewProjectDialog from './NewProjectDialog.svelte';
 	import PasteScriptDialog from './PasteScriptDialog.svelte';
@@ -16,6 +18,108 @@
 	let showFilmDialog = $state(false);
 	let showSeriesDialog = $state(false);
 	let showPasteDialog = $state(false);
+
+	// The wordmark is split into per-letter spans so anime.js can
+	// stagger their entrance — the writer should feel the title being
+	// *written* rather than placed. Source-of-truth string here so the
+	// template stays declarative.
+	const WORDMARK = 'Scriptty'.split('');
+
+	let cardEl: HTMLDivElement | undefined = $state(undefined);
+
+	onMount(() => {
+		if (typeof window === 'undefined') return;
+		const card = cardEl;
+		if (!card) return;
+
+		// Honour reduced-motion preference unconditionally — render at the
+		// rest state with no animation. Aligns with the editor-wide motion
+		// gate (issue #220) instead of treating the welcome as an exception.
+		const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		if (reduced) return;
+
+		// Snap every animated target to its hidden "from" state synchronously
+		// before the next paint. onMount runs after Svelte has committed the
+		// DOM but before the browser flushes paint, so a single utils.set()
+		// pass here avoids the flash-of-finished-state on cold launch.
+		const q = (sel: string) => Array.from(card.querySelectorAll(sel)) as HTMLElement[];
+
+		utils.set(card, { opacity: 0 });
+		utils.set(q('.mh-eyebrow .mh-rule'), { scaleX: 0, opacity: 0 });
+		utils.set(q('.mh-eyebrow > span:not(.mh-rule)'), { opacity: 0 });
+		utils.set(q('.title-glyph'), { opacity: 0, translateY: '0.5em' });
+		utils.set(q('.title .dot'), { opacity: 0, scale: 0 });
+		utils.set(q('.subtitle'), { opacity: 0, translateY: '0.3em' });
+		utils.set(q('.masthead-divider'), { scaleX: 0 });
+		utils.set(q('.choice'), { opacity: 0, translateY: '0.4em' });
+		utils.set(q('.pill-cta'), { opacity: 0, scale: 0.96 });
+		utils.set(q('.recent-item'), { opacity: 0, translateX: '-0.4em' });
+
+		// One timeline. Each step's position is relative to the previous so
+		// we can keep the rhythm tight (~2.4s total) without hardcoding
+		// absolute timestamps. The stagger() calls give the wordmark its
+		// inked-letter feel and the recent-files index its typeset cascade.
+		const tl = createTimeline({
+			defaults: { ease: 'outExpo', duration: 520 }
+		});
+
+		tl.add(card, { opacity: 1, duration: 360, ease: 'outQuart' })
+			.add(q('.mh-eyebrow .mh-rule'), { scaleX: 1, opacity: 1, duration: 460 }, '-=200')
+			.add(q('.mh-eyebrow > span:not(.mh-rule)'), { opacity: 1, duration: 320 }, '-=320')
+			.add(
+				q('.title-glyph'),
+				{
+					opacity: 1,
+					translateY: 0,
+					delay: stagger(48),
+					duration: 520,
+					ease: 'outQuart'
+				},
+				'-=160'
+			)
+			.add(q('.title .dot'), {
+				opacity: 1,
+				scale: [0, 1.18, 1],
+				duration: 420,
+				ease: 'outBack'
+			})
+			.add(q('.subtitle'), { opacity: 1, translateY: 0, duration: 420 }, '-=180')
+			.add(q('.masthead-divider'), { scaleX: 1, duration: 540, ease: 'outExpo' }, '-=320')
+			.add(
+				q('.choice'),
+				{
+					opacity: 1,
+					translateY: 0,
+					delay: stagger(80),
+					duration: 460
+				},
+				'-=240'
+			)
+			.add(
+				q('.pill-cta'),
+				{
+					opacity: 1,
+					scale: 1,
+					delay: stagger(60),
+					duration: 360
+				},
+				'-=200'
+			);
+
+		const recents = q('.recent-item');
+		if (recents.length > 0) {
+			tl.add(
+				recents,
+				{
+					opacity: 1,
+					translateX: 0,
+					delay: stagger(40),
+					duration: 360
+				},
+				'-=200'
+			);
+		}
+	});
 
 	function loadRecent() {
 		try {
@@ -71,7 +175,7 @@
 </script>
 
 <div class="welcome">
-	<div class="welcome-card">
+	<div class="welcome-card" bind:this={cardEl}>
 		<!-- Editorial masthead — eyebrow with flanking hairlines, big
          tracked title, italic Manjari subtitle, asterism divider.
          Same vocabulary as SceneCardsView's hero and the title-page
@@ -85,7 +189,14 @@
 			<span class="mh-rule"></span>
 		</div>
 
-		<h1 class="title">Scriptty<span class="dot">.</span></h1>
+		<!-- aria-label gives screen readers the literal wordmark; the
+		     per-letter spans are aria-hidden so the title isn't read as
+		     "S c r i p t t y dot". -->
+		<h1 class="title" aria-label="Scriptty.">
+			{#each WORDMARK as ch, i (i)}
+				<span class="title-glyph" aria-hidden="true">{ch}</span>
+			{/each}<span class="dot" aria-hidden="true">.</span>
+		</h1>
 		<p class="subtitle">For Malayalam &amp; <em>English</em> screenwriters</p>
 
 		<div class="masthead-divider" aria-hidden="true"></div>
@@ -239,8 +350,20 @@
 		line-height: 0.95;
 	}
 
+	/* Each letter of the wordmark is its own inline-block so anime.js can
+	   tween translateY independently. `inline-block` also gives the letter
+	   its own bounding box, which fixes the descender/ascender clipping
+	   that the bare h1 would have. */
+	.title .title-glyph {
+		display: inline-block;
+		will-change: transform, opacity;
+	}
+
 	.title .dot {
+		display: inline-block;
 		color: var(--marker-color);
+		transform-origin: 50% 70%;
+		will-change: transform, opacity;
 	}
 
 	/* Italic deck under the wordmark — display-font in italic, with
@@ -272,6 +395,10 @@
 		width: 100%;
 		height: 1px;
 		margin: 26px 0 28px;
+		/* transform-origin: center so anime's scaleX tween extends the
+		   rule outward from the centre dot rather than from one edge. */
+		transform-origin: 50% 50%;
+		will-change: transform;
 		background: linear-gradient(
 			to right,
 			transparent 0,

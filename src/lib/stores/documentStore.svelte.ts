@@ -184,7 +184,7 @@ export type AnyImportSummary =
  *  layer (Scene Navigator, Scene Cards, PDF export) see the same shape the
  *  Editor does — without pulling ProseMirror into the store module. */
 function normalizeContentPayload(content: unknown): unknown {
-	const emptyDoc = { type: 'doc', content: [] as unknown[] };
+	const emptyDoc = { type: 'doc', content: [{ type: 'scene_heading', content: [] }] };
 	if (!content) return emptyDoc;
 	const wrapNode = (raw: unknown): unknown => {
 		if (!raw || typeof raw !== 'object') return null;
@@ -198,15 +198,32 @@ function normalizeContentPayload(content: unknown): unknown {
 		}
 		return { type: node.type, content: [] };
 	};
+	// Schema rule (src/lib/editor/schema.ts) enforces that the doc starts
+	// with a scene_heading. Mirror that here so readers in this layer
+	// (Scene Navigator, Scene Cards, PDF export) see the same shape.
+	const ensureFirstIsSceneHeading = (children: object[]): object[] => {
+		if (children.length === 0) return [{ type: 'scene_heading', content: [] }];
+		const first = children[0] as { type?: string };
+		if (first?.type !== 'scene_heading') {
+			return [{ type: 'scene_heading', content: [] }, ...children];
+		}
+		return children;
+	};
 	if (Array.isArray(content)) {
 		const children = content.map(wrapNode).filter((n): n is object => n !== null);
-		return { type: 'doc', content: children };
+		return { type: 'doc', content: ensureFirstIsSceneHeading(children) };
 	}
 	if (typeof content === 'object') {
 		const obj = content as { type?: string; content?: unknown };
-		if (obj.type === 'doc') return content;
+		if (obj.type === 'doc') {
+			const arr = Array.isArray(obj.content) ? (obj.content as object[]) : [];
+			return { type: 'doc', content: ensureFirstIsSceneHeading(arr) };
+		}
 		const wrapped = wrapNode(content);
-		return { type: 'doc', content: wrapped ? [wrapped] : [] };
+		return {
+			type: 'doc',
+			content: ensureFirstIsSceneHeading(wrapped ? [wrapped] : [])
+		};
 	}
 	return emptyDoc;
 }

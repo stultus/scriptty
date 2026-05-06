@@ -23,8 +23,14 @@ export type ScreenplayNodeType =
  */
 const nodes: Record<string, NodeSpec> = {
 	doc: {
-		// The top-level document must contain one or more block nodes.
-		content: 'block+'
+		// Every screenplay starts with a scene heading, no exceptions —
+		// scenes are *defined by* their heading, so a document that opens
+		// with action would have a scene with no name. ProseMirror rejects
+		// any transaction that would leave the doc starting with a non-
+		// heading block (e.g. backspacing the only/first scene_heading
+		// when there's content after it), and rejects emptying the doc
+		// entirely. The empty-doc state is "one empty scene_heading".
+		content: 'scene_heading block*'
 	},
 
 	scene_heading: {

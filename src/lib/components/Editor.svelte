@@ -71,18 +71,40 @@
 
 		if (Array.isArray(content)) {
 			const children = content.map(wrapNode).filter((n): n is object => n !== null);
-			return { type: 'doc', content: children };
+			return { type: 'doc', content: ensureFirstIsSceneHeading(children) };
 		}
 
 		if (typeof content === 'object') {
 			const obj = content as { type?: string; content?: unknown };
-			if (obj.type === 'doc') return content;
+			if (obj.type === 'doc') {
+				const arr = Array.isArray(obj.content) ? (obj.content as object[]) : [];
+				return { type: 'doc', content: ensureFirstIsSceneHeading(arr) };
+			}
 			// Single block node handed in without a doc wrapper.
 			const wrapped = wrapNode(content);
-			return { type: 'doc', content: wrapped ? [wrapped] : [] };
+			return {
+				type: 'doc',
+				content: ensureFirstIsSceneHeading(wrapped ? [wrapped] : [])
+			};
 		}
 
 		return emptyDoc;
+	}
+
+	// Schema enforces "doc starts with scene_heading"; a stale .screenplay
+	// (or a Fountain / FDX import edge case) might still serialise an
+	// action-first doc. Prepend an empty scene_heading rather than letting
+	// fromJSON throw — the writer keeps their text and gets a placeholder
+	// heading they can fill in.
+	function ensureFirstIsSceneHeading(children: object[]): object[] {
+		if (children.length === 0) {
+			return [{ type: 'scene_heading', content: [] }];
+		}
+		const first = children[0] as { type?: string };
+		if (first?.type !== 'scene_heading') {
+			return [{ type: 'scene_heading', content: [] }, ...children];
+		}
+		return children;
 	}
 
 	// Walk ProseMirror JSON and make sure every parenthetical node contains

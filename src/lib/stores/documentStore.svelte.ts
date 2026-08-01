@@ -170,8 +170,7 @@ export interface FdxImportResult {
 /** Discriminated-union summary the toast component consumes. The kind
  *  field tells the renderer which set of count labels to surface. */
 export type AnyImportSummary =
-	| ({ kind: 'fountain' } & FountainImportSummary)
-	| ({ kind: 'fdx' } & FdxImportSummary);
+	({ kind: 'fountain' } & FountainImportSummary) | ({ kind: 'fdx' } & FdxImportSummary);
 
 /** Convert a ProseMirror-ish content payload into canonical
  *  `{type:'doc', content:[...]}` shape. Accepts three inputs:

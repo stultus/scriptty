@@ -908,12 +908,7 @@
 					const view = editorStore.view;
 					if (!view) return;
 					const elementType = event.payload as
-						| 'scene_heading'
-						| 'action'
-						| 'character'
-						| 'parenthetical'
-						| 'dialogue'
-						| 'transition';
+						'scene_heading' | 'action' | 'character' | 'parenthetical' | 'dialogue' | 'transition';
 					convertCurrentBlockTo(elementType)(view.state, view.dispatch);
 					view.focus();
 				})

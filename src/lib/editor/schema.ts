@@ -7,12 +7,7 @@ import { Schema, type NodeSpec, type MarkSpec } from 'prosemirror-model';
  * Used throughout the app to identify which kind of block a node is.
  */
 export type ScreenplayNodeType =
-	| 'scene_heading'
-	| 'action'
-	| 'character'
-	| 'parenthetical'
-	| 'dialogue'
-	| 'transition';
+	'scene_heading' | 'action' | 'character' | 'parenthetical' | 'dialogue' | 'transition';
 
 /**
  * Node specifications for every node type in the screenplay schema.

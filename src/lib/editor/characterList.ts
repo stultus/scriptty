@@ -129,8 +129,7 @@ export const characterListPlugin = new Plugin<CharacterListState>({
 		},
 		apply(tr, value, _oldState, newState): CharacterListState {
 			const meta = tr.getMeta(characterListKey) as
-				| Partial<Pick<CharacterListState, 'enabled' | 'extras'>>
-				| undefined;
+				Partial<Pick<CharacterListState, 'enabled' | 'extras'>> | undefined;
 
 			const enabled = meta && typeof meta.enabled === 'boolean' ? meta.enabled : value.enabled;
 			const extras = meta?.extras ?? value.extras;

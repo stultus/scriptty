@@ -5,6 +5,12 @@ on:
     tags:
       - 'v*'
 
+# Least-privilege token: tauri-action only needs to create the draft
+# release and upload installer assets. Nothing here writes code,
+# issues, or packages (#211).
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
@@ -25,6 +31,9 @@ jobs:
             label: Linux-x64
 
     runs-on: ${{ matrix.platform }}
+    # A hung build (stuck notarization, frozen download) would otherwise
+    # run for GitHub's 6-hour default — per matrix job (#211).
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v7

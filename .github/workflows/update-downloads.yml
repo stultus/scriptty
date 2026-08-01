@@ -20,6 +20,8 @@ concurrency:
 jobs:
   update-downloads:
     runs-on: ubuntu-latest
+    # Small job — regenerates one JSON file and pushes (#211).
+    timeout-minutes: 15
     permissions:
       contents: write
 

@@ -56,7 +56,9 @@ jobs:
         run: npm ci
 
       - name: Build Tauri app
-        uses: tauri-apps/tauri-action@v1
+        # Pinned to a commit SHA so a moved/compromised upstream tag can't inject
+        # code into our signed release builds (#213). Dependabot bumps the SHA.
+        uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # macOS code signing — signs the app with a Developer ID certificate

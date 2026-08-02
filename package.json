@@ -22,7 +22,7 @@
 		"@sveltejs/kit": "^2.70.1",
 		"@sveltejs/vite-plugin-svelte": "^7.2.0",
 		"@tauri-apps/cli": "^2.11.4",
-		"@types/node": "^25",
+		"@types/node": "^26",
 		"eslint": "^10.8.0",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-svelte": "^3.22.0",

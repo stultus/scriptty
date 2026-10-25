@@ -1004,10 +1004,17 @@
 								? 'INT · EXT'
 								: ''}
 				{@const timeWord = (card.time ?? '').toUpperCase()}
+				<!-- Drag state is tracked by 1-based scene ORDINAL (sceneOrder + 1),
+				     not the displayed sceneNumber. sceneNumber is offset by the
+				     document's scene_number_start (a co-writing feature), whereas
+				     the drop-target detection and reorderScene both work in plain
+				     positional 1-based scene order. Mixing the two spaces silently
+				     broke drag-reorder for any file whose numbering didn't start
+				     at 1. -->
 				<div
 					class="card scene-card"
-					class:dragging={dragFromScene === card.sceneNumber}
-					class:drop-target={dropTargetScene === card.sceneNumber}
+					class:dragging={dragFromScene === card.sceneOrder + 1}
+					class:drop-target={dropTargetScene === card.sceneOrder + 1}
 					class:skeleton={isSkeleton}
 					data-time={timeWord}
 					animate:flip={{ duration: 450, easing: cubicInOut }}
@@ -1022,7 +1029,7 @@
 						class="card-gutter"
 						class:disabled={groupByLocation}
 						onmousedown={(e: MouseEvent) => {
-							if (!groupByLocation) startDrag(e, card.sceneNumber);
+							if (!groupByLocation) startDrag(e, card.sceneOrder + 1);
 						}}
 						role="button"
 						tabindex="-1"

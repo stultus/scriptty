@@ -16,6 +16,9 @@ src-tauri/target/
 # Tauri-generated capability + permission schemas — rewritten by
 # `tauri build` / `tauri dev`, not hand-authored.
 src-tauri/gen/
+# Rewritten by the Update Download Links workflow on every release, which
+# emits 2-space JSON — not hand-authored, so don't let it trip the lint gate.
+docs/downloads.json
 
 # Local-only Claude Code state — never tracked, per-developer.
 .claude/settings.local.json

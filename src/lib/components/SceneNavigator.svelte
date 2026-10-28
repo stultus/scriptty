@@ -466,6 +466,27 @@
 		tr.scrollIntoView();
 		view.dispatch(tr);
 
+		// Remap scene_cards indices to follow the reordered scenes — same as
+		// SceneCardsView.reorderScene. scene_index is positional, so without
+		// this a moved scene would pick up its old slot's description/notes.
+		if (documentStore.document) {
+			for (const card of documentStore.activeSceneCards) {
+				if (card.scene_index === fromIdx) {
+					card.scene_index = toIdx;
+				} else if (fromIdx < toIdx) {
+					// Moving forward: scenes between from+1 and to shift down by 1
+					if (card.scene_index > fromIdx && card.scene_index <= toIdx) {
+						card.scene_index--;
+					}
+				} else {
+					// Moving backward: scenes between to and from-1 shift up by 1
+					if (card.scene_index >= toIdx && card.scene_index < fromIdx) {
+						card.scene_index++;
+					}
+				}
+			}
+		}
+
 		// Mark document dirty
 		documentStore.markDirty();
 
@@ -595,22 +616,27 @@
 				<li
 					class="scene-li"
 					class:active={isActive}
-					class:drop-above={dropTargetScene === scene.number &&
+					class:drop-above={dropTargetScene === sceneArrayIdx + 1 &&
 						dragFromScene !== null &&
-						dragFromScene > scene.number}
-					class:drop-below={dropTargetScene === scene.number &&
+						dragFromScene > sceneArrayIdx + 1}
+					class:drop-below={dropTargetScene === sceneArrayIdx + 1 &&
 						dragFromScene !== null &&
-						dragFromScene < scene.number}
-					class:dragging={dragFromScene === scene.number}
+						dragFromScene < sceneArrayIdx + 1}
+					class:dragging={dragFromScene === sceneArrayIdx + 1}
 				>
 					{#if isActiveEpisode}
 						<!-- Drag handle only on the active episode — drag-reorder
                  needs editorStore.view, which only points at the active
                  episode's content. Cross-episode reordering is a
                  follow-up. (#156) -->
+						<!-- Drag uses the 1-based scene ORDINAL (position in the list),
+						     not scene.number, which is offset by scene_number_start.
+						     reorderScene + the drop detection both work in positional
+						     order; passing the offset number broke reorder for any
+						     file not starting at scene 1. -->
 						<span
 							class="drag-handle"
-							onmousedown={(e: MouseEvent) => startDrag(e, scene.number)}
+							onmousedown={(e: MouseEvent) => startDrag(e, sceneArrayIdx + 1)}
 							role="button"
 							tabindex="-1"
 							aria-label="Drag to reorder scene {scene.number}"

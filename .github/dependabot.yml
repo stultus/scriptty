@@ -8,6 +8,15 @@ updates:
     groups:
       npm-minor-patch:
         update-types: ['minor', 'patch']
+    # `tauri build` refuses to run when a Tauri crate and its npm partner
+    # are on different minor versions, and Dependabot bumps the two sides
+    # in separate PRs (#275 / #286). Take Tauri minor bumps by hand in one
+    # PR touching both Cargo.toml and package.json; patches still flow.
+    ignore:
+      - dependency-name: '@tauri-apps/api'
+        update-types: ['version-update:semver-minor']
+      - dependency-name: '@tauri-apps/plugin-*'
+        update-types: ['version-update:semver-minor']
 
   - package-ecosystem: 'cargo'
     directory: '/src-tauri'
@@ -17,6 +26,14 @@ updates:
     groups:
       cargo-minor-patch:
         update-types: ['minor', 'patch']
+    # Pairs with the npm ignore above — see the comment there.
+    ignore:
+      - dependency-name: 'tauri'
+        update-types: ['version-update:semver-minor']
+      - dependency-name: 'tauri-build'
+        update-types: ['version-update:semver-minor']
+      - dependency-name: 'tauri-plugin-*'
+        update-types: ['version-update:semver-minor']
 
   - package-ecosystem: 'github-actions'
     directory: '/'

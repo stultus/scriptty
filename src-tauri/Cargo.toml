@@ -15,22 +15,22 @@ name = "scriptty_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2.5.6", features = [] }
+tauri-build = { version = "2.7.4", features = [] }
 
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
-tauri = { version = "2.11.1", features = [] }
-tauri-plugin-log = "2"
-tauri-plugin-dialog = "2"
+tauri = { version = "2.12.5", features = [] }
+tauri-plugin-log = "2.10.1"
+tauri-plugin-dialog = "2.8.4"
 typst = "0.14"
 typst-pdf = "0.14"
 chrono = "0.4"
 comemo = "0.5"
-tauri-plugin-fs = "2"
-tauri-plugin-opener = "2.5.4"
-tauri-plugin-deep-link = "2.4.9"
+tauri-plugin-fs = "2.7.1"
+tauri-plugin-opener = "2.7.2"
+tauri-plugin-deep-link = "2.6.3"
 # Pure-Rust XML pull-parser (MIT). Used by the Final Draft (.fdx) importer
 # in `screenplay::fdx_import` — `quick-xml` handles BOM, entity decoding,
 # and whitespace per the XML 1.0 spec, which we don't want to re-implement.
